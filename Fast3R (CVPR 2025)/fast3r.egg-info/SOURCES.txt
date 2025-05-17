@@ -1,7 +1,0 @@
-LICENSE
-README.md
-setup.py
-fast3r.egg-info/PKG-INFO
-fast3r.egg-info/SOURCES.txt
-fast3r.egg-info/dependency_links.txt
-fast3r.egg-info/top_level.txt
