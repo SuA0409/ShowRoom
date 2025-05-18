@@ -1,0 +1,194 @@
+# Selenium을 사용한 크롤링
+!pip install selenium
+!apt-get update # for installing ChromeDriver
+!apt-get install -y chromium-chromedriver
+!cp /usr/lib/chromium-browser/chromedriver /usr/bin
+
+
+## 수집 위치 및 저장 위치
+START, END = 20, 30  # 본인 파트에 맞게 수정 !!!!
+save_base_path = '/content/drive/MyDrive/AirbnbDataset/c2_2_20-29'  # 이미지 저장 위치
+
+# ※ 건들지 마시오.
+SLEEP = 2
+ROOM_LIST = ['주방', '거실', '침실']
+
+
+# Import
+import os, time, re, json
+from bs4 import BeautifulSoup
+import requests
+from requests import request
+from requests.compat import urljoin
+import base64
+from urllib.parse import quote, unquote, urlencode, urljoin
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from google.colab import drive
+
+# sys.path 설정
+import sys
+
+
+# Google mount
+from google.colab import drive
+drive.mount('/content/drive')
+
+
+# 도시 리스트
+# cities = ['New York', 'Los Angeles', 'San Francisco', 'Las Vegas', 'Miami', 'Chicago', 'Orlando', 'Vancouver',
+#           'Toronto', 'Montreal', 'Quebec City', 'London', 'Edinburgh', 'Manchester', 'Liverpool', 'Paris', 'Nice', 'Lyon', 'Marseille',
+#           'Berlin', 'Munich', 'Hamburg', 'Frankfurt', 'Rome', 'Venice', 'Milan', 'Florence', 'Naples', 'Barcelona', 'Seville', 'Madrid', 'Valencia',
+#           'Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Tokyo', 'Osaka', 'Kyoto', 'Fukuoka', 'Sapporo', 'Seoul', 'Busan', 'Jeju', 'Gangneung', 'Beijing',
+#           'Shanghai', 'Guangzhou', 'Chengdu', 'Bangkok', 'Phuket', 'Chiang Mai', 'Pattaya', 'Hanoi', 'Ho Chi Minh', 'Mexico City', 'Da Nang', 'Cancun',
+#           'Guadalajara', 'Rio de Janeiro', 'São Paulo', 'Istanbul', 'Cappadocia', 'Antalya']
+cities = ["Amsterdam", "Prague", "Vienna", "Budapest", "Copenhagen", "Stockholm", "Oslo", "Helsinki", "Dublin",
+    "Reykjavik", "Athens", "Santorini", "Dubrovnik", "Split", "Krakow", "Warsaw", "Bruges", "Brussels", "Zurich", "Geneva",
+    "Dubai", "Abu Dhabi", "Doha", "Jerusalem", "Tel Aviv", "Cairo", "Marrakesh", "Cape Town", "Johannesburg", "Nairobi",
+    "Buenos Aires", "Lima", "Cusco", "Santiago", "Bogotá", "Cartagena", "Quito", "Panama City", "San José",
+    "Havana", "Punta Cana", "San Juan", "Kingston", "Manila", "Bali", "Jakarta", "Kuala Lumpur", "Singapore", "Taipei"]
+cities = [it.replace(' ', '-') for it in cities]
+Curl = list()
+for i in range(len(cities)):
+    Curl.append(f'https://www.airbnb.co.kr/s/{cities[i]}/homes')
+
+
+# 이미지 저장
+def save_images(img_list, category, room_dir):
+    category_dir = os.path.join(room_dir, category)
+    os.makedirs(category_dir, exist_ok=True)
+    for idx_img, img_url in enumerate(img_list):
+        try:
+            img_data = requests.get(img_url, headers=headers).content
+            img_filename = f"{category}_{idx_img}.jpg"
+            img_path = os.path.join(category_dir, img_filename)
+            with open(img_path, 'wb') as f:
+                f.write(img_data)
+            print(f"✅ 저장 완료: {img_path}")
+        except Exception as e:
+            print(f"❌ 이미지 다운로드 실패: {e}")
+
+# 도시 페이지 이동
+def make_cursor(page: int) -> str:
+    items_offset = (page - 1) * 18
+    obj = {"section_offset": 0, "items_offset": items_offset, "version": 1}
+    json_str = json.dumps(obj, separators=(',', ':'))
+    b64 = base64.b64encode(json_str.encode()).decode()
+    return quote(b64)
+
+
+# 숙소별 이미지 크롤링 및 저장 함수
+def crawl_and_save_images(driver, urls, i):
+    idx = 0
+    while urls:
+        url = urls.pop()
+        try:
+            print(f"▶{i}/{END-1}▶ {idx+1}/{270}: {url}")
+
+            # modal url 생성
+            if '?' in url:
+                p1, p2 = re.split(r'\?', url)
+                modal_url = p1 + '?modal=PHOTO_TOUR_SCROLLABLE&' + p2
+            else:
+                modal_url = url + '?modal=PHOTO_TOUR_SCROLLABLE'
+
+            driver.get(modal_url)
+            time.sleep(SLEEP)
+
+            soup = BeautifulSoup(driver.page_source, 'html.parser')
+
+            # 이미지 분류할 리스트
+            rooms = dict()
+
+            for img_tag in soup.find_all('img', alt=True):
+                if 12 > len(img_tag['alt']) > 6 and any(rl in img_tag['alt'] for rl in ROOM_LIST):
+                    rooms[img_tag['alt'][:-5]] = rooms.get(img_tag['alt'][:-5], set())
+                    rooms[img_tag['alt'][:-5]].add(img_tag['src'])
+
+            # 이미지 가치 판단
+            for category, img_set in rooms.items():
+                if len(img_set) >= 3:
+                    # 숙소 고유번호 추출
+                    room_number = url.split('/rooms/')[-1].split('?')[0].strip()
+                    if room_number in pre_room_list:
+                        print(f'⚠️ 숙소 크롤링한 숙소:{room_number}')
+                        continue
+                    room_dir = os.path.join(save_base_path, room_number)
+                    os.makedirs(room_dir, exist_ok=True)
+
+                    with open(f'/content/drive/MyDrive/AirbnbDataset/room_number.txt', 'a', encoding='utf-8') as file:
+                        file.write(f'{room_number}\n')
+
+                    save_images(list(img_set), category, room_dir)
+
+        except Exception as e:
+            print(f"⚠️ 숙소 처리 중 오류: {e}")
+            continue
+
+        idx += 1
+
+
+# Selenium으로 Airbnb 웹사이트를 크롤링하기 위한 준비 작업과 드라이버 설정
+headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+    "Accept": "*/*",
+    "Accept-Language": "ko-KR,ko;q=0.9",
+    "Referer": "https://www.airbnb.co.kr/",
+    "Cookie": (
+    "rclmd=%7B%22309469461%22%3A%22otp_phone%22%7D; "
+    "rclu=%7B%22309469461%22%3A%2250vhLm912hLLTAL9pCkv7QgUL4zGAFn3aj5IMQ97e2A%3D%22%7D; "
+    "hli=1; "
+    "li=1; "
+    "tzo=540")
+}
+os.makedirs(save_base_path, exist_ok=True)
+sys.path.insert(0, '/usr/lib/chromium-browser/chromedriver')
+
+# 셀레니움 드라이버 설정 (Colab용)
+chrome_options = Options()
+chrome_options.add_argument("--headless")
+chrome_options.add_argument("--no-sandbox")
+chrome_options.add_argument("--disable-dev-shm-usage")
+chrome_options.add_argument('--window-size=1920x1080')
+driver = webdriver.Chrome(options=chrome_options)
+
+
+# Main
+if __name__ == '__main__':
+    urls = list()
+
+    import time
+    # --- 5. 도시별 숙소 링크 수집 함수 ---
+    for i in range(START, END):
+        current_time = time.time()
+
+
+        pre_room_list = list()
+        pre_room_list_path = '/content/drive/MyDrive/AirbnbDataset/room_number.txt'
+        with open(pre_room_list_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+            lines = [line.strip() for line in lines]
+
+        pre_room_list.extend(lines)
+        pre_room_list = set(pre_room_list)
+
+        curl = Curl[i] # 첫번째 뉴욕 -> ...
+
+        cpgs = list() # 뉴욕이면 뉴욕에 대한 페이지들
+        for j in range(1, 16): # 15페이지까지 있으니깐
+            cursor = make_cursor(j)
+            cpgs.append(f"{curl}?cursor={cursor}")
+
+        for urll in cpgs:
+            resp = request('get',urll)
+            dom = BeautifulSoup(resp.text, 'html.parser')
+
+            for a_tag in dom.select('a[href]'):
+                if re.search(r'^/rooms/', a_tag['href']):
+                    link = urljoin('https://www.airbnb.co.kr', a_tag['href'])
+                    if link not in urls:
+                        urls.append(link) # 나랑 똑같애야됨
+
+        crawl_and_save_images(driver, urls, i)
+        print(f"\n✅ {curl} 모든 작업 완료!\t소요 시간 : {time.time() - current_time}")
