@@ -391,7 +391,7 @@ len(userDict), len(stayDict)
 # from google.colab import drive
 # drive.mount('/content/drive', force_remount=True)
 
-# save_base_path = '/content/drive/MyDrive/AirbnbDataset/airbnb_reviews'  # 여기에 저장할 거야
+# save_base_path = '/content/drive/MyDrive/Dataset/reviews'  # 여기에 저장할 거야
 # os.makedirs(save_base_path, exist_ok=True)
 
 # with open(os.path.join(save_base_path, "reviews.csv"), "w", newline="", encoding="utf-8") as f:
@@ -414,7 +414,7 @@ len(userDict), len(stayDict)
 #     writer = csv.writer(f)
 #     writer.writerow(['user_id'])
 
-# !ls "/content/drive/MyDrive/AirbnbDataset/airbnb_reviews"
+# !ls "/content/drive/MyDrive/Dataset/reviews"
 
 
 #
