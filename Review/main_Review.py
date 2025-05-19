@@ -36,7 +36,7 @@ headers = {
             "Accept": "*/*",
             "Referer": "",
             "Accept-Language": "",
-            "x-airbnb-api-key": "",
+            "api-key": "",
         }
 
 # 번역본 없으면 걍 원본 ㄱㄱ가 아니라 걍 없애
