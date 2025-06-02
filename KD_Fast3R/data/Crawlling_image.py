@@ -7,7 +7,7 @@
 
 ## 수집 위치 및 저장 위치
 START, END = 20, 30  # 본인 파트에 맞게 수정 !!!!
-save_base_path = '/content/drive/MyDrive/AirbnbDataset/c2_2_20-29'  # 이미지 저장 위치
+save_base_path = '/content/drive/MyDrive/Dataset/c2_2_20-29'  # 이미지 저장 위치
 
 # ※ 건들지 마시오.
 SLEEP = 2
@@ -51,7 +51,7 @@ cities = ["Amsterdam", "Prague", "Vienna", "Budapest", "Copenhagen", "Stockholm"
 cities = [it.replace(' ', '-') for it in cities]
 Curl = list()
 for i in range(len(cities)):
-    Curl.append(f'https://www.airbnb.co.kr/s/{cities[i]}/homes')
+    Curl.append(f'https://www.yourURL.com/{cities[i]}/homes')
 
 
 # 이미지 저장
@@ -117,7 +117,7 @@ def crawl_and_save_images(driver, urls, i):
                     room_dir = os.path.join(save_base_path, room_number)
                     os.makedirs(room_dir, exist_ok=True)
 
-                    with open(f'/content/drive/MyDrive/AirbnbDataset/room_number.txt', 'a', encoding='utf-8') as file:
+                    with open(f'/content/drive/MyDrive/Dataset/room_number.txt', 'a', encoding='utf-8') as file:
                         file.write(f'{room_number}\n')
 
                     save_images(list(img_set), category, room_dir)
@@ -129,18 +129,18 @@ def crawl_and_save_images(driver, urls, i):
         idx += 1
 
 
-# Selenium으로 Airbnb 웹사이트를 크롤링하기 위한 준비 작업과 드라이버 설정
+# Selenium으로 웹사이트를 크롤링하기 위한 준비 작업과 드라이버 설정
 headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+    "User-Agent": "",
     "Accept": "*/*",
-    "Accept-Language": "ko-KR,ko;q=0.9",
-    "Referer": "https://www.airbnb.co.kr/",
+    "Accept-Language": "",
+    "Referer": "",
     "Cookie": (
-    "rclmd=%7B%22309469461%22%3A%22otp_phone%22%7D; "
-    "rclu=%7B%22309469461%22%3A%2250vhLm912hLLTAL9pCkv7QgUL4zGAFn3aj5IMQ97e2A%3D%22%7D; "
-    "hli=1; "
-    "li=1; "
-    "tzo=540")
+    ""
+    ""
+    ""
+    ""
+    "")
 }
 os.makedirs(save_base_path, exist_ok=True)
 sys.path.insert(0, '/usr/lib/chromium-browser/chromedriver')
@@ -165,7 +165,7 @@ if __name__ == '__main__':
 
 
         pre_room_list = list()
-        pre_room_list_path = '/content/drive/MyDrive/AirbnbDataset/room_number.txt'
+        pre_room_list_path = '/content/drive/MyDrive/Dataset/room_number.txt'
         with open(pre_room_list_path, 'r', encoding='utf-8') as f:
             lines = f.readlines()
             lines = [line.strip() for line in lines]
@@ -186,7 +186,7 @@ if __name__ == '__main__':
 
             for a_tag in dom.select('a[href]'):
                 if re.search(r'^/rooms/', a_tag['href']):
-                    link = urljoin('https://www.airbnb.co.kr', a_tag['href'])
+                    link = urljoin('https://www.yourURL.com', a_tag['href'])
                     if link not in urls:
                         urls.append(link) # 나랑 똑같애야됨
 

@@ -29,14 +29,14 @@ import csv
 import requests
 
 
-#
+# type your headers
 headers = {
             "Content-Type": "application/json",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+            "User-Agent": "",
             "Accept": "*/*",
-            "Referer": "https://www.airbnb.co.kr/",
-            "Accept-Language": "ko-KR,ko;q=0.9",
-            "x-airbnb-api-key": "d306zoyjsyarp7ifhu67rjxn52tv0t20",
+            "Referer": "",
+            "Accept-Language": "",
+            "api-key": "",
         }
 
 # 번역본 없으면 걍 원본 ㄱㄱ가 아니라 걍 없애
@@ -51,7 +51,7 @@ def comments(r):
 
 # 얘는 리뷰가져올 json임
 def getReviewsJson(stay_id, limit, offset, headers=headers):
-    jurl = "https://www.airbnb.co.kr/api/v3/StaysPdpReviewsQuery/dec1c8061483e78373602047450322fd474e79ba9afa8d3dbbc27f504030f91d?"
+    jurl = "" # json url
     variables = {
         "id":stay_id,
         "pdpReviewsRequest":{
@@ -101,7 +101,7 @@ def clean_text(text):
 
 
 ## 여기서 url만 가져오면 됨!!!
-url = 'https://www.airbnb.co.kr/rooms/848425589512158141?check_in=2025-06-20&check_out=2025-06-22&photo_id=1611822771&source_impression_id=p3_1747354714_P3xYNIXjRSllUNzN&previous_page_section_name=1000'
+url = ''
 
 # ---------- 여기서 url만 가져오면 됨!!! -------------
 
