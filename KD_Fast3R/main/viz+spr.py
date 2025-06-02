@@ -21,7 +21,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 
 from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
 from typing_extensions import LiteralString
-from fast3r_to_spr import spr
+from fast3r_to_spr import spr, postprocess
 
 data = torch.load('/content/drive/MyDrive/content.pt') #넣으면 열림
 
@@ -63,24 +63,34 @@ for i in range(num):
     all_colors.append(color)
 
 # 모든 포인트 클라우드와 색상 합치기
-combined_points = np.concatenate(all_points, axis=0)
-combined_colors = np.concatenate(all_colors, axis=0)
+xyz = np.concatenate(all_points, axis=0)
+rgb = np.concatenate(all_colors, axis=0)
 
 # Viser 서버 실행 (단일 서버)
 server = viser.ViserServer(host="0.0.0.0", port=port)
 
 # SPR 수행 (한 번만 호출)
-vertices, vertice_colors = spr(
-    coords_np_Vx3=combined_points,
-    colors_np_Vx3=combined_colors,
+vertices, colors = spr(
+    coords_np_Vx3=xyz,
+    colors_np_Vx3=rgb,
     depth=8,
 )
+
+vertices, colors = postprocess(xyz, vertices, colors)
+
+vertices, colors = spr(
+    coords_np_Vx3=vertices,
+    colors_np_Vx3=colors,
+    depth=8,
+)
+
+vertices, colors = postprocess(xyz, vertices, colors)
 
 # 합쳐진 포인트 클라우드 시각화
 server.scene.add_point_cloud(
     name="원본 포인트 클라우드",
-    points=combined_points,
-    colors=combined_colors,
+    points=xyz,
+    colors=rgb,
     point_size=0.001
 )
 
@@ -88,14 +98,14 @@ server.scene.add_point_cloud(
 server.scene.add_point_cloud(
     name="생성 포인트 클라우드",
     points=vertices,
-    colors=vertice_colors,
+    colors=colors,
     point_size=0.001
 )
 
-print(f"Combined points shape: {combined_points.shape}")
-print(f"Combined colors shape: {combined_colors.shape}")
+print(f"Combined points shape: {xyz.shape}")
+print(f"Combined colors shape: {rgb.shape}")
 print(f"Reconstructed vertices shape: {vertices.shape}")
-print(f"Reconstructed colors shape: {vertice_colors.shape}")
+print(f"Reconstructed colors shape: {colors.shape}")
 
 print("✅ 접속 후 아래 셀에서 Enter를 누르면 서버가 종료됩니다.")
 input("Press Enter to stop viser...")
