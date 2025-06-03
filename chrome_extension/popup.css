@@ -1,0 +1,257 @@
+/* 팝업 전체 배경 및 레이아웃 */
+body {
+  background: transparent;
+  margin: 0;
+  padding: 0;
+  width: 460px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: #333;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* 팝업 내부 카드 컨테이너 */
+.popup-container {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* 헤더 영역 스타일 */
+.popup-header {
+  text-align: center;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #ececec;
+  padding-bottom: 12px;
+}
+
+/* 헤더 제목 스타일 */
+.popup-header h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0;
+}
+
+/* 헤더 설명문 스타일 */
+.popup-header p {
+  font-size: 14px;
+  font-weight: 400;
+  color: #555;
+  margin: 6px 0 0 0;
+}
+
+/* 썸네일 섹션 컨테이너 */
+.thumbnail-section {
+  margin-bottom: 20px;
+}
+
+/* 썸네일 이미지 컨테이너 */
+.thumbnail-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-height: 100px;
+  overflow-x: auto;
+}
+
+/* 썸네일 이미지 스타일 */
+.thumbnail-container img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border: 2px solid #FF5A5F;
+  border-radius: 6px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+/* 썸네일 이미지 호버 효과 */
+.thumbnail-container img:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+}
+
+/* 버튼 섹션 컨테이너 */
+.button-section {
+  margin-bottom: 12px;
+}
+
+/* 버튼 그룹 레이아웃 */
+.button-group {
+  display: flex;
+  gap: 8px;
+}
+
+/* 버튼 공통 스타일 */
+.button-group button {
+  flex: 1;
+  height: 42px;
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: transform 0.1s ease, box-shadow 0.2s;
+  border: none;
+  outline: none;
+  cursor: pointer;
+}
+
+/* 버튼 툴팁 표시 (호버 시) */
+.button-group button:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 1;
+}
+
+/* 버튼 툴팁 기본 상태 */
+.button-group button::after {
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+/* 활성 버튼 호버 효과 */
+.button-group button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+/* 비활성 버튼 스타일 */
+.button-group button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 3D 변환 버튼(Cube) 스타일 */
+.btn-showroom-cube {
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 600px;
+}
+
+/* 3D 변환 버튼 호버 효과 */
+.btn-showroom-cube:hover:not(:disabled) {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+/* 3D 변환 버튼 비활성화 스타일 */
+.btn-showroom-cube:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 큐브 아이콘 3D 초기 상태 */
+.cube-icon {
+  height: 24px;
+  width: auto;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  transition: transform .5s ease-in-out;
+  transform: rotateX(25deg) rotateY(-25deg);
+}
+
+/* 큐브 아이콘 호버 애니메이션 */
+.btn-showroom-cube:hover .cube-icon {
+  transform: rotateX(0deg) rotateY(0deg);
+}
+
+/* 토글 버튼 기본 스타일 */
+#toggle {
+  background: linear-gradient(90deg, #28a745, #2ecc71);
+  color: #ffffff;
+  border: none;
+  outline: none;
+}
+
+/* 토글 버튼 호버 효과 */
+#toggle:hover:not(:disabled) {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+/* 토글 버튼 비활성화 스타일 */
+#toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 댓글 요약 버튼 기본 스타일 */
+.btn-showroom-text {
+  background: linear-gradient(90deg, #FF5A5F, #FF8A80);
+  color: #ffffff;
+  border: none;
+  outline: none;
+}
+
+/* 댓글 요약 버튼 호버 효과 */
+.btn-showroom-text:hover:not(:disabled) {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+/* 댓글 요약 버튼 비활성화 스타일 */
+.btn-showroom-text:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 상태 메시지 섹션 스타일 */
+.status-section {
+  text-align: center;
+  min-height: 20px;
+}
+
+/* 상태 메시지 텍스트 기본 스타일 */
+#status {
+  font-size: 13px;
+  margin: 0 auto;
+  padding: 6px 12px;
+  border-radius: 6px;
+  display: none; /* JS에서 클래스 토글하여 보여줌 */
+  width: fit-content;
+}
+
+/* 상태 메시지 성공 스타일 */
+#status.success {
+  background: #d4edda;
+  color: #155724;
+}
+
+/* 상태 메시지 오류 스타일 */
+#status.error {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+/* 팝업 닫기 버튼 기본 스타일 */
+.close-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  color: #888;
+  cursor: pointer;
+}
+
+/* 팝업 닫기 버튼 호버 스타일 */
+.close-btn:hover {
+  color: #333;
+}
