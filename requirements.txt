@@ -47,3 +47,16 @@ pyngrok
 # Using python, install below. (Using colab, you don't need)
 socket
 cv2
+
+# --------- BERTopic --------- #
+pandas
+kss
+transformers
+sentence-transformers
+kobert-transformers
+umap-learn
+hdbscan
+bertopic
+umap-learn
+hdbscan
+bertopic
