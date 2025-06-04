@@ -32,7 +32,7 @@ print("다운로드 완료!")
 # 지정된 파일에 코드 저장
 %%writefile rotate_and_inpaint.py
 
-# 라이브러리 설치
+# 필요한 라이브러리
 import os
 import cv2
 import torch
@@ -271,7 +271,7 @@ def main():
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--angle", type=float, default=30,
                         help="기본 회전 각도 (절대값). "
-                             "ST_result.txt에서 '0'은 +angle, '1'은 -angle로 사용됩니다.")
+                             "ST_result.txt에서 '0'은 +angle, '1'은 -angle, '2'은 양쪽 모두로 사용됩니다.")
     parser.add_argument("--max-depth", type=float, default=3.0)
     parser.add_argument("--steps", type=int, default=50,
                         help="Num inference steps for inpainting")
@@ -280,15 +280,14 @@ def main():
     parser.add_argument("--prompt", type=str,
                         default="Extend only the background wall and floor. Do not add new objects or decorations. "
                                 "Match color and lighting. Keep everything minimal.")
-    # 경로 수정
     parser.add_argument("--st-path", type=str,
-                        default="/content/drive/MyDrive/Colab Notebooks/Model/ShowRoom/Input/ST/ST_result.txt",
-                        help="ST_result.txt 경로 (각 줄: '<이미지번호> <0또는1>')")
+                        default="/content/drive/MyDrive/Colab Notebooks/Images/ST_result.txt",
+                        help="ST_result.txt 경로 (각 줄: '<이미지번호> <0,1,2 중 하나>')")
     parser.add_argument("--img-folder", type=str,
-                        default="/content/drive/MyDrive/Colab Notebooks/Model/ShowRoom/Input/Images",
+                        default="/content/drive/MyDrive/Colab Notebooks/Images",
                         help="원본 이미지가 저장된 폴더 경로 ('0.jpg', '1.jpg', '2.jpg' 등이 있음)")
     parser.add_argument("--out-folder", type=str,
-                        default="/content/drive/MyDrive/Colab Notebooks/Model/ShowRoom/Input/Images",
+                        default="/content/drive/MyDrive/Colab Notebooks/Images",
                         help="회전+인페인팅 결과를 저장할 폴더(존재하지 않으면 생성됨)")
     args = parser.parse_args()
 
@@ -302,7 +301,7 @@ def main():
     # SimpleRotator 인스턴스 생성 (로컬 캐시 모델 로딩)
     rotator = SimpleRotator(device='cuda', max_depth_m=args.max_depth)
 
-    # ST_result.txt 읽기 (각 줄: "<이미지번호> <0또는1>")
+    # ST_result.txt 읽기 (각 줄: "<이미지번호> <0,1,2 중 하나>")
     try:
         with open(args.st_path, 'r') as f:
             lines = [line.strip() for line in f if line.strip()]
@@ -318,54 +317,67 @@ def main():
             img_id = int(img_id_str)
             direction = int(direction_str)
         except Exception:
-            print(f"잘못된 형식 건너뜀: '{line}' (예상: '<번호> <0또는1>')")
+            print(f"잘못된 형식 건너뜀: '{line}' (예상: '<번호> <0,1,2>')")
             continue
 
-        # 이미지 파일 경로 구성 (예: "images/0.jpg")
+        # 방향에 따라 회전 각도 리스트 생성
+        if direction == 0:
+            angles = [args.angle]                # +angle만
+        elif direction == 1:
+            angles = [-args.angle]               # -angle만
+        elif direction == 2:
+            angles = [args.angle, -args.angle]   # +angle, -angle 둘 다
+        else:
+            print(f"알 수 없는 direction 값: {direction} (0,1,2만 허용). 건너뜀.")
+            continue
+
+        # 이미지 로드 (BGR) → RGB 변환
         input_path = os.path.join(args.img_folder, f"{img_id}.jpg")
         if not os.path.isfile(input_path):
             print(f"입력 이미지가 없습니다: {input_path} (건너뜀)")
             continue
 
-        # 방향에 따라 회전 각도 결정: '0' -> +angle, '1' -> -angle
-        angle_deg = +args.angle if direction == 0 else -args.angle
-
-        # 이미지 로드 (BGR) → RGB 변환
         img_bgr = cv2.imread(input_path)
         if img_bgr is None:
             print(f"이미지를 로드할 수 없습니다: {input_path} (건너뜀)")
             continue
         img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
 
-        # 2) 회전 + 깊이 기반 마스크 생성
-        new_rgb, depth, mask = rotator.rotate_frame(img_rgb, angle_deg)
+        # angles 리스트를 순회하며 각각 회전+인페인팅 수행
+        for angle_deg in angles:
+            # 회전 + 깊이 기반 마스크 생성
+            new_rgb, depth, mask = rotator.rotate_frame(img_rgb, angle_deg)
 
-        # 3) 회전된 텐서를 numpy 배열(RGB)로 변환
-        out_rgb = ((new_rgb[0].cpu().permute(1, 2, 0) + 1) * 127.5).clamp(0, 255).byte().numpy()
+            # 회전된 텐서를 numpy 배열(RGB)로 변환
+            out_rgb = ((new_rgb[0].cpu().permute(1, 2, 0) + 1) * 127.5).clamp(0, 255).byte().numpy()
 
-        # 마스크(Mask)도 numpy 배열로 변환하고, 모폴로지 열기 연산으로 잡음 제거
-        mask_np = (mask[0, 0].cpu().numpy() * 255).astype(np.uint8)
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-        mask_np = cv2.morphologyEx(mask_np, cv2.MORPH_OPEN, kernel)
+            # 마스크(Mask)도 numpy 배열로 변환하고, 모폴로지 열기 연산으로 잡음 제거
+            mask_np = (mask[0, 0].cpu().numpy() * 255).astype(np.uint8)
+            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+            mask_np = cv2.morphologyEx(mask_np, cv2.MORPH_OPEN, kernel)
 
-        # 4) 인페인팅을 위해 PIL 이미지로 변환 & 512×512 리사이즈
-        init_img = Image.fromarray(out_rgb).convert("RGB").resize((512, 512))
-        mask_img = Image.fromarray(mask_np).convert("L").resize((512, 512))
+            # 인페인팅을 위해 PIL 이미지로 변환 & 512×512 리사이즈
+            init_img = Image.fromarray(out_rgb).convert("RGB").resize((512, 512))
+            mask_img = Image.fromarray(mask_np).convert("L").resize((512, 512))
 
-        # 5) 인페인팅 수행
-        result = rotator.inpaint(
-            init_img, mask_img,
-            args.prompt, steps=args.steps, guidance=args.guidance
-        )
+            # 인페인팅 수행
+            result = rotator.inpaint(
+                init_img, mask_img,
+                args.prompt, steps=args.steps, guidance=args.guidance
+            )
 
-        # 6) 최종 결과 저장
-        output_path = os.path.join(args.out_folder, f"1{img_id}.png")
-        result.save(output_path)
-        print(f"[완료] 이미지 {img_id}.jpg → 회전 {angle_deg}° → 인페인팅 → 저장: {output_path}")
+            # 최종 결과 저장: 왼쪽 회전은 left1_{img_id}.png, 오른쪽 회전은 right1_{img_id}.png
+            if angle_deg > 0:
+                output_filename = f"left1{img_id}.png"
+            else:
+                output_filename = f"right1{img_id}.png"
 
+            output_path = os.path.join(args.out_folder, output_filename)
+            result.save(output_path)
+            print(f"[완료] 이미지 {img_id}.jpg → 회전 {angle_deg}° → 인페인팅 → 저장: {output_path}")
 
 if __name__ == '__main__':
     main()
-
+    
 # 파일 실행
 !python rotate_and_inpaint.py
