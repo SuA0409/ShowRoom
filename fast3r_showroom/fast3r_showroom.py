@@ -60,11 +60,14 @@ def save_camera_poses(preds, save_path):
     )
     camera_poses = poses_c2w_batch[0]  # List of (4, 4) numpy arrays
 
+    
+    # --- 문자열로 변환하여 저장
     with open(save_path, "w") as f:
         f.write("[\n")
         for pose in camera_poses:
-            f.write(" np.array(" + np.array2string(pose, separator=', ', precision=8) + ", dtype=float32),\n")
-        f.write("]\n")
+            pose_str = np.array2string(pose, separator=', ', precision=8, suppress_small=False)
+            f.write(f" np.array({pose_str}, dtype=float32),\n")
+        f.write("]")
     print(f" Saved all camera poses to {save_path}")
 
 
