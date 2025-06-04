@@ -75,24 +75,10 @@ def viz(pc, server, path, size=(512, 384)):
     )
     
     # SPR 수행
-    vertices, colors = spr(
-        coords_np_Vx3=xyz,
-        colors_np_Vx3=rgb,
-        depth=9,
-    )
-    
-    # 후처리
-    vertices, colors = postprocess(xyz, vertices, colors)
+    vertices, colors = spr(xyz, xyz, rgb)
     
     # SPR 2번 수행
-    vertices, colors = spr(
-        coords_np_Vx3=vertices,
-        colors_np_Vx3=colors,
-        depth=9,
-    )
-    
-    # 후처리
-    vertices, colors = postprocess(xyz, vertices, colors)
+    vertices, colors = spr(xyz, vertices, colors)
     
     # SPR 결과 시각화
     server.scene.add_point_cloud(
