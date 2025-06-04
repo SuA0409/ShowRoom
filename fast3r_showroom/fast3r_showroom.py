@@ -45,7 +45,7 @@ def save_point_clouds(preds, save_path):
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     npz_dict = {}
     for i, pred in enumerate(preds):
-        pts = pred["pts3d_local"].cpu().numpy().astype(np.float32).reshape(-1, 3)
+        pts = pred["pts3d_global"].cpu().numpy().astype(np.float32).reshape(-1, 3)
         npz_dict[f"pts{i}"] = pts
     np.savez(save_path, **npz_dict)
     print(f" Saved combined point clouds to {save_path}")
