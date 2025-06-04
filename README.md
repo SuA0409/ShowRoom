@@ -5,7 +5,14 @@ Based on the n spatial images selected by the user, missing 2D visual informatio
 ![image](https://github.com/user-attachments/assets/bb0cbc53-79c8-4f5c-8410-d61f3a99d56e)
 
 ## Installation
+    # clone project
+    git clone https://github.com/SuA0409/ShowRoom
+    cd ShowRoom
+
+    # install requirements
     pip install -r requirements.txt
+
+    # install ShowRoom as a package
     pip install -e .
 
 ## The View of Developer
