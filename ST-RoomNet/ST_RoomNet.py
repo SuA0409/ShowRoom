@@ -1,4 +1,4 @@
-# test.py 코드 복붙
+# ST-RoomNet start code
 import os
 import cv2
 import numpy as np
@@ -19,24 +19,23 @@ from spatial_transformer import ProjectiveTransformer
 # ─────────────────────────────────────────────────────────────────────────────
 
 # image 불러오기
-val_path = '/content/drive/MyDrive/Colab Notebooks/Model/ShowRoom/Input/Images'
+val_path = '/content/drive/MyDrive/Colab Notebooks/Model/ShowRoom/Input/Images' #chrome extention에서 저장한 이미지
 img_filenames = sorted([f for f in os.listdir(val_path) if f.endswith(('.jpg', '.png'))])
 img_names = [os.path.splitext(f)[0] for f in img_filenames]  # ['0', '1', '2', ...]
 
 
 # pose 불러오기
 pose_path = '/content/drive/MyDrive/Colab Notebooks/Model/ShowRoom/Input/Pose/pose.txt'
-with open(pose_path, 'r') as f:
+with open(pose_path, "r") as f:
     pose_text = f.read()
 
-# 문자열을 실제 리스트로 변환
-pose_list = eval(pose_text, {"array": np.array, "float32": np.float32})
+pose_list = eval(pose_text, {"np": np, "float32": np.float32})
+pose_array = np.array(pose_list, dtype=np.float32)
 
 # numpy array로 변환
-pose_list = [np.array(p, dtype=np.float32) for p in pose_list]
+pose_list = [np.array(p, dtype=np.float32) for p in pose_array]
 
 # 이미지 이름과 포즈 수가 같아야 함
-print (len(img_names),len(pose_list))
 assert len(img_names) == len(pose_list), "이미지 수와 포즈 수가 일치하지 않습니다"
 
 
@@ -105,17 +104,38 @@ theta_model = Model(inputs=base_model.input, outputs=theta_layer)
 # 5) Helper 함수 정의
 # ─────────────────────────────────────────────────────────────────────────────
 
-def is_front_view(layout_mask, class_id=1, center_threshold=0.25):
+def is_front_view(layout_mask, class_id=1, center_threshold=0.25, pixel_threshold=5000):
     """
     layout_mask: (H,W) uint8 형태의 세그멘테이션 레이블
     class_id   : 정면(전벽)에 해당하는 클래스 ID
     center_threshold: 중심 기준 판별 비율(이미지 폭/높이 대비)
+    pixel_threshold: 각 클래스의 최소 픽셀 수
 
-    정면(view)인지 판단하려면,
-    mask에서 class_id 위치를 찾아 BoundingBox의 중심이 이미지 중심에 가까운지 확인.
+    정면(view)인지 판단하려면:
+    1. 모든 클래스의 픽셀 수 확인, pixel_threshold 미만인 클래스는 제외
+    2. 유효 클래스(픽셀 수 ≥ pixel_threshold) 수가 5 미만이면 False
+    3. 유효 클래스 수가 5이면, class_id=1의 BoundingBox 중심이 이미지 중심에 가까운지 확인
     """
+    # 1. 모든 클래스의 픽셀 수 확인
+    unique_classes = np.unique(layout_mask)
+    valid_classes = []
+    for cls in unique_classes:
+        cls_mask = (layout_mask == cls).astype(np.uint8)
+        cls_pixel_count = np.sum(cls_mask)
+        if cls_pixel_count >= pixel_threshold:
+            valid_classes.append(cls)
+
+    # 2. 유효 클래스 수가 5 미만이면 False
+    if len(valid_classes) < 5:
+        print ('Layout 5장 이하')
+        return False
+
+    # 3. 유효 클래스 수가 5이고 class_id=1이 유효 클래스에 포함된 경우, 중심 기반 정면 판단
+    if class_id not in valid_classes:
+        return False
+
     h, w = layout_mask.shape
-    front_mask = (layout_mask == class_id).astype(np.uint8) * 255
+    front_mask = (layout_mask == class_id).astype(np.uint8) * 255  # 컨투어 검출을 위해 255 스케일링
     contours, _ = cv2.findContours(front_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if not contours:
         return False
@@ -229,7 +249,7 @@ def process_images_with_pose(
         print(f"\n▶ 처리 중: {img_name}.jpg")
         img_path = os.path.join(val_path, img_name + '.jpg')
         if not os.path.exists(img_path):
-            print(f"   ⚠ {img_path}을(를) 찾을 수 없음 → 건너뜀")
+            print(f"   {img_path}을(를) 찾을 수 없음 → 건너뜀")
             continue
 
         # 6-1) 이미지 읽고 RGB 전처리
