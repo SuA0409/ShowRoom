@@ -15,6 +15,7 @@ def find_free_port():
         s.bind(('', 0))  # 운영체제가 자동으로 포트 할당
         return s.getsockname()[1]
 
+# 서버 주소 할당
 def make_server():
     # 빈 포트 추출
     port = find_free_port()
