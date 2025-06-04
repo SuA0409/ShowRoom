@@ -20,7 +20,7 @@ def make_server():
     port = find_free_port()
     
     # Ngrok 설정
-    conf.get_default().auth_token = "2xtr40SYpZezDa87vL5L1N2bRmA_4cZfyszzUp23QxB7WeVr1"
+    conf.get_default().auth_token = "2xwkthyPz15CsSbartjgnt9aQde_3RoEvuB7Mz7oHHzuDJFia"
     
     # 새 Ngrok 터널 생성
     url = ngrok.connect(port, "http")
@@ -31,7 +31,7 @@ def make_server():
 
     return url, server # url, server = make_server() 이렇게 하면 될듯??
 
-def viz(pc, num, server, size=(512, 384), path):
+def viz(pc, server, path, size=(512, 384)):
     # 경고 무시
     # warnings.filterwarnings("ignore", category=UserWarning)
     
@@ -46,24 +46,24 @@ def viz(pc, num, server, size=(512, 384), path):
     
     # # 포인트 클라우드 좌표
     # pc = [np.reshape(a['preds'][i]['pts3d_in_other_view'].cpu().numpy().squeeze(), (-1, 3)) for i in range(num)]
-    # pc = np.round(pc, 5)  ==> pc
+    # pc = np.round(pc, 5)  # ==> pc
     
     all_points = [] # 모든 xyz 합치기 위함
     all_colors = [] # 모든 rgb 합치기 위함
-    for i in range(num): # 이미지 수 만큼
+    for i, p in enumerate(pc): # 이미지 수 만큼
         image = os.path.join(path, f'{i}.jpg') # 해당 경로에 있는 이미지 로드
+        image = cv2.imread(image)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # rgb로 갖고옴
         image = cv2.resize(image, (512, 384)) # 512, 384로 전처리
         image = image.astype(np.float32) / 255.0 # [0,1]로 전처리
         color = np.reshape(image, (-1, 3)) # (N,3)으로 재구성
-    
-        all_points.append(pc[i]) # xyz 좌표 추가
+
+        all_points.append(p) # xyz 좌표 추가
         all_colors.append(color) # rgb 좌표 추가
     
     # 모든 포인트 클라우드와 색상 합치기
-    xyz = np.concatenate(all_points, axis=0) # 원본 xyz 좌표들 합침
+    xyz = np.concatenate(all_points, axis=0) # 원본 xyz 값들 합침
     rgb = np.concatenate(all_colors, axis=0) # 원본 rgb 값들 합침
-    
     
     # 합쳐진 포인트 클라우드 시각화
     server.scene.add_point_cloud(
@@ -101,6 +101,14 @@ def viz(pc, num, server, size=(512, 384), path):
         point_size=0.001
     )
 
+    print("✅ 접속 후 아래 셀에서 Enter를 누르면 서버가 종료됩니다.")
+    input("Press Enter to stop viser...")
+    ngrok.kill()  # Ngrok 터널 종료
+
 # 사용 예:
-# url, server = make_server()
-# viz(pc, num, server, size=(), path='')
+# from 1.main import make_server, viz
+
+# url, server = make_server() # url과 server 받아옴
+# pc = np.load('/content/drive/MyDrive/views.npz') # pc 인풋 가져옴 !! 넘피로 어차피 나오니 실사용엔 필요 없을 듯
+# pc = [pc[k] for k in pc] # dict를 list로 바꿈
+# viz(pc, server, path='/content/drive/MyDrive/test_view') # 3d 시각화
