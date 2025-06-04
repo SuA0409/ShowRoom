@@ -1,4 +1,4 @@
-﻿test_name: 'layer_dims_half_v2_1e-4-re'
+﻿test_name: 'layer_dims_half_v1'
 
 path:
     rooms_path: '/content/drive/MyDrive/Scannet++/preprocessv2'
@@ -7,8 +7,8 @@ path:
     test_image_path: '/content/drive/MyDrive/Colab Notebooks/Model/test_view'
 
 arg_path:
-    student_args_path: 'configs/student_args_v1.yaml'
-    teacher_args_path: 'configs/teacher_args.yaml'
+    student_args_path: '/content/ShowRoom/configs/student_args_v1.yaml'
+    teacher_args_path: '/content/ShowRoom/configs/teacher_args.yaml'
 
 params:
     epochs: 30

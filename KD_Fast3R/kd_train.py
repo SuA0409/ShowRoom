@@ -13,43 +13,50 @@ from fast3r.dust3r.utils.image import load_images
 from KD_Fast3R.kd_loss import RKDLoss
 
 import warnings
+
 warnings.filterwarnings("ignore", category=UserWarning)
 
 from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
+
 
 def load_arguments(student_args_path, teacher_args_path='configs/teacher_args.yaml'):
     # 가중치 로드
     with open(teacher_args_path, 'r', encoding='utf-8') as f:
         teacher_args = yaml.safe_load(f)
-    teacher_args['head_args']['conf_mode']=['exp', 1, float('inf')]
-    teacher_args['head_args']['depth_mode']= ['exp', float('-inf'), float('inf')]
+    teacher_args['head_args']['conf_mode'] = ['exp', 1, float('inf')]
+    teacher_args['head_args']['depth_mode'] = ['exp', float('-inf'), float('inf')]
+    student_args = copy.deepcopy(teacher_args)
 
     with open(student_args_path, 'r', encoding='utf-8') as f:
-        student_add_args = yaml.safe_load(f)
-    student_args = copy.deepcopy(teacher_args)
-    student_args.update(student_add_args)
+        student_modify_args = yaml.safe_load(f)
+    # 수정된 student의 args를 적용
+    for k1, v1 in student_modify_args.items():
+        for k2, v2 in v1.items():
+            student_args[k1][k2] = v2
 
     return teacher_args, student_args
 
+
 def train(test_name, path, arg_path, params):
     # initial path
-    student_model_path = os.path.join(path['student_model_save_path'], test_name)
+    student_model_path = os.path.join(path['student_model_path'], test_name)
 
     # gpu setting
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f'device : {device} \n')
 
     # -- 1.  Load Data Path
-    rooms_name = [it for it in os.listdir(path['rooms_path']) if it.endswith('.pt')] # 전처리된 데이터셋
-    print(f'Number of Train Data : {len(rooms_name)*1000}')
+    rooms_name = [it for it in os.listdir(path['rooms_path']) if it.endswith('.pt')]  # 전처리된 데이터셋
+    print(f'Number of Train Data : {len(rooms_name) * 1000}')
 
     # -- 2. Load Teacher Model
-    torch.manual_seed(42); torch.cuda.manual_seed(42)
+    torch.manual_seed(42);
+    torch.cuda.manual_seed(42)
 
-     # load_arguments
+    # load_arguments
     teacher_args, student_args = load_arguments(**arg_path)
 
-     # Fast3r 제공 모델
+    # Fast3r 제공 모델
     print('Building Teacher model ...')
     teacher_model = Fast3R(**teacher_args)
     teacher_model.load_state_dict(torch.load(path['teacher_model_path']))
@@ -64,7 +71,6 @@ def train(test_name, path, arg_path, params):
     try:
         # 가중치 폴더 로드
         student_weight_files = [it for it in os.listdir(student_model_path) if it.endswith('.pth')]
-
         # 가장 최신 가중치 파일 로드
         last_student_weight = sorted(student_weight_files, key=lambda x: len(x))[-1]
         checkpoint = torch.load(os.path.join(student_model_path, last_student_weight))
@@ -75,7 +81,7 @@ def train(test_name, path, arg_path, params):
 
         start_epoch = int(re.findall(r'\d+', last_student_weight)[0])
         start_room_idx = int(re.findall(r'\d+', last_student_weight)[1]) // 1000
-    except FileNotFoundError:
+    except (FileNotFoundError, IndexError):
         # 모델 저장 경로
         os.makedirs(student_model_path, exist_ok=True)
 
@@ -86,7 +92,6 @@ def train(test_name, path, arg_path, params):
         start_epoch, start_room_idx = 1, 0
         checkpoint = None
 
-
     os.makedirs(os.path.join(student_model_path, 'pred'), exist_ok=True)
     student_model = student_model.to(device)
     student_model.eval()
@@ -94,10 +99,10 @@ def train(test_name, path, arg_path, params):
 
     # -- 4. Set Prams
     epochs = params['epochs']
-    learning_rate = params['learning_rate']
+    learning_rate = float(params['learning_rate'])
     accum_iter = params.get('accum_iter', 1)
 
-     # AdamW 사용
+    # AdamW 사용
     optimizer = torch.optim.AdamW(
         student_model.parameters(),
         lr=learning_rate,
@@ -105,19 +110,19 @@ def train(test_name, path, arg_path, params):
         betas=tuple(params['optimizer']['betas'])
     )
 
-     # scheduler를 사용
+    # scheduler를 사용
     if params['scheduler']['type'] == 'LinearWarmupCosineAnnealingLR':
         scheduler = LinearWarmupCosineAnnealingLR(
             optimizer,
             warmup_epochs=params['scheduler']['warmup_epochs'],
             max_epochs=params['scheduler']['max_epochs'],
-            eta_min=params['scheduler']['eta_min']
+            eta_min=float(params['scheduler']['eta_min'])
         )
 
-     # custom loss 사용
+    # custom loss 사용
     kd_loss = RKDLoss()
 
-     # optimzer와 scheduler 로드
+    # optimzer와 scheduler 로드
     if checkpoint is None:
         # learning rate 0인 지점 스킵
         try:
@@ -153,7 +158,7 @@ def train(test_name, path, arg_path, params):
 
             optimizer.zero_grad()
 
-            for it in range(1, len(data_all)+1):
+            for it in range(1, len(data_all) + 1):
                 # 데이터 가져오기
                 batch_data = data_all.pop()
 
@@ -190,13 +195,13 @@ def train(test_name, path, arg_path, params):
                 del teacher_pred, student_pred, train_loss, batch_data
 
             # 모델 저장
-            if (room_idx+1) == len(rooms_name) // 2 or (room_idx+1) == len(rooms_name):
+            if (room_idx + 1) == len(rooms_name) // 2 or (room_idx + 1) == len(rooms_name):
                 print('\nSaving Model ...')
                 torch.save({
                     'model_state_dict': student_model.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict(),
                     'scheduler_state_dict': scheduler.state_dict()},
-                    f'{student_model_path}/model_{e:02d}_{((room_idx+1) * 1000):04d}.pth')
+                    f'{student_model_path}/model_{e:02d}_{((room_idx + 1) * 1000):04d}.pth')
                 print('Saving Finished\n')
 
             torch.cuda.empty_cache()
@@ -233,10 +238,8 @@ def train(test_name, path, arg_path, params):
 
     print('Finished training !')
 
-def main(test_yaml_name='test1'):
-    with open('configs/'+test_yaml_name+'.yaml', 'r', encoding='utf-8') as f:
+
+def main1(test_yaml_name='configs/test1.yaml'):
+    with open(test_yaml_name, 'r', encoding='utf-8') as f:
         config = yaml.safe_load(f)
     train(**config)
-
-if __name__ == '__main__':
-    main()
