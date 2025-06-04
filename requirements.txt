@@ -42,3 +42,7 @@ scipy
 seaborn
 pyglet<2
 huggingface-hub[torch]>=0.22
+pymeshlab
+pyngrok
+socket
+cv2
