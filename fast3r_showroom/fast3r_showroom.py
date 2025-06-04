@@ -1,5 +1,4 @@
 ## pt와 pose를 뽑기 위한 Fast3R의 demo 코드
-
 import os
 import torch
 import numpy as np
