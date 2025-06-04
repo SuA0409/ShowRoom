@@ -365,24 +365,15 @@ class Evaluator:
     def print_summary(self, results: Dict):
         """
         평가 결과 요약 출력
-
+        
         Args:
             results: evaluate_all()의 출력 결과
         """
         print("\n" + "="*60)
         print("📋 Knowledge Distillation Evaluation Summary")
         print("="*60)
-
-        # Per-axis MAE
-        mae = results['per_axis_mae']
-        print(f"\n📊 Per-axis MAE (축별 정확도):")
-        print(f"   • X축 MAE: {mae['mae_x']:.6f}")
-        print(f"   • Y축 MAE: {mae['mae_y']:.6f}")
-        print(f"   • Z축 MAE: {mae['mae_z']:.6f}")
-        print(f"   • 전체 MAE: {mae['overall_mae']:.6f}")
-        print(f"   • 최대/최소 축 MAE: {mae['max_axis_mae']:.6f} / {mae['min_axis_mae']:.6f}")
-
-        # Chamber Distance
+        
+        # 1. Chamber Distance
         chamber = results['chamber_distance']
         print(f"\n🔄 Chamber Distance (구조적 유사도):")
         print(f"   • 총 Chamber Distance: {chamber['chamber_distance']:.6f}")
@@ -390,18 +381,36 @@ class Evaluator:
         print(f"   • Pred→GT: {chamber['cd_pred_to_gt']:.6f}")
         print(f"   • GT/Pred 포인트 수: {chamber['num_gt_points']} / {chamber['num_pred_points']}")
 
-        # Self-consistency
+        # 2. Point-wise L2 Distance
+        l2 = results['pointwise_l2']
+        print("\n📐 Point-wise L2 Distance:")
+        print(f"   • 평균 거리: {l2['mean_l2_distance']:.6f}")
+        print(f"   • 표준 편차: {l2['std_l2_distance']:.6f}")
+        print(f"   • 최소 거리: {l2['min_l2_distance']:.6f}")
+        print(f"   • 최대 거리: {l2['max_l2_distance']:.6f}")
+        print(f"   • 중앙값 거리: {l2['median_l2_distance']:.6f}")
+
+        # 3. Per-axis MAE
+        mae = results['per_axis_mae']
+        print(f"\n📊 Per-axis MAE (축별 정확도):")
+        print(f"   • X축 MAE: {mae['mae_x']:.6f}")
+        print(f"   • Y축 MAE: {mae['mae_y']:.6f}")
+        print(f"   • Z축 MAE: {mae['mae_z']:.6f}")
+        print(f"   • 전체 MAE: {mae['overall_mae']:.6f}")
+        print(f"   • 최대/최소 축 MAE: {mae['max_axis_mae']:.6f} / {mae['min_axis_mae']:.6f}")
+        
+        # 4. Self-consistency
         consistency = results['self_consistency']
         print(f"\n🔍 Self-consistency (내부 일관성):")
         print(f"   • 일관성 점수: {consistency['self_consistency_score']:.4f}")
         print(f"   • Outlier 수: {consistency['num_outliers']}")
         print(f"   • 평균 이웃 수: {consistency['mean_neighbors']:.2f}")
-
-        # 3D SSIM
+        
+        # 5. 3D SSIM
         ssim_score = results['ssim_3d']
         print(f"\n🖼️ 3D SSIM (구조적 유사성):")
         print(f"   • SSIM 점수: {ssim_score:.4f}")
-
+        
 def accuary(teacher_path, student_path):
 
     # 평가 객체 생성 및 실행
