@@ -4,6 +4,10 @@ Based on the n spatial images selected by the user, missing 2D visual informatio
 # ShowRoom FlowChart
 ![image](https://github.com/user-attachments/assets/bb0cbc53-79c8-4f5c-8410-d61f3a99d56e)
 
+## Installation
+    pip install -r requirements.txt
+    pip install -e .
+
 ## The View of Developer
   Train dataset : ScnaNet++
   
