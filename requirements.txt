@@ -44,5 +44,6 @@ pyglet<2
 huggingface-hub[torch]>=0.22
 pymeshlab
 pyngrok
+# Using python, install below. (Using colab, you don't need)
 socket
 cv2
