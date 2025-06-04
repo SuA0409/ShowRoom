@@ -58,6 +58,14 @@ rgb = np.concatenate(all_colors, axis=0) # 원본 rgb 값들 합침
 # Viser 서버 실행 (단일 서버)
 server = viser.ViserServer(host="0.0.0.0", port=port)
 
+# 합쳐진 포인트 클라우드 시각화
+server.scene.add_point_cloud(
+    name="원본 포인트 클라우드",
+    points=xyz,
+    colors=rgb,
+    point_size=0.001
+)
+
 # SPR 수행
 vertices, colors = spr(
     coords_np_Vx3=xyz,
@@ -77,14 +85,6 @@ vertices, colors = spr(
 
 # 후처리
 vertices, colors = postprocess(xyz, vertices, colors)
-
-# 합쳐진 포인트 클라우드 시각화
-server.scene.add_point_cloud(
-    name="원본 포인트 클라우드",
-    points=xyz,
-    colors=rgb,
-    point_size=0.001
-)
 
 # SPR 결과 시각화
 server.scene.add_point_cloud(
