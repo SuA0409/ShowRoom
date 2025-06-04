@@ -7,7 +7,7 @@ import copy
 
 from fast3r.dust3r.inference_multiview import inference
 from fast3r.models.fast3r import Fast3R
-from fast3r.fast3r.models.multiview_dust3r_module import MultiViewDUSt3RLitModule
+from fast3r.models.multiview_dust3r_module import MultiViewDUSt3RLitModule
 from fast3r.dust3r.utils.image import load_images
 
 from KD_Fast3R.kd_loss import RKDLoss
