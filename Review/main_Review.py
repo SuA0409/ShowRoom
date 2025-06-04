@@ -29,7 +29,7 @@ import csv
 import requests
 
 
-# type your headers
+# 헤더 정보
 headers = {
             "Content-Type": "application/json",
             "User-Agent": "",
@@ -39,7 +39,7 @@ headers = {
             "api-key": "",
         }
 
-# 번역본 없으면 걍 원본 ㄱㄱ가 아니라 걍 없애
+# 한국어로 번역한것이 없을 때 or 한국어 댓글이 아닐때 None 반환 함수
 def comments(r):
     if r["language"] == 'ko':
         return r["comments"]
@@ -49,7 +49,7 @@ def comments(r):
         except:
             return None
 
-# 얘는 리뷰가져올 json임
+# 리뷰에 해당하는 json 호출 함수
 def getReviewsJson(stay_id, limit, offset, headers=headers):
     jurl = "" # json url
     variables = {
@@ -90,6 +90,7 @@ def getReviewsJson(stay_id, limit, offset, headers=headers):
     resp = requests.get(jurl+urlencode(params, quote_via=quote), headers=headers)
     return resp.json()
 
+# 정규표현식으로 불용어 전처리 함수
 def clean_text(text):
     text = text.replace('\n', ' ').replace('\r', ' ')
     text = text.replace('<br>', '').replace('<br/>', '').replace('<br />', '')
@@ -100,13 +101,14 @@ def clean_text(text):
     return text.strip()
 
 
-## 여기서 url만 가져오면 됨!!!
+#---------------------- 해당 숙소의 리뷰 추출 ------------------------
+
 url = ''
 
 # ---------- 여기서 url만 가져오면 됨!!! -------------
 
 
-## 여기서부터는 안건드려도 됨
+# 해당 url의 dom을 가져옴
 resp = request('get',url)
 dom = BeautifulSoup(resp.text, 'html.parser')
 
@@ -115,17 +117,21 @@ review = p1+'/reviews?'+p2 # 리뷰 페이지 가는거
 
 url, num = re.split(r'/rooms/', p1) # num은 숙소번호
 num = num.split('/reviews')[0] # 진짜 숙소번호
-encoding = 'StayListing:'+num # 인코딩 하려고
+encoding = 'StayListing:'+num # 인코딩 하고 json 호출하기 위한 표현
 stay_id = base64.b64encode(encoding.encode('utf-8')).decode('utf-8')
 
+# 최대 50개씩 뽑을 수 있음(넘기면 다른거 가져옴)
 limit, cnt = 50, 50
 offset = 0
 data = []
 while 1:
     res_json = getReviewsJson(stay_id, limit, offset)
     try:
+		    # 해당 숙소의 리뷰 데이터 접근
         review_data = res_json["data"]["presentation"]["stayProductDetailPage"]["reviews"]
+        # 해당 숙소의 리뷰 갯수
         reviewsCount = int(review_data['metadata']['reviewsCount'])
+        # 해당 숙소의 리뷰 데이터
         for r in review_data["reviews"]:
             comment_text = comments(r)
             if comment_text:
@@ -141,25 +147,30 @@ while 1:
 
     except KeyError:
         break
-
+		
+		# 마지막 값이 리뷰 최대보다 많다면 무한루프 빠져나옴
     if offset >= reviewsCount:
         break
-
+		
+		# 리뷰 최신화
     offset += cnt
     limit += cnt
 
+
+#---------------------- 리뷰 전처리 ------------------------
+
+# 리뷰 pandas화
 reviews = pd.DataFrame(data)
 reviews = reviews.dropna()
-reviews.info()
-
-#---------------------- 모델 사용 ------------------------
-
-rows = []
 reviews = reviews.reset_index(drop=True)
+
+rows = [] # 숙소의 문장분리 + 불용어 처리한 리뷰를 담기위한 그릇
 for j, row in reviews.iterrows():
     raw_comment = row['comment']
     user_id = row['user_id']
+    # 정규식으로 불용어 처리
     cleaned_comment = clean_text(raw_comment)
+    # kss로 문장 분리
     sentences = kss.split_sentences(cleaned_comment)
 
     idx = 0
@@ -167,17 +178,20 @@ for j, row in reviews.iterrows():
 
     for sentence in sentences:
         sentence = sentence.strip()
+        # 정규식으로 한번 더 문장 분리
         split_sentences = re.split(r'(?<=[가-힣\w])\.(?=[^\d])', sentence)
         if not isinstance(split_sentences, list):
             split_sentences = [sentence]
-
+				
         for s in split_sentences:
             s = s.strip()
+            # 초벌한 리뷰가 7이상만 가져감
             if len(s) < 7:
                 continue
             start = cleaned_comment.find(s, idx)
             end = start + len(s) - 1
             idx = end + 1
+            # rows에 문장 분리한 리뷰를 담음
             rows.append({
                 "stay_id": num,
                 "user_id": user_id,
@@ -190,14 +204,18 @@ for j, row in reviews.iterrows():
 
 # DataFrame 생성
 sentence = pd.DataFrame(rows, columns=["stay_id", "user_id", "splitNum", "sentence", "start", "end"])
-sentence.info()
+
 # Plotly 렌더링 설정
 pio.renderers.default = 'colab'
-
+# 전처리한 리뷰만 가져옴
 sentence = sentence['sentence']
-docs = sentence.dropna().drop_duplicates().tolist()  # NaN 및 중복 제거
+# NaN 및 중복 제거하고 list화
+docs = sentence.dropna().drop_duplicates().tolist()
+# 리뷰 5개 이상만 주제 추출
 if len(docs) < 5:
     raise ValueError("데이터가 충분하지 않습니다.")
+
+#---------------------- 모델 사용 ------------------------
 
 # MPS 디바이스 설정
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -234,6 +252,7 @@ topic_model = BERTopic(
     vectorizer_model=TfidfVectorizer()  # TF-IDF로 키워드 가중치 반영
 )
 
+# BERTopic 모델로 돌린 토픽과 확률 가져옴
 topics, probs = topic_model.fit_transform(docs)
 
 # 토픽 번호와 키워드 추출
