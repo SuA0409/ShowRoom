@@ -14,7 +14,7 @@ chrome.action.onClicked.addListener((tab) => {
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: "toggle-feature",                         // 메뉴 식별용 ID
-    title: "Airbnb 이미지 기능 켜기/끄기",         // 우클릭 메뉴에 표시될 텍스트
+    title: "Airbnb 이미지 기능 on/off",         // 우클릭 메뉴에 표시될 텍스트
     contexts: ["action"]                          // 확장 아이콘 우클릭시만 표시
   });
   chrome.storage.local.set({ enabled: false });   // 기본 상태: 기능 비활성화 저장

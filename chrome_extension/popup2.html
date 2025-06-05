@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>리뷰뷰 요약</title>
+  <title>리뷰 요약</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
@@ -14,14 +14,14 @@
 
     <!-- 헤더 -->
     <header class="popup-header">
-      <h3>댓글 요약</h3> <!-- 팝업 제목 -->
-      <p id="instruction">Airbnb 숙소 페이지에서 댓글을 분석합니다.</p>
+      <h3>리뷰 주제 추출</h3> <!-- 팝업 제목 -->
+      <p id="instruction">Airbnb 숙소 페이지에서 리뷰를 분석합니다.</p>
       <!-- 안내 문구 -->
     </header>
 
     <!-- 댓글 요약 결과를 보여주는 섹션 -->
     <section class="comment-section">
-      <div id="comments-summary">댓글을 불러오는 중...</div>
+      <div id="comments-summary">리뷰를 불러오는 중...</div>
       <!-- JavaScript가 댓글을 가져와 분석 결과로 대체할 영역 -->
     </section>
 
@@ -32,13 +32,13 @@
         <button id="analyze-review"
                 class="btn-showroom-text"
                 disabled
-                data-tooltip="댓글을 분석합니다.">
-          댓글 요약 시작
+                data-tooltip="리뷰를를 분석합니다.">
+          review 주제 추출
         </button>
 
         <!-- 뒤로 가기 버튼: 3D 변환 화면으로 돌아가기 -->
-        <button id="back" data-tooltip="3D 변환 화면으로 돌아갑니다.">
-          3D 변환 화면으로
+        <button id="back" data-tooltip="3D 변환 화면으로 이동">
+          ShowRoom
         </button>
       </div>
     </section>
