@@ -316,7 +316,7 @@ decision = process_images_with_pose(
     val_path=val_path,
     save_path=save_path
 )
-print(f"\n▶ 최종 재생성 판단 결과: {decision}")
+print(f"\n 최종 재생성 판단 결과: {decision}")
 
 # 결과 저장
 
@@ -336,4 +336,4 @@ with open(output_txt_path, "w") as f:
         # 예외 처리 (None 등)
         f.write("none 2\n")
 
-print(f"\n▶ 결과 텍스트 저장 완료: {output_txt_path}")
+print(f"\n 결과 텍스트 저장 완료: {output_txt_path}")
