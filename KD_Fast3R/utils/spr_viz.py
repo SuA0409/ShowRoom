@@ -33,10 +33,6 @@ def make_server(token):
 
     return url, server # url, server = make_server() 이렇게 하면 될듯??
 
-# 딕셔너리 numpy를 list numpy로 바꿈
-def dict_to_list(*pc):
-    return [pc[k] for k in pc]
-
 def viz(pc, server, path, size=(512, 384)):
     # 경고 무시
     # warnings.filterwarnings("ignore", category=UserWarning)
@@ -49,11 +45,13 @@ def viz(pc, server, path, size=(512, 384)):
     # # 데이터 로드
     # a = torch.load('/content/drive/MyDrive/content.pt', weights_only=True)
     # num = len(a['preds'])  ==> num
-    
+
     # # 포인트 클라우드 좌표
     # pc = [np.reshape(a['preds'][i]['pts3d_in_other_view'].cpu().numpy().squeeze(), (-1, 3)) for i in range(num)]
     # pc = np.round(pc, 5)  # ==> pc
-
+    
+    # 딕셔너리 numpy를 list numpy로 바꿈
+    pc = [pc[k] for k in pc]
     # 해당 경로의 jpg 파일들
     all_image = sorted(glob.glob(os.path.join(path, '**', '*.jpg'), recursive=True))
     # 이미지 갯수
@@ -105,5 +103,5 @@ def viz(pc, server, path, size=(512, 384)):
 # from 1.main import make_server, viz
 
 # url, server = make_server('your token') # url과 server 받아옴
-# pc = dict_to_list(np.load('/content/drive/MyDrive/views.npz')) # pc 인풋 가져옴 !! 넘피로 어차피 나오니 실사용엔 필요 없을 듯
+# pc = np.load('/content/drive/MyDrive/views.npz')) # pc 인풋 가져옴 !! 넘피로 어차피 나오니 실사용엔 필요 없을 듯
 # viz(pc, server, path='/content/drive/MyDrive/test_view') # 3d 시각화
