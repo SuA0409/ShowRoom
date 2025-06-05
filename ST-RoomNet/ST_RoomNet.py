@@ -14,9 +14,7 @@ from tensorflow.keras.applications.convnext import ConvNeXtTiny, preprocess_inpu
 # spatial_transformer.py 에 정의된 ProjectiveTransformer 클래스
 from spatial_transformer import ProjectiveTransformer
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 2) Input
-# ─────────────────────────────────────────────────────────────────────────────
+## Input
 
 # image 불러오기
 val_path = '/content/drive/MyDrive/Colab Notebooks/Model/ShowRoom/Input/Images' #chrome extention에서 저장한 이미지
@@ -42,19 +40,17 @@ assert len(img_names) == len(pose_list), "이미지 수와 포즈 수가 일치�
 
 # 포즈 매핑
 poses_map = {name: pose for name, pose in zip(img_names, pose_list)}
-# ─────────────────────────────────────────────────────────────────────────────
-# 3) GPU 설정 (필요시 수정)
-# ─────────────────────────────────────────────────────────────────────────────
+
+## GPU 설정 (필요시 수정)
 
 # Colab에서 GPU를 사용하려면 이 줄을 주석 처리 또는 삭제하세요.
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 4) 모델 로드 및 가중치 설정
-# ─────────────────────────────────────────────────────────────────────────────
+## 모델 로드 및 가중치 설정
 
-# 4-1) 기준 이미지(ref_img2.png) 불러오기
-#      Colab 환경에 'ref_img2.png' 를 업로드해두거나, Drive와 연동해 경로 지정해 주세요.
+
+# 기준 이미지(ref_img2.png) 불러오기
+# Colab 환경에 'ref_img2.png' 를 업로드해두거나, Drive와 연동해 경로 지정해 주세요.
 ref_img_path = 'ref_img2.png'
 if not os.path.exists(ref_img_path):
     raise FileNotFoundError(f"{ref_img_path} 파일을 Colab 환경에 업로드하셨는지 확인하세요.")
@@ -65,8 +61,8 @@ ref_img = tf.cast(ref_img, tf.float32) / 51.0             # 0~1 사이 정규화
 ref_img = tf.image.resize(ref_img, (400, 400))            # 크기 보정
 ref_img = ref_img[tf.newaxis, ...]                        # (1, 400, 400, 3) 배치 차원 추가
 
-# 4-2) ConvNeXtTiny Base 모델 (include_top=False, pooling='avg')
-#      input_shape=(400,400,3)으로 지정
+# ConvNeXtTiny Base 모델 (include_top=False, pooling='avg')
+# input_shape=(400,400,3)으로 지정
 base_model = ConvNeXtTiny(
     include_top=False,
     weights="imagenet",
@@ -74,22 +70,22 @@ base_model = ConvNeXtTiny(
     pooling='avg'
 )
 
-# 4-3) Theta 값을 예측할 Dense 레이어 추가
+# Theta 값을 예측할 Dense 레이어 추가
 theta_layer = Dense(8, name='theta_layer')(base_model.output)
 
-# 4-4) ProjectiveTransformer로 Warping 수행
-#      - (400,400) 출력 크기를 ProjectiveTransformer 생성자에 전달
+# ProjectiveTransformer로 Warping 수행
+# - (400,400) 출력 크기를 ProjectiveTransformer 생성자에 전달
 transformer = ProjectiveTransformer((400, 400))
 
-#    stl: Spatial Transformer Layer의 출력 (정규화되지 않은 형태)
-#       입력 이미지는 ref_img(고정) → theta 값은 trainable
+# stl: Spatial Transformer Layer의 출력 (정규화되지 않은 형태)
+# 입력 이미지는 ref_img(고정) → theta 값은 trainable
 stl = transformer.transform(ref_img, theta_layer)
 
-# 4-5) 최종 모델: 입력 → Theta → Spatial Transformer 변환 출력
+# 최종 모델: 입력 → Theta → Spatial Transformer 변환 출력
 model = Model(inputs=base_model.input, outputs=stl)
 
-# 4-6) 사전에 학습된 가중치(.h5) 불러오기
-#      Colab 환경에 Weight_ST_RroomNet_ConvNext.h5 를 업로드하거나 Drive 연동 후 경로 수정하세요.
+# 사전에 학습된 가중치(.h5) 불러오기
+# Colab 환경에 Weight_ST_RroomNet_ConvNext.h5 를 업로드하거나 Drive 연동 후 경로 수정하세요.
 weight_path = '/content/drive/MyDrive/Colab Notebooks/Model/ShowRoom/ST-RoomNet/weights/Weight_ST_RroomNet_ConvNext.h5'
 if not os.path.exists(weight_path):
     raise FileNotFoundError(f"{weight_path} 파일을 Colab 환경에 업로드하셨는지 확인하세요.")
@@ -97,12 +93,10 @@ if not os.path.exists(weight_path):
 model.load_weights(weight_path)
 print(" 메인 모델 가중치 로드 완료")
 
-# 4-7) Theta만 별도로 뽑아내기 위한 서브 모델
+# Theta만 별도로 뽑아내기 위한 서브 모델
 theta_model = Model(inputs=base_model.input, outputs=theta_layer)
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 5) Helper 함수 정의
-# ─────────────────────────────────────────────────────────────────────────────
+## Helper 함수 정의
 
 def is_front_view(layout_mask, class_id=1, center_threshold=0.25, pixel_threshold=5000):
     """
@@ -116,7 +110,7 @@ def is_front_view(layout_mask, class_id=1, center_threshold=0.25, pixel_threshol
     2. 유효 클래스(픽셀 수 ≥ pixel_threshold) 수가 5 미만이면 False
     3. 유효 클래스 수가 5이면, class_id=1의 BoundingBox 중심이 이미지 중심에 가까운지 확인
     """
-    # 1. 모든 클래스의 픽셀 수 확인
+    # 모든 클래스의 픽셀 수 확인
     unique_classes = np.unique(layout_mask)
     valid_classes = []
     for cls in unique_classes:
@@ -125,12 +119,12 @@ def is_front_view(layout_mask, class_id=1, center_threshold=0.25, pixel_threshol
         if cls_pixel_count >= pixel_threshold:
             valid_classes.append(cls)
 
-    # 2. 유효 클래스 수가 5 미만이면 False
+    # 유효 클래스 수가 5 미만이면 False
     if len(valid_classes) < 5:
         print ('Layout 5장 이하')
         return False
 
-    # 3. 유효 클래스 수가 5이고 class_id=1이 유효 클래스에 포함된 경우, 중심 기반 정면 판단
+    # 유효 클래스 수가 5이고 class_id=1이 유효 클래스에 포함된 경우, 중심 기반 정면 판단
     if class_id not in valid_classes:
         return False
 
@@ -228,9 +222,7 @@ def decide_regeneration_from_angle_and_side(layout1, layout2, angle, side, z1, z
     print(f"   잘못된 side 값: {side}")
     return None
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 6) 메인 처리 함수 정의
-# ─────────────────────────────────────────────────────────────────────────────
+## 메인 처리 함수 정의
 
 def process_images_with_pose(
     img_names,         # 예: ['000000','000001','000002']
@@ -246,25 +238,25 @@ def process_images_with_pose(
     theta_map = {}
 
     for img_name in img_names:
-        print(f"\n▶ 처리 중: {img_name}.jpg")
+        print(f"\n 처리 중: {img_name}.jpg")
         img_path = os.path.join(val_path, img_name + '.jpg')
         if not os.path.exists(img_path):
             print(f"   {img_path}을(를) 찾을 수 없음 → 건너뜀")
             continue
 
-        # 6-1) 이미지 읽고 RGB 전처리
+        # 이미지 읽고 RGB 전처리
         img = cv2.imread(img_path)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = cv2.resize(img, (400, 400))
         img_input = preprocess_input(img[tf.newaxis, ...])  # (1,400,400,3), float32
 
-        # 6-2) Layout Segmentation 예측 (stl 출력이 (1,400,400,1) 가정)
+        # Layout Segmentation 예측 (stl 출력이 (1,400,400,1) 가정)
         layout_pred = model.predict(img_input)
         # layout_pred[0,:,:,0]는 실수형 예측 결과 → 반올림 후 uint8로 바꿔서 mask 생성
         layout_seg = np.rint(layout_pred[0, :, :, 0]).astype(np.uint8)
         layout_map[img_name] = layout_seg
 
-        # 6-3) Theta 값 추출
+        # Theta 값 추출
         theta_values = theta_model.predict(img_input)[0]
         theta_map[img_name] = theta_values
         # θ를 파일로 저장
@@ -272,16 +264,16 @@ def process_images_with_pose(
         # Segmentation mask를 시각화(51*레이블)하여 PNG로 저장
         cv2.imwrite(os.path.join(save_path, f'{img_name}_pred.png'), layout_seg * 51)
 
-        # 6-4) 정면 판별
+        # 정면 판별
         if is_front_view(layout_seg, class_id=1, center_threshold=0.25):
             front_views.append(img_name)
             print(f"   > {img_name}: 정면(True)")
         else:
             print(f"   > {img_name}: 정면(False)")
 
-    print(f"\n▶ 최종 정면 이미지: {front_views}")
+    print(f"\n 최종 정면 이미지: {front_views}")
 
-    # 6-5) 정면 이미지 개수에 따른 재생성 판단
+    # 정면 이미지 개수에 따른 재생성 판단
     if len(front_views) >= 3:
         print("   → 정면 이미지가 3개 이상 → 재생성 불필요")
         return None
@@ -310,9 +302,7 @@ def process_images_with_pose(
         print("   → 정면 이미지 없음 → 전체 재생성 필요")
         return 'both'
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 7) 메인 함수 실행
-# ─────────────────────────────────────────────────────────────────────────────
+# 메인 함수 실행
 
 # ※ val_path에 실제로 .jpg 파일들이 존재해야 합니다.
 #    예: '/content/drive/MyDrive/images/' 등으로 수정 가능
@@ -327,9 +317,9 @@ decision = process_images_with_pose(
     save_path=save_path
 )
 print(f"\n▶ 최종 재생성 판단 결과: {decision}")
-# ─────────────────────────────────────────────────────────────────────────────
-# 8) 결과 저장
-# ─────────────────────────────────────────────────────────────────────────────
+
+# 결과 저장
+
 
 output_txt_path = os.path.join(save_path, "ST_result.txt")
 
