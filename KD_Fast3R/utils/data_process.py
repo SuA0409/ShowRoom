@@ -26,8 +26,7 @@ def batch_images_load(rooms_path,
                       size=256, 
                       sample=5, 
 ):
-    '''이미지 batch크기만큼 전처리 후 torch로 저장 <- dataloader의 학습속도가 매우 느림 ; 사전 전처리의 필요성
-        한 torch file에 4_000개의 room과, 각각 5장의 iamges 존재
+    '''한 torch file에 4_000개의 room과, 각각 5장의 iamges 존재
         각 방을 batch_size(b) 각 방안에 이미지를 sample(s)로 표시
     Args:
         rooms_path (str): 방의 모음이 들어 있는 path
