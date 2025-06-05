@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sho三Room 리뷰 분석</title>
+  <style>
+    /* ===== Reset & 기본 설정 ===== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+      background-color: #fafafa;
+      color: #484848;
+      line-height: 1.6;
+      padding: 20px 0;
+    }
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    /* ===== 전체 컨테이너 ===== */
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+    h1 {
+      font-size: 1.75rem;
+      color: #383838;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    /* ===== 토픽 필터 버튼 그룹 (sticky 처리) ===== */
+    .filter-group {
+      position: sticky;
+      top: 0;
+      background: #fafafa;
+      padding-top: 12px;
+      padding-bottom: 12px;
+      z-index: 10;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .filter-btn {
+      font-size: 0.95rem;
+      padding: 8px 16px;
+      border-radius: 16px;
+      border: 1px solid #ebebeb;
+      background-color: #fff;
+      color: #484848;
+      cursor: pointer;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+    .filter-btn:hover {
+      background-color: #f0f0f0;
+    }
+    .filter-btn.active {
+      background-color: #ff5a5f;
+      color: #fff;
+      border-color: #ff5a5f;
+    }
+
+    /* ===== 토픽 카드 (토픽별 디자인) ===== */
+    .topic-card {
+      background-color: #fff;
+      border: 1px solid #ebebeb;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      overflow: hidden;
+      transition: box-shadow 0.2s ease;
+      position: relative;
+    }
+    .topic-card:hover {
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    /* ===== 카드 헤더 ===== */
+    .topic-header {
+      display: flex;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid #ebebeb;
+      background-color: #fff;
+      position: relative;
+    }
+    .topic-icon {
+      font-size: 1.3rem;
+      margin-right: 8px;
+      z-index: 1;
+    }
+    .topic-header h3 {
+      position: relative;
+      font-size: 1.125rem;
+      color: #222222;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      z-index: 1;
+    }
+
+    /* ===== 토픽별 키 컬러 ===== */
+    .topic-card[data-topic="청결도"] {
+      border-left: 4px solid #A8E6CF;
+    }
+    .topic-card[data-topic="위치"] {
+      border-left: 4px solid #82CAFA;
+    }
+    .topic-card[data-topic="가격"] {
+      background-color: #FFF8E1;
+      border-left: 4px solid #FFB74D;
+    }
+    .topic-card[data-topic="시설"] {
+      border-left: 4px solid #B0BEC5;
+    }
+    .topic-card[data-topic="호스트"] {
+      border-left: 4px solid #FF8A80;
+    }
+    .topic-card[data-topic="소음"] {
+      border-left: 4px solid #607D8B;
+    }
+
+    /* ===== 본문 리뷰 리스트 ===== */
+    .review-list {
+      list-style: none;
+      padding: 0;
+    }
+    .review-list li {
+      padding: 14px 20px;
+      font-size: 0.95rem;
+      color: #484848;
+      border-bottom: 1px solid #f0f0f0;
+      background-color: #fff;
+      transition: background-color 0.15s ease;
+    }
+    .review-list li:hover {
+      background-color: #fbfaf9;
+    }
+    .review-list li.hidden {
+      display: none;
+    }
+    .review-list li:last-child {
+      border-bottom: none;
+      border-radius: 0 0 8px 8px;
+    }
+
+    /* ===== 카드 하단 “더 보기/접기” 버튼 ===== */
+    .actions {
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid #ebebeb;
+      background-color: #fff;
+    }
+    .actions .btn-expand,
+    .actions .btn-collapse {
+      flex: 1;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #ff5a5f;
+      background-color: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 12px 0;
+      transition: color 0.2s ease;
+      line-height: 1;
+    }
+    .actions .btn-collapse.hidden {
+      display: none;
+    }
+    .actions .separator {
+      width: 1px;
+      background-color: #ebebeb;
+      margin: 8px 0;
+    }
+
+    /* ===== 구분선 ===== */
+    .divider {
+      height: 16px;
+      background-color: #fafafa;
+    }
+
+    /* ===== 반응형 ===== */
+    @media (max-width: 600px) {
+      .topic-header {
+        padding: 12px 16px;
+      }
+      .topic-header h3 {
+        font-size: 1rem;
+      }
+      .review-list li {
+        padding: 12px 16px;
+        font-size: 0.9rem;
+      }
+      .actions .btn-expand,
+      .actions .btn-collapse {
+        padding: 10px 0;
+        font-size: 0.95rem;
+      }
+      .actions .separator {
+        margin: 6px 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Sho三Room 리뷰 분석</h1>
+
+    <!-- 토픽 필터 버튼 -->
+    <div class="filter-group">
+      <button class="filter-btn active" data-topic="All">전체 보기</button>
+      {% for topic in topics.keys() %}
+        <button class="filter-btn" data-topic="{{ topic }}">{{ topic }}</button>
+      {% endfor %}
+    </div>
+
+    <!-- 리뷰 카드들 -->
+    {% for topic, sentences in topics.items() %}
+      <div class="topic-card" data-topic="{{ topic }}" id="card-{{ loop.index }}">
+        <!-- 카드 헤더: 아이콘 + 제목 -->
+        <div class="topic-header">
+          <span class="topic-icon">
+            {% if topic == '청결도' %}🧼{% elif topic == '위치' %}📍{% elif topic == '가격' %}💰{% elif topic == '시설' %}🛋️{% elif topic == '호스트' %}🤝{% elif topic == '소음' %}🔇{% endif %}
+          </span>
+          <h3>{{ topic }}</h3>
+        </div>
+
+        <!-- 리뷰 리스트 -->
+        <ul class="review-list" id="list-{{ loop.index }}">
+          {% for sentence in sentences %}
+            <li class="{{ 'hidden' if loop.index > 5 else '' }}">
+              {{ sentence | replace("깔끔", '<span class="highlight-clean">깔끔</span>') | safe }}
+            </li>
+          {% endfor %}
+        </ul>
+
+        <!-- 하단 버튼: 더 보기 / 접기 -->
+        {% if sentences|length > 5 %}
+          <div class="actions">
+            <button class="btn-expand"
+                    onclick="expandList({{ loop.index }})"
+                    id="btn-expand-{{ loop.index }}"
+                    data-shown="5">
+              ▼ 더 보기
+            </button>
+            <div class="separator"></div>
+            <button class="btn-collapse hidden"
+                    onclick="collapseList({{ loop.index }})"
+                    id="btn-collapse-{{ loop.index }}">
+              ▲ 접기
+            </button>
+          </div>
+        {% endif %}
+      </div>
+      <div class="divider"></div>
+    {% endfor %}
+  </div>
+
+  <script>
+    // ===== 토픽 필터 로직 =====
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        // 버튼 활성 상태 토글
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const selectedTopic = btn.dataset.topic;
+        document.querySelectorAll('.topic-card').forEach(card => {
+          card.style.display = (selectedTopic === 'All' || card.dataset.topic === selectedTopic)
+            ? 'block'
+            : 'none';
+        });
+
+        // 아무 스크롤 동작 없음 → 카드가 절대 위치 고정
+      });
+    });
+
+    // ===== “더 보기” 기능 =====
+    function expandList(index) {
+      const listItems = document.querySelectorAll(`#list-${index} li`);
+      const btnExpand = document.getElementById(`btn-expand-${index}`);
+      const btnCollapse = document.getElementById(`btn-collapse-${index}`);
+      let shownCount = parseInt(btnExpand.dataset.shown);
+      const totalCount = listItems.length;
+      const nextCount = Math.min(shownCount + 5, totalCount);
+      listItems.forEach((item, idx) => {
+        if (idx < nextCount) item.style.display = "list-item";
+      });
+      btnExpand.dataset.shown = nextCount;
+      btnCollapse.classList.remove("hidden");
+      if (nextCount >= totalCount) {
+        btnExpand.style.display = "none";
+      }
+    }
+
+    // ===== “접기” 기능 =====
+    function collapseList(index) {
+      const listItems = document.querySelectorAll(`#list-${index} li`);
+      const btnExpand = document.getElementById(`btn-expand-${index}`);
+      const btnCollapse = document.getElementById(`btn-collapse-${index}`);
+      listItems.forEach((item, idx) => {
+        item.style.display = idx < 5 ? "list-item" : "none";
+      });
+      btnExpand.style.display = "block";
+      btnExpand.dataset.shown = 5;
+      btnCollapse.classList.add("hidden");
+    }
+
+    // ===== 초기화 =====
+    document.addEventListener("DOMContentLoaded", () => {
+      document.querySelectorAll("ul[id^='list-']").forEach(list => {
+        const items = list.querySelectorAll("li");
+        items.forEach((item, idx) => {
+          if (idx >= 5) item.style.display = "none";
+        });
+      });
+    });
+  </script>
+</body>
+</html>
