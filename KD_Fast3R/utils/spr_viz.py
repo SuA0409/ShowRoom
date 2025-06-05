@@ -8,7 +8,7 @@ import warnings
 import glob
 import os
 
-from KD_Fast3R.fast3r_to_spr import spr, postprocess
+from fast3r_to_spr import spr
 
 # 빈 포트 탐색
 def find_free_port():
