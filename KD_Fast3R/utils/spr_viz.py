@@ -5,6 +5,7 @@ import cv2
 from pyngrok import ngrok, conf
 import socket
 import warnings
+import glob
 import os
 
 from KD_Fast3R.fast3r_to_spr import spr, postprocess
@@ -48,12 +49,16 @@ def viz(pc, server, path, size=(512, 384)):
     # # 포인트 클라우드 좌표
     # pc = [np.reshape(a['preds'][i]['pts3d_in_other_view'].cpu().numpy().squeeze(), (-1, 3)) for i in range(num)]
     # pc = np.round(pc, 5)  # ==> pc
-    
+
+    # 해당 경로의 jpg 파일들
+    all_image = sorted(glob.glob(os.path.join(path, '**', '*.jpg'), recursive=True))
+    # 이미지 갯수
+    num = len(all_image)
     all_points = [] # 모든 xyz 합치기 위함
     all_colors = [] # 모든 rgb 합치기 위함
     for i, p in enumerate(pc): # 이미지 수 만큼
-        image = os.path.join(path, f'{i}.jpg') # 해당 경로에 있는 이미지 로드
-        image = cv2.imread(image)
+        image = all_image[i] # i번째 이미지
+        image = cv2.imread(image) # 읽음
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # rgb로 갖고옴
         image = cv2.resize(image, (512, 384)) # 512, 384로 전처리
         image = image.astype(np.float32) / 255.0 # [0,1]로 전처리
