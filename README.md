@@ -2,7 +2,8 @@
 Based on the n spatial images selected by the user, missing 2D visual information is complemented through inpainting, and empty regions generated during the 3D reconstruction process are refined to provide a realistic 3D space.
 
 # ShowRoom FlowChart
-![image](https://github.com/user-attachments/assets/bb0cbc53-79c8-4f5c-8410-d61f3a99d56e)
+![image](https://github.com/user-attachments/assets/f706becb-5712-4f78-bd5b-499ded7b035c)
+
 
 ## Installation
     # clone project
