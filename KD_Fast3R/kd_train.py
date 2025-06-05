@@ -284,7 +284,7 @@ def train(
     print('Finished training !')
 
 
-def main1(test_yaml_name='configs/test1.yaml'):
+def main(test_yaml_name='configs/test1.yaml'):
     with open(test_yaml_name, 'r', encoding='utf-8') as f:
         config = yaml.safe_load(f)
     train(**config)
