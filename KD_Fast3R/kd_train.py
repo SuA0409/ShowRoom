@@ -18,26 +18,71 @@ warnings.filterwarnings("ignore", category=UserWarning)
 
 from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
 
+def load_arguments(
+        student_args_path: str,
+        teacher_args_path: str='configs/teacher_args.yaml'
+):
+    '''teacher의 모델 구조를 가져오고, student의 바뀐 부분을 업데이트하여 student에도 저장
+    Args:
+        student_args_path (str): student의 argument가 저장된 yaml 파일 주소
+        teacher_args_path (str): teacher의 argument가 저장된 yaml 파일 주소
 
-def load_arguments(student_args_path, teacher_args_path='configs/teacher_args.yaml'):
+    Returns:
+        student_args (dict): model에 적용할 config가 들어있는 딕셔너리
+        teacher_args (dict): model에 적용할 config가 들어있는 딕셔너리
+    '''
+
     # 가중치 로드
+     # teacher part
     with open(teacher_args_path, 'r', encoding='utf-8') as f:
         teacher_args = yaml.safe_load(f)
     teacher_args['head_args']['conf_mode'] = ['exp', 1, float('inf')]
     teacher_args['head_args']['depth_mode'] = ['exp', float('-inf'), float('inf')]
     student_args = copy.deepcopy(teacher_args)
-
+     # student part
     with open(student_args_path, 'r', encoding='utf-8') as f:
         student_modify_args = yaml.safe_load(f)
+
     # 수정된 student의 args를 적용
     for k1, v1 in student_modify_args.items():
         for k2, v2 in v1.items():
             student_args[k1][k2] = v2
 
-    return teacher_args, student_args
+    return student_args, teacher_args
 
 
-def train(test_name, path, arg_path, params):
+def train(
+        test_name: str,
+        path: dict,
+        arg_path: dict,
+        params: dict,
+):
+    ''' KD를 하기 위한 Main code
+    Args:
+        test_name (str): 테스트 이름을 지정
+        path (dict):
+            rooms_path (str): 방 데이터셋의 이름
+            student_model_path (str): student 모델 저장 경로
+            teacher_model_path (str): teacher 모델 가중치 경로
+            test_image_path (str): 테스트 이미지 저장 경로
+        arg_path (dict):
+            student_args_path (str): student의 argument가 저장된 yaml 파일 주소
+            teacher_args_path (str): teacher의 argument가 저장된 yaml 파일 주소
+        params (dict): 기타 학습 파라미터
+            epochs (int): 전체 학습 epoch 횟수
+            learning_rate (float): 학습률
+            accum_iter (int): Gradient Accumulation을 사용할 횟수
+            optimizer (dict):
+                type (str): optimizer 이름
+                weight_decay (float): optimizer weight_decay에 대한 것 default=(0.05)
+                betas (list): optimizer betas에 대한 것 default=(0.9, 0.95)
+            scheduler (dict):
+                type (str): scheduler 이름
+                warmup_epochs (int): warmup에 사용할 epoch 수
+                max_epochs (int): 전체 학습에 사용할 epoch 수
+                eta_min (float): learning rate의 최소값
+    '''
+
     # initial path
     student_model_path = os.path.join(path['student_model_path'], test_name)
 
@@ -54,7 +99,7 @@ def train(test_name, path, arg_path, params):
     torch.cuda.manual_seed(42)
 
     # load_arguments
-    teacher_args, student_args = load_arguments(**arg_path)
+    student_args, teacher_args = load_arguments(**arg_path)
 
     # Fast3r 제공 모델
     print('Building Teacher model ...')
