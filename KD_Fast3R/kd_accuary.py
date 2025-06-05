@@ -15,13 +15,14 @@ import random
 
 # 성능 평가 클래스
 class Evaluator:
-    def __init__(self, student_path, teacher_path="/content/drive/MyDrive/ex_teacher_output.pt"):
+    def __init__(self, teacher_path, student_path):
         self.teacher_pointmap = self.load_teacher_pointmap_from_pt(teacher_path)
         self.student_pointmap = self.load_student_pointmap_from_pth(student_path)
 
     # teacher output를 { index : (x, y, z) } 형태로 변환
     def load_teacher_pointmap_from_pt(self, teacher_path: str, index: int = 0):
         teacher_data = torch.load(teacher_path, map_location=torch.device('cpu'))
+        print(teacher_data.keys())
         teacher_pointmap = dict()
         t_preds = teacher_data['preds']
         for i, v in enumerate(t_preds[0]['pts3d_in_other_view'].reshape(-1, 3)):
@@ -81,41 +82,6 @@ class Evaluator:
         }
 
         return results
-
-    '''
-    # GPU 메모리 폭발
-    def chamber_distance(self, use_squared: bool = True):
-        teacher_pointmap = np.array(list(self.teacher_pointmap.values()))
-        student_pointmap = np.array(list(self.student_pointmap.values()))
-
-        # GT에서 Pred로의 거리 (각 GT 점에서 가장 가까운 Pred 점까지의 거리)
-        dist_gt_to_pred = cdist(teacher_pointmap, student_pointmap, metric='euclidean')
-        min_dist_gt_to_pred = np.min(dist_gt_to_pred, axis=1)
-
-        # Pred에서 GT로의 거리 (각 Pred 점에서 가장 가까운 GT 점까지의 거리)
-        dist_pred_to_gt = cdist(student_pointmap, teacher_pointmap, metric='euclidean')
-        min_dist_pred_to_gt = np.min(dist_pred_to_gt, axis=1)
-
-        if use_squared:
-            min_dist_gt_to_pred = min_dist_gt_to_pred ** 2
-            min_dist_pred_to_gt = min_dist_pred_to_gt ** 2
-
-        # Chamber Distance 계산
-        cd_gt_to_pred = np.mean(min_dist_gt_to_pred)
-        cd_pred_to_gt = np.mean(min_dist_pred_to_gt)
-        chamber_distance = cd_gt_to_pred + cd_pred_to_gt
-
-        results = {
-            'chamber_distance': float(chamber_distance),
-            'cd_gt_to_pred': float(cd_gt_to_pred),
-            'cd_pred_to_gt': float(cd_pred_to_gt),
-            'num_gt_points': len(teacher_pointmap),
-            'num_pred_points': len(student_pointmap),
-            'distance_type': 'squared' if use_squared else 'euclidean'
-        }
-
-        return results
-    '''
 
     # Point-wise L2 Distance : index의 정확도
     def pointwise_l2_distance(self):
@@ -210,41 +176,6 @@ class Evaluator:
         }
 
         return results
-
-    '''
-    # GPU 메모리 폭발
-    def self_consistency_check(self, neighbor_threshold: float = 0.1):
-        # 예측된 point cloud 내에서 이웃 점들 간의 일관성을 확인 (급격한 변화나 outlier 감지 가능)
-        pred_coords = np.array(list(self.student_pointmap.values()))
-
-        if len(pred_coords) < 2:
-            return {'self_consistency_score': 1.0, 'num_outliers': 0}
-
-        # 각 점에서 다른 모든 점까지의 거리 계산
-        distances = cdist(pred_coords, pred_coords, metric='euclidean')
-
-        # 각 점의 이웃 수 계산 (자기 자신 제외)
-        neighbors_count = np.sum(distances < neighbor_threshold, axis=1) - 1
-
-        # 이웃이 적은 점들을 outlier로 간주
-        mean_neighbors = np.mean(neighbors_count)
-        std_neighbors = np.std(neighbors_count)
-        outlier_threshold = max(1, mean_neighbors - 2 * std_neighbors)
-        outliers = np.sum(neighbors_count < outlier_threshold)
-
-        # 전체적인 density 일관성 계산
-        consistency_score = 1.0 - (outliers / len(pred_coords))
-
-        results = {
-            'self_consistency_score': float(consistency_score),
-            'num_outliers': int(outliers),
-            'mean_neighbors': float(mean_neighbors),
-            'std_neighbors': float(std_neighbors),
-            'total_points': len(pred_coords)
-        }
-
-        return results
-    '''
 
     # SSIM : 밝기, 대비, 구조 등을 고려하여 얼마나 구조적/시각적으로 유사한가
     def compute_ssim_3d(self, grid_size: int = 32):
@@ -370,7 +301,7 @@ class Evaluator:
         
 def accuary(teacher_path, student_path):
     # 평가 객체 생성 및 실행
-    evaluator = Evaluator(student_path, teacher_path)
+    evaluator = Evaluator(teacher_path, student_path)
     results = evaluator.evaluate_all(evaluator.teacher_pointmap, evaluator.student_pointmap)
     evaluator.print_summary(results)
 
@@ -378,7 +309,6 @@ def accuary(teacher_path, student_path):
 
 # 실행
 if __name__ == "__main__":
-    teacher_path = "/content/drive/MyDrive/ex_teacher_output.pt"  # teahcer(Fast3R) 경로 (고정)
-    student_path = "/content/drive/MyDrive/ex_student_output.pth"  # student(ShowRoom) 경로
-    res_accuary = accuary(student_path, teacher_path)
-
+    teacher_path = "/content/drive/MyDrive/INISW6_CV5/Fast3R/output data_for accuary/ex_teacher_output.pt"  # teahcer(Fast3R) 경로 (고정)
+    student_path = "/content/drive/MyDrive/INISW6_CV5/Fast3R/output data_for accuary/18.pth"  # student(ShowRoom) 경로
+    res_accuary = accuary(teacher_path, student_path)
