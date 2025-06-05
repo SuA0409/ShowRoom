@@ -33,6 +33,10 @@ def make_server(token):
 
     return url, server # url, server = make_server() 이렇게 하면 될듯??
 
+# 딕셔너리 numpy를 list numpy로 바꿈
+def dict_to_list(*pc):
+    return [pc[k] for k in pc]
+
 def viz(pc, server, path, size=(512, 384)):
     # 경고 무시
     # warnings.filterwarnings("ignore", category=UserWarning)
@@ -101,6 +105,5 @@ def viz(pc, server, path, size=(512, 384)):
 # from 1.main import make_server, viz
 
 # url, server = make_server('your token') # url과 server 받아옴
-# pc = np.load('/content/drive/MyDrive/views.npz') # pc 인풋 가져옴 !! 넘피로 어차피 나오니 실사용엔 필요 없을 듯
-# pc = [pc[k] for k in pc] # dict를 list로 바꿈
+# pc = dict_to_list(np.load('/content/drive/MyDrive/views.npz')) # pc 인풋 가져옴 !! 넘피로 어차피 나오니 실사용엔 필요 없을 듯
 # viz(pc, server, path='/content/drive/MyDrive/test_view') # 3d 시각화
