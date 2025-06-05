@@ -18,38 +18,15 @@ def find_free_port():
 
 # 서버 주소 할당
 def make_server(token):
-    # 빈 포트 추출
-    port = find_free_port()
+    port = find_free_port() # 빈 포트 추출
+    conf.get_default().auth_token = token # Ngrok 설정
     
-    # Ngrok 설정
-    conf.get_default().auth_token = token
-    
-    # 새 Ngrok 터널 생성
-    url = ngrok.connect(port, "http")
-    print(f"🔗 Viser 접속 링크: {url}")
+    url = ngrok.connect(port, "http") # 새 Ngrok 터널 생성
+    server = viser.ViserServer(host="0.0.0.0", port=port) # Viser 서버 실행 (단일 서버)
+    return url, server # url, server 반환 (url 고정한 채로 서버는 계속 쓸 수 있음)
 
-    # Viser 서버 실행 (단일 서버)
-    server = viser.ViserServer(host="0.0.0.0", port=port)
-
-    return url, server # url, server = make_server() 이렇게 하면 될듯??
-
+# viser로 원본 3d와 spr*2로 생성 3d를 보여주는 함수
 def viz(pc, server, path, size=(512, 384)):
-    # 경고 무시
-    # warnings.filterwarnings("ignore", category=UserWarning)
-    
-    # data = torch.load(pt) # 데모 pt
-    
-    # # list[np.nparray 형태임]
-    # data_preds = [data['preds'][i]['pts3d_in_other_view'].cpu().numpy().squeeze() for i in range(3)]
-
-    # # 데이터 로드
-    # a = torch.load('/content/drive/MyDrive/content.pt', weights_only=True)
-    # num = len(a['preds'])  ==> num
-
-    # # 포인트 클라우드 좌표
-    # pc = [np.reshape(a['preds'][i]['pts3d_in_other_view'].cpu().numpy().squeeze(), (-1, 3)) for i in range(num)]
-    # pc = np.round(pc, 5)  # ==> pc
-    
     # 딕셔너리 numpy를 list numpy로 바꿈
     pc = [pc[k] for k in pc]
     # 해당 경로의 jpg 파일들
@@ -62,7 +39,7 @@ def viz(pc, server, path, size=(512, 384)):
         image = all_image[i] # i번째 이미지
         image = cv2.imread(image) # 읽음
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # rgb로 갖고옴
-        image = cv2.resize(image, (512, 384)) # 512, 384로 전처리
+        image = cv2.resize(image, size) # 512, 384로 전처리(default)
         image = image.astype(np.float32) / 255.0 # [0,1]로 전처리
         color = np.reshape(image, (-1, 3)) # (N,3)으로 재구성
 
@@ -73,7 +50,7 @@ def viz(pc, server, path, size=(512, 384)):
     xyz = np.concatenate(all_points, axis=0) # 원본 xyz 값들 합침
     rgb = np.concatenate(all_colors, axis=0) # 원본 rgb 값들 합침
     
-    # 합쳐진 포인트 클라우드 시각화
+    # 먼저 합쳐진 원본 포인트 클라우드 시각화
     server.scene.add_point_cloud(
         name="원본 포인트 클라우드",
         points=xyz,
@@ -99,9 +76,11 @@ def viz(pc, server, path, size=(512, 384)):
     input("Press Enter to stop viser...")
     ngrok.kill()  # Ngrok 터널 종료
 
-# 사용 예:
-# from 1.main import make_server, viz
+'''
+사용 예:
+from KD_Fast3R.utils import make_server, viz
 
-# url, server = make_server('your token') # url과 server 받아옴
-# pc = np.load('/content/drive/MyDrive/views.npz')) # pc 인풋 가져옴 !! 넘피로 어차피 나오니 실사용엔 필요 없을 듯
-# viz(pc, server, path='/content/drive/MyDrive/test_view') # 3d 시각화
+url, server = make_server('your token') # url과 server 받아옴
+pc = np.load(pc_ndarray) # pc 인풋 가져옴(fast3r 출력값)
+viz(pc, server, path='/content/drive/MyDrive/test_view') # 3d 시각화
+'''
