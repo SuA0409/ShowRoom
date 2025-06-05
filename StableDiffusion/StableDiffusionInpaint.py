@@ -1,37 +1,3 @@
-# 환경 설정 및 사전 설치
-from google.colab import drive
-drive.mount('/content/drive')
-%cd /content/drive/MyDrive/Colab Notebooks/Model/ShowRoom
-
-!pip install kornia
-!pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cu117
-!pip install diffusers transformers accelerate
-!pip install kornia opencv-python pillow
-!pip install flask pyngrok
-
-import torch
-from diffusers import StableDiffusionInpaintPipeline
-
-# MIDAS 다운로드(offline 옵션 사용)
-torch.hub.load("intel-isl/MiDaS", "MiDaS_small", offline=False)
-
-# transforms는 offline 옵션 없이!
-torch.hub.load("intel-isl/MiDaS", "transforms")
-
-# Stable Diffusion Inpainting 다운로드
-pipe = StableDiffusionInpaintPipeline.from_pretrained(
-    "stabilityai/stable-diffusion-2-inpainting",
-    revision="fp16",
-    torch_dtype=torch.float16,
-    safety_checker=None,
-    local_files_only=False
-)
-print("다운로드 완료!")
-
-
-# 지정된 파일에 코드 저장
-%%writefile rotate_and_inpaint.py
-
 # 필요한 라이브러리
 import os
 import cv2
@@ -376,8 +342,6 @@ def main():
             result.save(output_path)
             print(f"[완료] 이미지 {img_id}.jpg → 회전 {angle_deg}° → 인페인팅 → 저장: {output_path}")
 
+
 if __name__ == '__main__':
     main()
-    
-# 파일 실행
-!python rotate_and_inpaint.py
