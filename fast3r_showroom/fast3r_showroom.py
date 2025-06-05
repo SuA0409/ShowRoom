@@ -7,7 +7,7 @@ import concurrent.futures
 from fast3r.models.fast3r import Fast3R
 from fast3r.models.multiview_dust3r_module import MultiViewDUSt3RLitModule
 
-
+## 이미지 불러오기 및 전처리
 def load_and_preprocess_images(image_dir, size=512):
     supported_exts = [".jpg", ".jpeg", ".png"]
     image_paths = sorted([
@@ -17,10 +17,10 @@ def load_and_preprocess_images(image_dir, size=512):
     ])
 
     def _load_process_image(img_path):
-        img = cv2.imread(img_path)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        img = cv2.resize(img, (size, size * 3 // 4))
-        img = img.astype(np.float32) / 255.0 * 2 - 1
+        img = cv2.imread(img_path)                        # BGR로 읽힘
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)        # RGB로 변환
+        img = cv2.resize(img, (size, size * 3 // 4))      # 4:3 비율 유지
+        img = img.astype(np.float32) / 255.0 * 2 - 1      # [-1, 1] 정규화
         return torch.from_numpy(img).float().permute(2, 0, 1)  # (C, H, W)
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -28,7 +28,7 @@ def load_and_preprocess_images(image_dir, size=512):
 
     return imgs
 
-
+## Fast3r 입력 형태로 전처리
 def prepare_fast3r_input(imgs, device):
     images = []
     for idx, img in enumerate(imgs):
@@ -41,7 +41,7 @@ def prepare_fast3r_input(imgs, device):
         })
     return images
 
-
+## Point cloud 저장(.npz)
 def save_point_clouds(preds, save_path):
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     npz_dict = {}
@@ -51,9 +51,10 @@ def save_point_clouds(preds, save_path):
     np.savez(save_path, **npz_dict)
     print(f" Saved combined point clouds to {save_path}")
 
-
+# 카메라 포즈 추정
 def save_camera_poses(preds, save_path):
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    # Fast3R의 MultiView 모듈을 이용한 camera pose 추정
     poses_c2w_batch, _ = MultiViewDUSt3RLitModule.estimate_camera_poses(
         preds,
         niter_PnP=100,
@@ -71,7 +72,7 @@ def save_camera_poses(preds, save_path):
         f.write("]")
     print(f" Saved all camera poses to {save_path}")
 
-
+## 전체 실행 함수
 def main(
     image_dir,
     point_save_path,
@@ -99,11 +100,11 @@ def main(
     with torch.no_grad():
         preds = model(inputs)
 
-    # Save outputs
+    # 결과 저장
     save_point_clouds(preds, point_save_path)
     save_camera_poses(preds, pose_save_path)
 
-
+## 실행
 if __name__ == "__main__":
     # === 설정 ===
     image_dir = "/content/drive/MyDrive/Colab Notebooks/Model/ShowRoom/Input/Images"
