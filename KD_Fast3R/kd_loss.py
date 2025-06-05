@@ -21,11 +21,11 @@ class RKDLoss(nn.Module):
         e_square = e.pow(2).sum(dim=1)  # b
         prod = e @ e.t()  # [b, b]
         res = ((e_square.unsqueeze(1) + e_square.unsqueeze(0) - 2 * prod)
-               .clamp(min=eps))  # [b, 1] + [1, b] - 2 * [b, b] = # [b, b]
+               .clamp(min=eps))  # [b, b]
 
-        res = res.sqrt()  # [b, b]
+        res = res.sqrt()
         res = res.clone()
-        res[range(len(e)), range(len(e))] = 0  # 자신은 0
+        res[range(len(e)), range(len(e))] = 0
         return res
 
     # kd distnace 계산
@@ -46,9 +46,9 @@ class RKDLoss(nn.Module):
     # 각도 관계 손실 계산
     def RKDAngle(self, student, teacher):
         with torch.no_grad():
-            td = (teacher.unsqueeze(0) - teacher.unsqueeze(1))  # [1, b, c'] - [b, 1, c'], [b, b, c']
-            norm_td = F.normalize(td, p=2, dim=2)  # [b, b, c']
-            t_angle = torch.bmm(norm_td, norm_td.transpose(1, 2)).view(-1)  # [b*c'*b]
+            td = (teacher.unsqueeze(0) - teacher.unsqueeze(1))  # [b, b, c']
+            norm_td = F.normalize(td, p=2, dim=2)
+            t_angle = torch.bmm(norm_td, norm_td.transpose(1, 2)).view(-1)  # [b * c' * b]
 
         sd = (student.unsqueeze(0) - student.unsqueeze(1))
         norm_sd = F.normalize(sd, p=2, dim=2)
