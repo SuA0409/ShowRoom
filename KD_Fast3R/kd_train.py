@@ -130,7 +130,7 @@ def train(
         # 모델 저장 경로
         os.makedirs(student_model_path, exist_ok=True)
 
-        # teacher에 encoder와 decoder weight 가져오기
+        # teacher의 encoder와 decoder weight 가져오기
         student_model.encoder.load_state_dict(teacher_model.encoder.state_dict())
         student_model.decoder.load_state_dict(teacher_model.decoder.state_dict())
         print("loaded : Teacher's en/decoder \n")
