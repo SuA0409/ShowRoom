@@ -1,4 +1,4 @@
-﻿test_name: 'layer_half_1e-4_v2'
+﻿test_name: 'layer_half_1e-5_v1'
 
 path:
     rooms_path: '/content/drive/MyDrive/Scannet++/preprocessv2'
@@ -11,9 +11,9 @@ arg_path:
     teacher_args_path: '/content/ShowRoom/configs/teacher_args.yaml'
 
 params:
-    epochs: 30
-    learning_rate: 1e-4
-    accum_iter: 8
+    epochs: 35
+    learning_rate: 1e-5
+    accum_iter: 1
 
     optimizer:
       type: AdamW
@@ -22,7 +22,7 @@ params:
 
     scheduler:
       type: LinearWarmupCosineAnnealingLR
-      warmup_epochs: 5
+      warmup_epochs: 1
       max_epochs: 30
       eta_min: 1e-6
 
