@@ -22,7 +22,6 @@ class Evaluator:
     # teacher output를 { index : (x, y, z) } 형태로 변환
     def load_teacher_pointmap_from_pt(self, teacher_path: str, index: int = 0):
         teacher_data = torch.load(teacher_path, map_location=torch.device('cpu'))
-        print(teacher_data.keys())
         teacher_pointmap = dict()
         t_preds = teacher_data['preds']
         for i, v in enumerate(t_preds[0]['pts3d_in_other_view'].reshape(-1, 3)):
@@ -229,7 +228,7 @@ class Evaluator:
     def evaluate_all(self, teacher_output: Dict, student_output: Dict) -> Dict:
         results = {}
 
-        print("----- KD 성능 평가 -----")
+        print("-----  KD 성능 평가  -----")
 
         # 1. Chamber Distance
         results['chamber_distance'] = self.chamber_distance()
@@ -251,19 +250,19 @@ class Evaluator:
         results['ssim_3d'] = self.compute_ssim_3d()
         print(">> 3D SSIM 평가 완료")
         
-        print("----- KD 평가 완료 -----")
+        print("-----  KD 평가 완료  -----")
 
         return results
 
     def print_summary(self, results: Dict):
         # 평가 결과 요약 출력
-        print("\n" + "="*60)
-        print("     Knowledge Distillation Evaluation Summary")
+        print("\n\n" + "="*60)
+        print("         Knowledge Distillation Evaluation Summary")
         print("="*60)
         
         # 1. Chamber Distance : 작을수록 구조적 차이 적음
         chamber = results['chamber_distance']
-        print(f"\n1. Chamber Distance (구조적 유사도):")
+        print(f"\n1. Chamber Distance:")
         print(f"   • 총 Chamber Distance: {chamber['chamber_distance']:.6f}")  ## 비교 대상
         print(f"   • GT→Pred: {chamber['cd_gt_to_pred']:.6f}")
         print(f"   • Pred→GT: {chamber['cd_pred_to_gt']:.6f}")
@@ -280,7 +279,7 @@ class Evaluator:
 
         # 3. Per-axis MAE : 작을수록 축별 평균 오차 적음
         mae = results['per_axis_mae']
-        print(f"\n3. Per-axis MAE (축별 정확도):")
+        print(f"\n3. Per-axis MAE:")
         print(f"   • X축 MAE: {mae['mae_x']:.6f}")
         print(f"   • Y축 MAE: {mae['mae_y']:.6f}")
         print(f"   • Z축 MAE: {mae['mae_z']:.6f}")
@@ -289,14 +288,14 @@ class Evaluator:
         
         # 4. Self-consistency : 클수록(1에 가까움) 예측 결과 내 일관성 높음
         consistency = results['self_consistency']
-        print(f"\n4. Self-consistency (내부 일관성):")
+        print(f"\n4. Self-consistency:")
         print(f"   • 일관성 점수: {consistency['self_consistency_score']:.4f}")  ## 비교 대상
         print(f"   • Outlier 수: {consistency['num_outliers']}")
         print(f"   • 평균 이웃 수: {consistency['mean_neighbors']:.2f}")
         
         # 5. 3D SSIM : 클수록 (최대 1) 구조 및 시각적 유사도 높음
         ssim_score = results['ssim_3d']
-        print(f"\n5. 3D SSIM (구조적 유사성):")
+        print(f"\n5. 3D SSIM:")
         print(f"   • SSIM 점수: {ssim_score:.4f}")  ## 비교 대상
         
 def accuary(teacher_path, student_path):
