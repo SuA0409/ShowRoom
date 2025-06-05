@@ -16,12 +16,12 @@ def find_free_port():
         return s.getsockname()[1]
 
 # 서버 주소 할당
-def make_server():
+def make_server(token):
     # 빈 포트 추출
     port = find_free_port()
     
     # Ngrok 설정
-    conf.get_default().auth_token = "2xwkthyPz15CsSbartjgnt9aQde_3RoEvuB7Mz7oHHzuDJFia"
+    conf.get_default().auth_token = token
     
     # 새 Ngrok 터널 생성
     url = ngrok.connect(port, "http")
@@ -95,7 +95,7 @@ def viz(pc, server, path, size=(512, 384)):
 # 사용 예:
 # from 1.main import make_server, viz
 
-# url, server = make_server() # url과 server 받아옴
+# url, server = make_server('your token') # url과 server 받아옴
 # pc = np.load('/content/drive/MyDrive/views.npz') # pc 인풋 가져옴 !! 넘피로 어차피 나오니 실사용엔 필요 없을 듯
 # pc = [pc[k] for k in pc] # dict를 list로 바꿈
 # viz(pc, server, path='/content/drive/MyDrive/test_view') # 3d 시각화
