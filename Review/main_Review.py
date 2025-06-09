@@ -9,8 +9,6 @@ from bertopic import BERTopic
 from sentence_transformers import SentenceTransformer
 from umap import UMAP
 import hdbscan
-import plotly.express as px
-import plotly.io as pio
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from collections import defaultdict
@@ -160,9 +158,7 @@ while 1:
 #---------------------- 리뷰 전처리 ------------------------
 
 # 리뷰 pandas화
-reviews = pd.DataFrame(data)
-reviews = reviews.dropna()
-reviews = reviews.reset_index(drop=True)
+reviews = pd.DataFrame(data).dropna().reset_index(drop=True)
 
 rows = [] # 숙소의 문장분리 + 불용어 처리한 리뷰를 담기위한 그릇
 for j, row in reviews.iterrows():
@@ -205,8 +201,6 @@ for j, row in reviews.iterrows():
 # DataFrame 생성
 sentence = pd.DataFrame(rows, columns=["stay_id", "user_id", "splitNum", "sentence", "start", "end"])
 
-# Plotly 렌더링 설정
-pio.renderers.default = 'colab'
 # 전처리한 리뷰만 가져옴
 sentence = sentence['sentence']
 # NaN 및 중복 제거하고 list화
