@@ -334,9 +334,9 @@ def main():
 
             # 최종 결과 저장: 왼쪽 회전은 left1_{img_id}.png, 오른쪽 회전은 right1_{img_id}.png
             if angle_deg > 0:
-                output_filename = f"left1{img_id}.png"
+                output_filename = f"left1{img_id}.jpg"
             else:
-                output_filename = f"right1{img_id}.png"
+                output_filename = f"right1{img_id}.jpg"
 
             output_path = os.path.join(args.out_folder, output_filename)
             result.save(output_path)
