@@ -5,6 +5,7 @@ import torch
 import random
 import concurrent.futures
 
+
 # 이미지를 torch로 바꾸는 함수
 def _load_process_image_cv2(img_path, size=256):
     img = cv2.imread(img_path)
@@ -14,19 +15,20 @@ def _load_process_image_cv2(img_path, size=256):
     except:
         print(img_path)
         return
-    img = cv2.resize(img, (size, size * 3 // 4)) # 이미지를 256, 192로 resize한 상태로 받은 후 다시 한 번 점검
+    img = cv2.resize(img, (size, size * 3 // 4))  # 이미지를 256, 192로 resize한 상태로 받은 후 다시 한 번 점검
     img = img.astype(np.float32) / 255.0 * 2 - 1  # [-1, 1]로 정규화
     img = torch.from_numpy(img).float().permute(2, 0, 1)  # (H, W, C) -> (C, H, W)
 
     return img
 
-def batch_images_load(rooms_path, 
-                      rooms_name, 
-                      batch_size=4, 
-                      *, 
-                      size=256, 
-                      sample=5, 
-):
+
+def batch_images_load(rooms_path,
+                      rooms_name=None,
+                      batch_size=4,
+                      *,
+                      size=256,
+                      sample=5,
+                      ):
     '''한 torch file에 4_000개의 room과, 각각 5장의 iamges 존재
         각 방을 batch_size(b) 각 방안에 이미지를 sample(s)로 표시
         preprocesser를 위한 thread를 사용하는 전용 함수
@@ -44,10 +46,13 @@ def batch_images_load(rooms_path,
             idx (list[int]): 이미지의 index를 표시 ; Fast3r에서는 사용하였지만, 본 학습에서는 사용 X [s, b]
             instance (list[str]): 이미지의 instance를 표시; Fast3r에서는 사용하였지만, 본 학습에서는 사용 X [s, b]
     '''
-    
-    supported_images_extensions = [".jpg", ".jpeg", ".png"] # 이미지의 확장자를 제한
+
+    supported_images_extensions = [".jpg", ".jpeg", ".png"]  # 이미지의 확장자를 제한
     rooms = list()
-    imgs = [list() for _ in range(sample)] # 샘플 개수만큼 미리 생성
+    imgs = [list() for _ in range(sample)]  # 샘플 개수만큼 미리 생성
+
+    if rooms_name is None:
+        assert batch_size == 1, 'batch size must be 1'
 
     # 전처리 속도 향상을 위해 thread를 사용
     with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -55,8 +60,11 @@ def batch_images_load(rooms_path,
 
         # batch_size 만큼 전처리 실행
         for i in range(batch_size):
-            room_path = os.path.join(rooms_path, rooms_name[i])
-            imgs_name = [it for it in os.listdir(room_path) if any(it.lower().endswith(ext) for ext in supported_images_extensions)]
+            # room_path
+            room_path = rooms_path if rooms_name is None else os.path.join(rooms_path, rooms_name[i])
+
+            imgs_name = [it for it in os.listdir(room_path) if
+                         any(it.lower().endswith(ext) for ext in supported_images_extensions)]
 
             # sample size 만큼 이미지를 sampling한 후 가져옴
             imgs_name = random.sample(imgs_name, sample)
@@ -69,7 +77,8 @@ def batch_images_load(rooms_path,
         for future in concurrent.futures.as_completed(future_to_img):
             idx = future_to_img[future]
             img = future.result()
-            imgs[idx].append(dict(img=img, true_shape=torch.from_numpy(np.int32([size * 3 // 4, size])), idx=idx, instance=str(idx)))
+            imgs[idx].append(
+                dict(img=img, true_shape=torch.from_numpy(np.int32([size * 3 // 4, size])), idx=idx, instance=str(idx)))
 
     # Fast3R 모델에서 원하는 데이터 타입으로 형태를 변경
     for image in imgs:
