@@ -25,17 +25,17 @@ def comments(r):
         except:
             return None
 
-# Airbnb 리뷰 API 요청 시 필요한 헤더
+# 리뷰 API 요청 시 필요한 헤더
 headers = {
-    "Content-Type": "application/json",
-    "User-Agent": "Mozilla/5.0",
-    "Accept": "*/*",
-    "Referer": "https://www.airbnb.co.kr/",
-    "Accept-Language": "ko-KR,ko;q=0.9",
-    "x-airbnb-api-key": "d306zoyjsyarp7ifhu67rjxn52tv0t20",
-}
+            "Content-Type": "application/json",
+            "User-Agent": "",
+            "Accept": "*/*",
+            "Referer": "",
+            "Accept-Language": "",
+            "api-key": "",
+        }
 
-# Airbnb API로 리뷰 JSON 응답 받아오기
+# API로 리뷰 JSON 응답 받아오기
 def getReviewsJson(stay_id, limit, offset, headers=headers):
     jurl = "https://www.airbnb.co.kr/api/v3/StaysPdpReviewsQuery/dec1c8061483e78373602047450322fd474e79ba9afa8d3dbbc27f504030f91d?"
     variables = {

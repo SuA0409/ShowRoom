@@ -59,10 +59,10 @@ def viz(pc, server, path, size=(512, 384)):
     )
     
     # SPR 수행
-    vertices, colors = spr(xyz, xyz, rgb)
+    vertices, colors = spr(xyz, rgb)
     
     # SPR 2번 수행
-    vertices, colors = spr(xyz, vertices, colors)
+    vertices, colors = spr(vertices, colors)
     
     # SPR 결과 시각화
     server.scene.add_point_cloud(
@@ -76,11 +76,33 @@ def viz(pc, server, path, size=(512, 384)):
     input("Press Enter to stop viser...")
     ngrok.kill()  # Ngrok 터널 종료
 
+def more_spr(vertices, colors, depth=9, server):
+    '''
+    depth도 조종 가능
+    '''
+
+    vertices, colors = spr(vertices, colors, depth)
+    
+    # SPR 결과 시각화
+    server.scene.add_point_cloud(
+        name="생성 포인트 클라우드",
+        points=vertices,
+        colors=colors,
+        point_size=0.001
+    )
+
+    return vertices, colors
+
 '''
-사용 예:
+
+# 사용 예:
 from KD_Fast3R.utils import make_server, viz
 
 url, server = make_server('your token') # url과 server 받아옴
 pc = np.load(pc_ndarray) # pc 인풋 가져옴(fast3r 출력값)
 viz(pc, server, path='/content/drive/MyDrive/test_view') # 3d 시각화
+
+# 만약에 spr 요청시
+vertices, colors = more_spr(vertices, colors)
+
 '''

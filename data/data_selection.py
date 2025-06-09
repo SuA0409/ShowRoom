@@ -78,9 +78,9 @@ def show_select_images(imgs_path, rn):
 # Main
 if __name__ == '__main__':
     ## 경로 설정
-    root = '/content/drive/MyDrive/AirbnbDataset/Images'   # 저장된 이미지 경로 (본인 환경에 맞게 수정 !!!)
+    root = '/content/drive/MyDrive/Dataset/Images'   # 저장된 이미지 경로 (본인 환경에 맞게 수정 !!!)
 
-    save_root = '/content/drive/MyDrive/AirbnbDataset/airbnb_images'   # 선택한 이미지 저장할 위치 (본인 환경에 맞게 수정 !!!)
+    save_root = '/content/drive/MyDrive/Dataset/images'   # 선택한 이미지 저장할 위치 (본인 환경에 맞게 수정 !!!)
     os.makedirs(save_root, exist_ok=True)
 
     pre_room_number = load_rooms_number(save_root)

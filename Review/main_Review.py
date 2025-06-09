@@ -24,16 +24,16 @@ import requests
 # 한국어로 번역한것이 없을 때 or 한국어 댓글이 아닐때 None 반환 함수
 def comments(r):
     if r["language"] == 'ko':
-        return r["comments"]
+        return r["comments"] # 한국 사람 리뷰
     else:
         try:
-            return r["localizedReview"]["comments"]
+            return r["localizedReview"]["comments"] # 외국인 한국어 번역 리뷰
         except:
             return None
 
 # 리뷰에 해당하는 json 호출 함수
-def getReviewsJson(stay_id, limit, offset, headers=headers):
-    jurl = "" # json url
+def getReviewsJson(stay_id, limit, offset, headers):
+    jurl = "https://www.airbnb.co.kr/api/v3/StaysPdpReviewsQuery/dec1c8061483e78373602047450322fd474e79ba9afa8d3dbbc27f504030f91d?"
     variables = {
         "id":stay_id,
         "pdpReviewsRequest":{
@@ -70,7 +70,7 @@ def getReviewsJson(stay_id, limit, offset, headers=headers):
     }
 
     resp = requests.get(jurl+urlencode(params, quote_via=quote), headers=headers)
-    return resp.json()
+    return resp.json() # 리뷰에 관련된 json
 
 # 정규표현식으로 불용어 전처리 함수
 def clean_text(text):
@@ -80,10 +80,10 @@ def clean_text(text):
     text = re.sub(r'[!\"“”‘’?.]+', '. ', text)
     text = re.sub(r'[():]', ' ', text)
     text = re.sub(r'\s+', ' ', text).strip()
-    return text.strip()
+    return text.strip() # 불용어 처리된 텍스트
 
 # 리뷰 크롤링하는 함수
-def getReviews(url):
+def getReviews(url,headers):
     # 해당 url의 dom을 가져옴
     resp = request('get',url)
     dom = BeautifulSoup(resp.text, 'html.parser')
@@ -101,24 +101,24 @@ def getReviews(url):
     offset = 0
     data = []
     while 1:
-        res_json = getReviewsJson(stay_id, limit, offset)
+        res_json = getReviewsJson(stay_id, limit, offset,headers)
         try:
-        # 해당 숙소의 리뷰 데이터 접근
-        review_data = res_json["data"]["presentation"]["stayProductDetailPage"]["reviews"]
-        # 해당 숙소의 리뷰 갯수
-        reviewsCount = int(review_data['metadata']['reviewsCount'])
-        # 해당 숙소의 리뷰 데이터
-        for r in review_data["reviews"]:
-            comment_text = comments(r)
-            if comment_text:
-            data.append({
-                "user_id": r["reviewer"]["id"],
-                "name": r["reviewer"]["firstName"],
-                "stay_id": num,
-                "comment": comment_text,
-                "rating": r.get("rating"),
-                "createdAt": r.get("createdAt")
-            })
+            # 해당 숙소의 리뷰 데이터 접근
+            review_data = res_json["data"]["presentation"]["stayProductDetailPage"]["reviews"]
+            # 해당 숙소의 리뷰 갯수
+            reviewsCount = int(review_data['metadata']['reviewsCount'])
+            # 해당 숙소의 리뷰 데이터
+            for r in review_data["reviews"]:
+                comment_text = comments(r)
+                if comment_text:
+                    data.append({
+                        "user_id": r["reviewer"]["id"],
+                        "name": r["reviewer"]["firstName"],
+                        "stay_id": num,
+                        "comment": comment_text,
+                        "rating": r.get("rating"),
+                        "createdAt": r.get("createdAt")
+                    })
 
 
         except KeyError:
@@ -132,10 +132,10 @@ def getReviews(url):
         offset += cnt
         limit += cnt
         
-    return data
+    return data, num # 리뷰 데이터, 숙소 번호
 
 # 리뷰 전처리 함수
-def preprocessReviews(data):
+def preprocessReviews(data, num):
     # 리뷰 pandas화
     reviews = pd.DataFrame(data).dropna().reset_index(drop=True)
 
@@ -188,7 +188,7 @@ def preprocessReviews(data):
     if len(docs) < 5:
         raise ValueError("데이터가 충분하지 않습니다.")
 	    
-    return docs
+    return docs # 문장으로 전처리된 리뷰들
 
 # bertopic 사용 함수
 def use_model(docs, device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')):
@@ -282,8 +282,8 @@ headers = {
 #--------------------- url 지정 -----------------------
 url = ''
 #--------------------- 리뷰 크롤링 -----------------------
-data = getReviews(url)
+data, num = getReviews(url,headers)
 #--------------------- 리뷰 전처리 -----------------------
-docs = preprocessReviews(data)
+docs = preprocessReviews(data, num)
 #---------------------- 모델 사용 ------------------------
 use_model(docs)
