@@ -32,15 +32,14 @@ def postprocess(xyz, vertices, colors):
 
     return vertices, colors
     
-def spr(xyz, coords_np_Vx3, colors_np_Vx3, depth=9):
+def spr(xyz, rgb, depth=9):
 
     """
     SPR 기반 메시 재구성 함수 (입출력: numpy)
 
     Args:
         xyz (np.ndarray): (N, 3) 원본 포인트 클라우드 정점 좌표
-        coords_np_Vx3 (np.ndarray): (N, 3) 생성된 포인트 클라우드 정점 좌표(첫번째면 원본)
-        colors_np_Vx3 (np.ndarray): (N, 3) RGB 색상, [0~1] 범위
+        rgb (np.ndarray): (N, 3) RGB 색상, [0~1] 범위
         depth (int): Poisson reconstruction 깊이
 
     Returns:
@@ -48,8 +47,8 @@ def spr(xyz, coords_np_Vx3, colors_np_Vx3, depth=9):
         colors (np.ndarray): (N, 3) 메시 정점 색상 [0~1]
     """
 
-    coords = coords_np_Vx3 # xyz(N,3)
-    colors = colors_np_Vx3 # rgb(N,3)
+    coords = xyz # xyz(N,3)
+    colors = rgb # rgb(N,3)
 
     ms = pymeshlab.MeshSet()
     colors_4 = np.concatenate((colors, np.ones((colors.shape[0], 1))), axis=1)  # N,3 -> N,4
