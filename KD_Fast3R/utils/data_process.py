@@ -2,6 +2,7 @@ import torch
 import os
 from KD_Fast3R.utils.data_preprocess import batch_images_load
 
+
 def data_processer(
     rooms_path: str='/content/drive/MyDrive/Scannet++/data_scannet_fin', 
     dataset_path: str='/content/drive/MyDrive/Scannet++/preprocessv2'
@@ -22,7 +23,8 @@ def data_processer(
         # 40gb VRAM(A100)에서 사용 가능한 최대 효율 batch size는 4로 고정
         for i in range(1, 4001, 4):
             rooms_name = [room_files.pop() for _ in range(4)] # colab의 ram explosion을 방지하기 위해 pop으로 코딩
-            dataset[i//4] = batch_images_load(room_path, rooms_name, 4, size=256, sample=5, device=device)
+            rooms, _ = batch_images_load(room_path, rooms_name, 4, size=256, sample=5)
+            dataset[i//4] = rooms
             
         torch.save(dataset, dataset_path+f'/data_torch-{num}.pt') # pt파일로 데이터 저장 후 load ; 병목 현상 최소화를 목적
 
