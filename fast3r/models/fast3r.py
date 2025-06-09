@@ -48,18 +48,20 @@ class Fast3R(nn.Module,
              tags=["image-to-3d"]
              ):
     def __init__(
-        self,
-        encoder_args: dict,
-        decoder_args: dict,
-        head_args: dict,
-        freeze="none",
+            self,
+            encoder_args: dict,
+            decoder_args: dict,
+            head_args: dict,
+            freeze="none",
     ):
         super(Fast3R, self).__init__()
 
-        self.encoder_args = OmegaConf.to_container(encoder_args) if isinstance(encoder_args, DictConfig) else encoder_args
+        self.encoder_args = OmegaConf.to_container(encoder_args) if isinstance(encoder_args,
+                                                                               DictConfig) else encoder_args
         self.build_encoder(encoder_args)
 
-        self.decoder_args = OmegaConf.to_container(decoder_args) if isinstance(decoder_args, DictConfig) else decoder_args
+        self.decoder_args = OmegaConf.to_container(decoder_args) if isinstance(decoder_args,
+                                                                               DictConfig) else decoder_args
         self.build_decoder(decoder_args)
 
         self.head_args = OmegaConf.to_container(head_args) if isinstance(head_args, DictConfig) else head_args
@@ -98,8 +100,8 @@ class Fast3R(nn.Module,
             raise ValueError(f"Unsupported decoder type: {decoder_args['decoder_type']}")
 
     def build_head(
-        self,
-        head_args: dict,
+            self,
+            head_args: dict,
     ):
         self.output_mode = head_args['output_mode']
         self.head_type = head_args['head_type']
@@ -108,13 +110,15 @@ class Fast3R(nn.Module,
 
         # allocate primary downstream head
         self.downstream_head = self.head_factory(
-            head_args['head_type'], head_args['output_mode'], has_conf=bool(head_args['conf_mode']), patch_size=head_args['patch_size']
+            head_args['head_type'], head_args['output_mode'], has_conf=bool(head_args['conf_mode']),
+            patch_size=head_args['patch_size']
         )
 
         # add the second head if with_local_head is True
         if head_args.get('with_local_head', False):
             self.downstream_head_local = self.head_factory(
-                head_args['head_type'], head_args['output_mode'], has_conf=bool(head_args['conf_mode']), patch_size=head_args['patch_size']
+                head_args['head_type'], head_args['output_mode'], has_conf=bool(head_args['conf_mode']),
+                patch_size=head_args['patch_size']
             )
         else:
             self.downstream_head_local = None
@@ -136,11 +140,13 @@ class Fast3R(nn.Module,
         if head_type == "dpt" and output_mode == "pts3d":
             assert self.decoder_args["depth"] > 9
             l2 = self.decoder_args["depth"]
-            feature_dim = 256
+            feature_dim = self.head_args.get('feature_dim', 256)
             last_dim = feature_dim // 2
             out_nchan = 3
             ed = self.encoder_args["embed_dim"]
             dd = self.decoder_args["embed_dim"]
+            layer_dims = self.head_args.get('layer_dims', [96, 192, 384, 768])
+
             return PixelwiseTaskWithDPT(
                 num_channels=out_nchan + has_conf,
                 feature_dim=feature_dim,
@@ -152,6 +158,7 @@ class Fast3R(nn.Module,
                 conf_mode=self.head_args["conf_mode"],
                 head_type="regression",
                 patch_size=patch_size,
+                layer_dims=layer_dims,
             )
         else:
             raise NotImplementedError(f"unexpected {head_type=} and {output_mode=}")
@@ -181,8 +188,8 @@ class Fast3R(nn.Module,
             if key.startswith("patch_embed") or key.startswith("enc_blocks") or key.startswith("enc_norm"):
                 if isinstance(self.encoder, CroCoEncoder):
                     new_key = key.replace("patch_embed", "encoder.patch_embed") \
-                                 .replace("enc_blocks", "encoder.enc_blocks") \
-                                 .replace("enc_norm", "encoder.enc_norm")
+                        .replace("enc_blocks", "encoder.enc_blocks") \
+                        .replace("enc_norm", "encoder.enc_norm")
                     encoder_state_dict[new_key] = value
                     loaded_keys.add(key)  # Tentatively mark as loaded
             elif key.startswith("downstream_head1"):
@@ -247,7 +254,7 @@ class Fast3R(nn.Module,
         }
         freeze_all_params(to_be_frozen[freeze])
 
-    def _encode_images(self, views, chunk_size=400):
+    def _encode_images(self, views, chunk_size=128):
         B = views[0]["img"].shape[0]
 
         # Check if all images have the same shape
@@ -265,14 +272,14 @@ class Fast3R(nn.Module,
             num_chunks = (imgs.shape[0] + chunk_size - 1) // chunk_size
             feats_chunks = []
             pos_chunks = []
-            
+
             for i in range(num_chunks):
                 start_idx = i * chunk_size
                 end_idx = min((i + 1) * chunk_size, imgs.shape[0])
                 chunk_feats, chunk_pos = self.encoder(imgs[start_idx:end_idx], true_shapes[start_idx:end_idx])
                 feats_chunks.append(chunk_feats)
                 pos_chunks.append(chunk_pos)
-            
+
             feats = torch.cat(feats_chunks, dim=0)
             pos = torch.cat(pos_chunks, dim=0)
 
@@ -310,7 +317,7 @@ class Fast3R(nn.Module,
         """
         # Initialize profiling dict
         profiling_info = {} if profiling else None
-        
+
         # encode the images --> B,S,D
         encode_images_start_time = time.time()
         encoded_feats, positions, shapes = self._encode_images(views)
@@ -321,11 +328,6 @@ class Fast3R(nn.Module,
             encode_time = encode_images_end_time - encode_images_start_time
             profiling_info["encode_images_time"] = encode_time
             print(f"encode_images time: {encode_time}")
-        if encode_images_end_time - encode_images_start_time > 20:
-            print(f"something is wrong with the encoder, it took: {encode_images_end_time - encode_images_start_time}")
-            # print the image and true_shape
-            for view_idx, view in enumerate(views):
-                print(f"view_idx: {view_idx}\n, view name: {view_name(view)}\n, image content: {view['img']}\n, true_shape: {view['true_shape']}")
 
         # Create image IDs for each patch
         pos_emb_start_time = time.time()
@@ -401,7 +403,7 @@ class Fast3R(nn.Module,
             head_prepare_input_time = time.time() - head_prepare_input_start_time
             profiling_info["head_prepare_input_time"] = head_prepare_input_time
             print(f"head prepare input time: {head_prepare_input_time}")
-        
+
         head_forward_start_time = time.time()
         with profiler.record_function("head: forward pass"):
             if different_resolution_across_views or self.training:
@@ -459,10 +461,12 @@ class Fast3R(nn.Module,
                         local_result_chunks.append(local_result_chunk)
 
                 # Reassemble chunks
-                result = {key: torch.cat([chunk[key] for chunk in result_chunks], dim=0) for key in result_chunks[0].keys()}
+                result = {key: torch.cat([chunk[key] for chunk in result_chunks], dim=0) for key in
+                          result_chunks[0].keys()}
 
                 if self.local_head:
-                    local_result = {key: torch.cat([chunk[key] for chunk in local_result_chunks], dim=0) for key in local_result_chunks[0].keys()}
+                    local_result = {key: torch.cat([chunk[key] for chunk in local_result_chunks], dim=0) for key in
+                                    local_result_chunks[0].keys()}
 
                 #### Re-map the results from num_images * B tensor to list of B tensors
                 # Initialize the final results list
@@ -496,19 +500,20 @@ class Fast3R(nn.Module,
         else:
             return final_results
 
+
 class CroCoEncoder(nn.Module):
     def __init__(
-        self,
-        img_size=512,
-        patch_size=16,
-        patch_embed_cls="ManyAR_PatchEmbed",
-        embed_dim=768,
-        num_heads=12,
-        depth=12,
-        mlp_ratio=4,
-        norm_layer=partial(nn.LayerNorm, eps=1e-6),
-        pos_embed="RoPE100",
-        attn_implementation="pytorch_naive",
+            self,
+            img_size=512,
+            patch_size=16,
+            patch_embed_cls="ManyAR_PatchEmbed",
+            embed_dim=768,
+            num_heads=12,
+            depth=12,
+            mlp_ratio=4,
+            norm_layer=partial(nn.LayerNorm, eps=1e-6),
+            pos_embed="RoPE100",
+            attn_implementation="pytorch_naive",
     ):
         super(CroCoEncoder, self).__init__()
 
@@ -523,7 +528,7 @@ class CroCoEncoder(nn.Module):
                 raise ImportError(
                     "Cannot find cuRoPE2D, please install it following the README instructions"
                 )
-            freq = float(pos_embed[len("RoPE") :])
+            freq = float(pos_embed[len("RoPE"):])
             self.rope = RoPE2D(freq=freq)
         else:
             raise NotImplementedError("Unknown pos_embed " + pos_embed)
@@ -558,114 +563,21 @@ class CroCoEncoder(nn.Module):
         x = self.enc_norm(x)
         return x, pos
 
-class DinoEncoder(nn.Module):
-    def __init__(
-        self,
-        patch_size=14,
-        **kwargs
-    ):
-        super(DinoEncoder, self).__init__()
-        # Load the pretrained DINOv2 model
-        self.model = torch.hub.load('facebookresearch/dinov2', 'dinov2_vitl14')
-        assert self.model.patch_size == patch_size == 14, "DINOv2 model must have patch size 14"
-        self.patch_size = patch_size
-        self.position_getter = PositionGetter()
-
-    def forward(self, image, true_shape):
-        # image shape: B x C x H x W
-        B, C, H, W = image.shape
-
-        # Split the batch into landscape and portrait based on true_shape
-        landscape_mask = true_shape[:, 1] >= true_shape[:, 0]  # width >= height (landscape)
-        portrait_mask = ~landscape_mask  # width < height (portrait)
-
-        # Calculate the number of patches for the largest resolution in the batch
-        true_height = true_shape[:, 0]  # Index 0 is height
-        true_width = true_shape[:, 1]   # Index 1 is width
-        num_patches_h = true_height // self.patch_size
-        num_patches_w = true_width // self.patch_size
-        num_patches = num_patches_h * num_patches_w  # Total number of patches
-
-        # Pre-allocate tensors for the output
-        encoded_feats = torch.empty((B, num_patches.max(), self.model.embed_dim), dtype=next(self.named_parameters())[1].dtype, device=image.device)
-        encoded_pos = torch.empty((B, num_patches.max(), 2), dtype=torch.long, device=image.device)
-
-        # If there are landscape images, process them
-        if landscape_mask.any():
-            landscape_images = image[landscape_mask]
-            landscape_shapes = true_shape[landscape_mask]
-            landscape_features, landscape_pos = self._process_images(landscape_images, landscape_shapes)
-            encoded_feats[landscape_mask] = landscape_features
-            encoded_pos[landscape_mask] = landscape_pos
-
-        # If there are portrait images, process them
-        if portrait_mask.any():
-            portrait_images = image[portrait_mask]
-            portrait_shapes = true_shape[portrait_mask]
-
-            # Transpose the portrait images back to their original orientation
-            portrait_images_transposed = portrait_images.transpose(2, 3)  # HxW -> WxH
-            portrait_features, portrait_pos = self._process_images(portrait_images_transposed, portrait_shapes)
-
-            # Unflatten the features, transpose back to match original batch order, then flatten again
-            num_patches_h = portrait_shapes[:, 0] // self.patch_size  # Use true height
-            num_patches_w = portrait_shapes[:, 1] // self.patch_size  # Use true width
-            B_p, N, D = portrait_features.shape
-
-            # Unflatten the features to (B, num_patches_h, num_patches_w, D)
-            portrait_features_unflattened = portrait_features.view(B_p, num_patches_h[0], num_patches_w[0], D)
-
-            # Transpose back (swap height and width)
-            portrait_features_transposed = portrait_features_unflattened.transpose(1, 2)
-
-            # Flatten again to match the expected shape
-            portrait_features_flattened = portrait_features_transposed.flatten(1, 2)
-
-            # Apply the same operation for positional embeddings (pos)
-            B_p, N, _ = portrait_pos.shape  # Get the shape for pos
-            portrait_pos_unflattened = portrait_pos.view(B_p, num_patches_h[0], num_patches_w[0], 2)
-            portrait_pos_transposed = portrait_pos_unflattened.transpose(1, 2)
-            portrait_pos_flattened = portrait_pos_transposed.flatten(1, 2)
-
-            # Assign the processed features and positional embeddings back
-            encoded_feats[portrait_mask] = portrait_features_flattened
-            encoded_pos[portrait_mask] = portrait_pos_flattened
-
-        return encoded_feats, encoded_pos
-
-    def _process_images(self, images, true_shape):
-        """
-        Process a batch of images through the DINO encoder and compute positions.
-        """
-        # Forward pass through the DINO encoder to get encoded features
-        features = self.model.forward_features(images)['x_norm_patchtokens']  # Shape: B x N_patches x D
-        x = features  # Encoded features
-
-        # Compute positions using PositionGetter
-        true_height = true_shape[:, 0]  # Explicitly assign height
-        true_width = true_shape[:, 1]   # Explicitly assign width
-        num_patches_h = true_height // self.patch_size  # Height patches
-        num_patches_w = true_width // self.patch_size  # Width patches
-        pos = self.position_getter(images.shape[0], num_patches_h[0], num_patches_w[0], images.device)
-
-        return x, pos
-
-
 class Fast3RDecoder(nn.Module):
     def __init__(
-        self,
-        random_image_idx_embedding: bool,
-        enc_embed_dim: int,
-        embed_dim: int = 768,
-        num_heads: int = 12,
-        depth: int = 12,
-        mlp_ratio: float = 4.0,
-        qkv_bias: bool = True,
-        drop: float = 0.0,
-        attn_drop: float = 0.0,
-        attn_implementation: str = "pytorch_naive",
-        attn_bias_for_inference_enabled=True,
-        norm_layer=partial(nn.LayerNorm, eps=1e-6),
+            self,
+            random_image_idx_embedding: bool,
+            enc_embed_dim: int,
+            embed_dim: int = 768,
+            num_heads: int = 12,
+            depth: int = 12,
+            mlp_ratio: float = 4.0,
+            qkv_bias: bool = True,
+            drop: float = 0.0,
+            attn_drop: float = 0.0,
+            attn_implementation: str = "pytorch_naive",
+            attn_bias_for_inference_enabled=True,
+            norm_layer=partial(nn.LayerNorm, eps=1e-6),
     ):
         super(Fast3RDecoder, self).__init__()
 
@@ -803,166 +715,6 @@ class Fast3RDecoder(nn.Module):
             final_output.append(x)
 
         x = self.dec_norm(x)
-        final_output[-1] = x
-
-        return final_output
-
-class LlamaDecoder(nn.Module):
-    def __init__(
-        self,
-        random_image_idx_embedding: bool,
-        enc_embed_dim: int,
-        embed_dim: int = 4096,
-        n_layers: int = 32,
-        n_heads: int = 32,
-        n_kv_heads: Optional[int] = None,
-        multiple_of: int = 256,  # make SwiGLU hidden layer size multiple of large power of 2
-        ffn_dim_multiplier: Optional[float] = None,
-        norm_eps: float = 1e-5,
-        rope_theta: float = 10000,
-        max_seq_len: int = 1000,
-        is_causal: bool = False,  # use bidirectional attention
-        depth_init: bool = True,
-        **kwargs
-    ):
-        super(LlamaDecoder, self).__init__()
-
-        # assign the flags to attributes for later use
-        self.random_image_idx_embedding = random_image_idx_embedding
-        self.rope_theta = rope_theta
-
-        # Compute head dimension
-        self.head_dim = embed_dim // n_heads
-
-        # Precompute freqs_cis
-        self.precomputed_freqs_cis = self._precompute_freqs_cis(max_seq_len=max_seq_len)  # complex64, it is a tensor and not a parameter or buffer because otherwise DeepSpeed will convert it to float32
-
-        # **Learnable embedding for view 0**
-        self.view0_embed = nn.Parameter(torch.zeros(embed_dim))
-        nn.init.normal_(self.view0_embed, mean=0.0, std=0.02)
-
-        # Transfer from encoder to decoder dimensions
-        self.decoder_embed = nn.Linear(enc_embed_dim, embed_dim, bias=True)
-
-        # Initialize Transformer layers
-        self.layers = nn.ModuleList([
-            TransformerBlock(layer_id=i, n_heads=n_heads, n_kv_heads=n_kv_heads, dim=embed_dim, multiple_of=multiple_of,
-                             ffn_dim_multiplier=ffn_dim_multiplier, n_layers=n_layers, is_causal=is_causal, norm_eps=norm_eps, depth_init=depth_init)
-            for i in range(n_layers)
-        ])
-
-        self.norm = RMSNorm(dim=embed_dim, eps=norm_eps)
-
-    def _precompute_freqs_cis(self, max_seq_len) -> torch.Tensor:
-        return precompute_freqs_cis(
-            self.head_dim,
-            # Need to compute until at least the max token limit for generation
-            # (use 2x max sequence length to be safe)
-            max_seq_len,
-            self.rope_theta,
-        )
-
-    def _generate_per_rank_generator(self):
-        # Generate a per-rank random seed
-        per_forward_pass_seed = torch.randint(0, 2 ** 32, (1,)).item()
-        world_rank = torch.distributed.get_rank() if torch.distributed.is_initialized() else 0
-        per_rank_seed = per_forward_pass_seed + world_rank
-
-        # Set the seed for the random generator
-        per_rank_generator = torch.Generator()
-        per_rank_generator.manual_seed(per_rank_seed)
-        return per_rank_generator
-
-    def _get_random_freqs_cis(self, encoded_feats, batch_size, num_views, max_image_idx, device):
-        """
-        Generates freqs_cis for each patch based on random image indices.
-
-        Args:
-            encoded_feats (list of tensors): Encoded features for each view.
-            batch_size (int): Number of samples in the batch.
-            num_views (int): Number of views per sample.
-            max_image_idx (int): Maximum image index for embedding.
-            device (torch.device): Device to move data to.
-
-        Returns:
-            torch.Tensor: freqs_cis of shape (batch_size, total_num_patches, head_dim)
-        """
-        # Generate random image IDs (on CPU)
-        image_ids = torch.zeros(batch_size, num_views, dtype=torch.long)
-
-        # First view is always 0 for all samples
-        image_ids[:, 0] = 0
-
-        # Get a generator that is unique to each rank
-        per_rank_generator = self._generate_per_rank_generator()
-
-        # Generate random IDs for the remaining views
-        for b in range(batch_size):
-            # Use the torch.Generator for randomness
-            random_ids = torch.randperm(max_image_idx, generator=per_rank_generator)[:num_views - 1] + 1
-            image_ids[b, 1:] = random_ids
-
-        # Move the image IDs to the correct device
-        image_ids = image_ids.to(device)
-        self.precomputed_freqs_cis = self.precomputed_freqs_cis.to(device)
-
-        # Initialize list to store positional embeddings for all views
-        freqs_cis_list = []
-
-        for i in range(num_views):
-            # Retrieve the number of patches for this view
-            num_patches = encoded_feats[i].shape[1]
-
-            # Gather the positional embeddings for the entire batch based on the random image IDs
-            freqs_cis_for_view = self.precomputed_freqs_cis[image_ids[:, i]]  # (B, D)
-
-            # Expand the positional embeddings to match the number of patches
-            freqs_cis_for_view = freqs_cis_for_view.unsqueeze(1).repeat(1, num_patches, 1)  # (B, Npatches, D)
-
-            freqs_cis_list.append(freqs_cis_for_view)
-
-        # Concatenate positional embeddings for all views along the patch dimension
-        freqs_cis = torch.cat(freqs_cis_list, dim=1)  # (B, Npatches_total, D)
-
-        return freqs_cis
-
-    def forward(self, encoded_feats, positions, image_ids):
-        x = torch.cat(encoded_feats, dim=1)  # Concatenate along the patch dimension
-        pos = torch.cat(positions, dim=1)
-        batch_size = x.shape[0]
-        device = x.device
-
-        x = self.decoder_embed(x)
-
-        # Generate freqs_cis based on image_ids
-        if self.random_image_idx_embedding:
-            freqs_cis = self._get_random_freqs_cis(
-                encoded_feats=encoded_feats,
-                batch_size=batch_size,
-                num_views=len(encoded_feats),
-                max_image_idx=self.precomputed_freqs_cis.shape[0] - 1,
-                device=device
-            )
-        else:
-            # Use image_ids to index into precomputed_freqs_cis
-            num_images = (torch.max(image_ids) + 1).cpu().item()
-            self.precomputed_freqs_cis = self.precomputed_freqs_cis.to(device=device)
-            image_idx_emb = self.precomputed_freqs_cis[:num_images]
-            freqs_cis = image_idx_emb[image_ids]
-
-        # Create a mask for view 0 patches
-        view0_mask = (image_ids == 0).unsqueeze(-1).float()  # Shape: (batch_size, total_num_patches, 1)
-
-        final_output = [x]
-
-        for layer in self.layers:
-            # Add the view0_embedding to the features of view 0 before each transformer layer
-            x = x + view0_mask * self.view0_embed  # Broadcasts self.view0_embed over the last dimension
-
-            x = layer(x, freqs_cis)
-            final_output.append(x)
-
-        x = self.norm(x)
         final_output[-1] = x
 
         return final_output
