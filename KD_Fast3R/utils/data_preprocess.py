@@ -16,10 +16,12 @@ def _load_process_image_cv2(img_path, size=256):
         print(img_path)
         return
     img = cv2.resize(img, (size, size * 3 // 4))  # 이미지를 256, 192로 resize한 상태로 받은 후 다시 한 번 점검
-    img = img.astype(np.float32) / 255.0 * 2 - 1  # [-1, 1]로 정규화
-    img = torch.from_numpy(img).float().permute(2, 0, 1)  # (H, W, C) -> (C, H, W)
 
-    return img
+    img_color = img.astype(np.float32) / 255.0  # [0, 1]로 정규화
+    img_tensor = img.astype(np.float32) / 255.0 * 2 - 1  # [-1, 1]로 정규화
+    img_tensor = torch.from_numpy(img_tensor).float().permute(2, 0, 1)  # (H, W, C) -> (C, H, W)
+
+    return img_tensor, img_color
 
 
 def batch_images_load(rooms_path,
@@ -50,6 +52,7 @@ def batch_images_load(rooms_path,
     supported_images_extensions = [".jpg", ".jpeg", ".png"]  # 이미지의 확장자를 제한
     rooms = list()
     imgs = [list() for _ in range(sample)]  # 샘플 개수만큼 미리 생성
+    colors = [list() for _ in range(sample)]
 
     if rooms_name is None:
         assert batch_size == 1, 'batch size must be 1'
@@ -76,9 +79,10 @@ def batch_images_load(rooms_path,
         # 전처리 완료후 저장
         for future in concurrent.futures.as_completed(future_to_img):
             idx = future_to_img[future]
-            img = future.result()
+            img, color = future.result()
             imgs[idx].append(
                 dict(img=img, true_shape=torch.from_numpy(np.int32([size * 3 // 4, size])), idx=idx, instance=str(idx)))
+            colors[idx].append(color)
 
     # Fast3R 모델에서 원하는 데이터 타입으로 형태를 변경
     for image in imgs:
@@ -89,4 +93,4 @@ def batch_images_load(rooms_path,
             'instance': [d['instance'] for d in image],
         })
 
-    return rooms
+    return rooms, colors
