@@ -60,13 +60,20 @@ def viz(pc, server, path, size=(512, 384)):
     
     # SPR 수행
     vertices, colors = spr(xyz, rgb)
+
+    server.scene.add_point_cloud(
+        name="생성 포인트 클라우드1",
+        points=vertices,
+        colors=colors,
+        point_size=0.001
+    )
     
     # SPR 2번 수행
     vertices, colors = spr(vertices, colors)
     
     # SPR 결과 시각화
     server.scene.add_point_cloud(
-        name="생성 포인트 클라우드",
+        name="생성 포인트 클라우드2",
         points=vertices,
         colors=colors,
         point_size=0.001
