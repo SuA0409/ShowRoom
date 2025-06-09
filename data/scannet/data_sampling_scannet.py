@@ -2,106 +2,118 @@ import os
 import shutil
 import re
 
-## 경로 및 변수 설정
-SRC_ROOT = r'E:\scannet\data_download\data'
-BASE_DST_ROOT = r'G:\내 드라이브\Scannet++\data_scannet_fin'
-DSX_ROOT = r'G:\내 드라이브\Scannet++'
-TXT_PATH = os.path.join(DSX_ROOT, 'processed_rooms_4.txt')
-MIN_IMAGE_COUNT = 20        # 최소 이미지 개수 조건
-SET_IMAGE_COUNT = 5         # 한 세트에 포함될 이미지 개수
-FOLDER_SPLIT_SIZE = 4000    # 폴더를 나눌 기준 개수 (4000개 단위로 새 폴더 생성)
 
-## 유틸 함수
-# 파일명에서 숫자 추출
-def extract_number(filename):
-    match = re.search(r'\d+', filename)
-    return int(match.group()) if match else -1
+class ScannetRoomProcessor:
+    def __init__(self, src_root, dst_root_base, txt_path,
+                 min_image_count=20, set_image_count=5, folder_split_size=4000):
+        self.src_root = src_root
+        self.dst_root_base = dst_root_base
+        self.txt_path = txt_path
+        self.min_image_count = min_image_count        # 최소 이미지 개수 조건
+        self.set_image_count = set_image_count        # 한 세트에 포함될 이미지 개수
+        self.folder_split_size = folder_split_size    # 폴더를 나눌 기준 개수 (4000개 단위로 새 폴더 생성)
+        self.processed_rooms = self._load_processed_rooms()
+        self.current_upper_idx = 10                   # 저장 폴더 인덱스 시작값
+        self.dst_root = self._ensure_dst_root()       # 현재 상위 저장 폴더 경로
+        self.folder_idx = self._get_initial_folder_idx()  # 하위 폴더 시작 인덱스
 
-# 처리된 방 목록 불러오기
-def load_processed_rooms(txt_path):
-    if os.path.exists(txt_path):
-        with open(txt_path, 'r') as f:
-            return set(line.strip() for line in f if line.strip())
-    return set()
+    # 처리된 방 목록 불러오기
+    def _load_processed_rooms(self):
+        if os.path.exists(self.txt_path):
+            with open(self.txt_path, 'r') as f:
+                return set(line.strip() for line in f if line.strip())
+        return set()
 
-# 처리 완료된 방 텍스트 파일에 저장(중복 방지)
-def save_processed_room(txt_path, room):
-    with open(txt_path, 'a') as f:
-        f.write(f"{room}\n")
+    # 처리 완료된 방 텍스트 파일에 저장(중복 방지)
+    def _save_processed_room(self, room):
+        with open(self.txt_path, 'a') as f:
+            f.write(f"{room}\n")
 
-# 새 결과 저장 폴더
-def ensure_dst_root(base_dst_root, current_upper_idx):
-    dst_root = os.path.join(base_dst_root, f'data_scannet_r_{current_upper_idx}')
-    os.makedirs(dst_root, exist_ok=True)
-    return dst_root
-
-# 이미지 파일 복사
-def copy_images(image_dir, image_files, indices, dst_folder):
-    os.makedirs(dst_folder, exist_ok=True)
-    for idx in indices:
-        file = image_files[idx]
-        shutil.copy(os.path.join(image_dir, file), os.path.join(dst_folder, file))
-
-## 메인 함수
-# 전체 방 폴더 순회, 이미지 샘플링 및 복사
-def process_rooms(src_root, base_dst_root, txt_path):
-    processed_rooms = load_processed_rooms(txt_path)
-    room_folders = sorted(os.listdir(src_root))
-
-    current_upper_idx = 10
-    dst_root = ensure_dst_root(base_dst_root, current_upper_idx)
+    # 새 결과 저장 폴더
+    def _ensure_dst_root(self):
+        dst_root = os.path.join(self.dst_root_base, f'data_scannet_r_{self.current_upper_idx}')
+        os.makedirs(dst_root, exist_ok=True)
+        return dst_root
 
     # 현재 폴더 내 가장 높은 번호를 인덱스로 설정
-    existing_folders = [name for name in os.listdir(dst_root) if name.isdigit()]
-    folder_idx = max([int(name) for name in existing_folders], default=0) + 1
+    def _get_initial_folder_idx(self):
+        existing = [name for name in os.listdir(self.dst_root) if name.isdigit()]
+        return max([int(name) for name in existing], default=0) + 1
 
-    for room in room_folders:
-        if room in processed_rooms:
-            continue
+    # 이미지 파일 복사
+    def _copy_images(self, image_dir, image_files, indices, dst_folder):
+        os.makedirs(dst_folder, exist_ok=True)
+        for idx in indices:
+            src_file = os.path.join(image_dir, image_files[idx])
+            dst_file = os.path.join(dst_folder, image_files[idx])
+            shutil.copy(src_file, dst_file)
 
-        image_dir = os.path.join(src_root, room, 'dslr', 'resized_undistorted_images')
-        if not os.path.isdir(image_dir):
-            continue
+    # 파일명에서 숫자 추출
+    def _extract_number(self, filename):
+        match = re.search(r'\d+', filename)
+        return int(match.group()) if match else -1
 
-        image_files = [f for f in os.listdir(image_dir) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
-        total = len(image_files)
+    # 전체 방 폴더 순회, 이미지 샘플링 및 복사
+    def process_all(self):
+        for room in sorted(os.listdir(self.src_root)):
+            if room in self.processed_rooms:
+                continue
+            self._process_room(room)
+        print("모든 작업 완료!")
 
-        if total < MIN_IMAGE_COUNT:
-            print(f" {room} 폴더는 이미지가 부족하여 건너뜀 ({total}장)")
-            continue
+    # 개별 방 처리
+    def _process_room(self, room):
+    image_dir = os.path.join(self.src_root, room, 'dslr', 'resized_undistorted_images')
+    if not os.path.isdir(image_dir):
+        return
 
-        # 샘플링을 위한 간격    
-        k = total // SET_IMAGE_COUNT
-        num_sets = total // (SET_IMAGE_COUNT * 4)
-        if num_sets == 0:
-            continue
-        p = k // num_sets
+    image_files = sorted(
+        [f for f in os.listdir(image_dir) if f.lower().endswith(('.jpg', '.jpeg', '.png'))],
+        key=self._extract_number
+    )
+    total_images = len(image_files)
 
-        # 이미지 샘플링
-        for j in range(p):
-            base_idx = j * (k + num_sets)
-            for i in range(num_sets):
-                base_idx += 1
-                indices = [base_idx + t * num_sets for t in range(SET_IMAGE_COUNT)]
+    if total_images < self.min_image_count:
+        print(f" {room} 폴더는 이미지가 부족하여 건너뜀 ({total_images}장)")
+        return
 
-                if indices[-1] >= total:
-                    continue
+    # 샘플링 간격: 한 세트를 구성할 수 있는 최소 간격 계산
+    sampling_interval = total_images // (self.set_image_count * 4)
+    if sampling_interval == 0:
+        return
 
-                dst_folder = os.path.join(dst_root, str(folder_idx))
-                copy_images(image_dir, image_files, indices, dst_folder)
+    # 한 간격당 이미지 5장씩 건너뛰며 뽑을 수 있는 반복 횟수
+    total_span = total_images // self.set_image_count
+    num_iterations = total_span // sampling_interval
 
-                # 지정된 개수마다 상위 폴더 인덱스 증가
-                if folder_idx % FOLDER_SPLIT_SIZE == 0:
-                    current_upper_idx += 1
-                    dst_root = ensure_dst_root(base_dst_root, current_upper_idx)
+    for iter_idx in range(num_iterations):
+        start_base = iter_idx * (sampling_interval + total_span)
+        for offset in range(sampling_interval):
+            base_idx = start_base + offset + 1  # 시작점 보정
 
-                folder_idx += 1
+            indices = [
+                base_idx + t * sampling_interval for t in range(self.set_image_count)
+            ]
+            if indices[-1] >= total_images:
+                continue
 
-        save_processed_room(txt_path, room)
-        print(f" {room} 완료: {folder_idx}번까지 생성됨")
+            dst_folder = os.path.join(self.dst_root, str(self.folder_idx))
+            self._copy_images(image_dir, image_files, indices, dst_folder)
 
-    print("모든 작업 완료!")
+            if self.folder_idx % self.folder_split_size == 0:
+                self.current_upper_idx += 1
+                self.dst_root = self._ensure_dst_root()
 
-## 실행
+            self.folder_idx += 1
+
+    self._save_processed_room(room)
+    print(f" {room} 완료: {self.folder_idx}번까지 생성됨")
+
+
 if __name__ == '__main__':
-    process_rooms(SRC_ROOT, BASE_DST_ROOT, TXT_PATH)
+    processor = ScannetRoomProcessor(
+        src_root=r'E:\scannet\data_download\data',
+        dst_root_base=r'G:\내 드라이브\Scannet++\data_scannet_fin',
+        txt_path=r'G:\내 드라이브\Scannet++\processed_rooms_4.txt'
+    )
+    processor.process_all()
