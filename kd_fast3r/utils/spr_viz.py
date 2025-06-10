@@ -103,7 +103,7 @@ def more_spr(vertices, colors, depth=9, server):
 '''
 
 # 사용 예:
-from KD_Fast3R.utils import make_server, viz
+from kd_fast3r.utils import make_server, viz
 
 url, server = make_server('your token') # url과 server 받아옴
 pc = np.load(pc_ndarray) # pc 인풋 가져옴(fast3r 출력값)
