@@ -9,9 +9,8 @@
   },
   "web_accessible_resources": [{
     "resources": [
-      "sounds/cat.mp3",
-      "icons/cube.png",
-      "icons/comment.svg"
+      "sounds/coin.mp3",
+      "icons/loading.gif"
     ],
     "matches": ["<all_urls>"]
   }],

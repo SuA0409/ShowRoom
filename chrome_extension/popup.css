@@ -255,3 +255,47 @@ body {
 .close-btn:hover {
   color: #333;
 }
+
+.btn-showroom-2d {
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-showroom-2d:hover:not(:disabled) {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+.btn-showroom-2d:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ★ 로딩 GIF 컨테이너 숨김 & 위치 조정 */
+#loading-container {
+  display: none;
+  position: relative;      /* 자식 절대 위치 기준 */
+  width: 100%;             /* 팝업 폭 전체 */
+  height: 240px;           /* 충분한 세로 공간 확보 */
+  margin: 12px 0;
+  background: rgba(0,0,0,0.05); /* 은은한 배경 */
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* ★ 로딩 GIF 이미지 스타일 */
+#loading-container img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  /* 컨테이너에 꽉 차도록 채우기 (원본 종횡비 유지) */
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+
+  /* 그림자 효과 */
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+}
