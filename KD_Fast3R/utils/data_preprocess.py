@@ -88,7 +88,7 @@ def batch_images_load(rooms_path,
     for image in imgs:
         rooms.append({
             'img': torch.stack([d['img'] for d in image], dim=0),
-            'true_shape': torch.stack([d['true_shape'] for d in image]).squeeze(),
+            'true_shape': torch.stack([d['true_shape'] for d in image]),
             'idx': [d['idx'] for d in image],
             'instance': [d['instance'] for d in image],
         })
