@@ -1,18 +1,18 @@
 document.addEventListener('DOMContentLoaded', () => {
+  // 공통: 효과음
   const clickSound = document.getElementById('click-sound');
 
-  // ── [공통 서버 주소 상수] ──
-  const SERVER_BASE_URL = 'https://0aaa-34-87-21-83.ngrok-free.app';
+  // 서버 주소
+  const SERVER_BASE_URL = 'https://4f8d-34-87-1-83.ngrok-free.app';
 
-  // ── 0) 닫기 버튼 동작 ──
+  // 닫기 버튼
   const closeBtn = document.getElementById('close-popup');
+  const loadingContainer = document.getElementById('loading-container');
   if (closeBtn) {
-    closeBtn.addEventListener('click', () => {
-      window.close();
-    });
+    closeBtn.addEventListener('click', () => window.close());
   }
 
-  // ── 0-2) ShowRoom 로고 버튼 클릭 시 이동할 URL 설정 ──
+  // (옵션) 로고 버튼
   const logoBtn = document.getElementById('logo-button');
   if (logoBtn) {
     logoBtn.addEventListener('click', () => {
@@ -22,28 +22,27 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ── 1) 3D 변환 페이지 전용 요소 ──
+  // 3D 변환 관련 버튼
   const convertBtn = document.getElementById('convert');
+  // 2D 생성 버튼
+  const create2DBtn = document.getElementById('create-2d');
+  // 상태 표시 엘리먼트
   const status = document.getElementById('status');
-
-  // ── 2) 댓글 요약 페이지 전용 요소 ──
+  // 리뷰 요약 버튼
   const analyzeBtn = document.getElementById('analyze-review');
-
-  // ── 3) 공통 요소 ──
+  // 공통 버튼: 토글, 댓글 이동, 뒤로가기
   const toggleBtn = document.getElementById('toggle');
   const gotoBtn = document.getElementById('goto-comments');
   const backBtn = document.getElementById('back');
 
-  // ── 썸네일 렌더링 함수 ──
+  // 썸네일 렌더링 함수
   function renderThumbnails(images) {
     const container = document.getElementById('selected-thumbnails');
     const countEl = document.getElementById('selected-count');
     if (!container) return;
 
     container.innerHTML = '';
-    if (countEl) {
-      countEl.textContent = `선택된 이미지: ${images.length}장`;
-    }
+    if (countEl) countEl.textContent = `선택된 이미지: ${images.length}장`;
 
     images.forEach(src => {
       const img = document.createElement('img');
@@ -59,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ── 4) 3D 변환 페이지 로직 ──
+  // 3D 변환 버튼 초기화 및 페이지 로직
   if (convertBtn) {
     const wrapper = convertBtn.parentElement;
     wrapper.addEventListener('click', () => {
@@ -92,6 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // 3D 변환 요청 셋업 함수
   function setupConvertButton(tabId) {
     convertBtn.replaceWith(convertBtn.cloneNode(true));
     const newBtn = document.getElementById('convert');
@@ -101,61 +101,108 @@ document.addEventListener('DOMContentLoaded', () => {
       clickSound.currentTime = 0;
       clickSound.play();
 
-      chrome.tabs.sendMessage(tabId, { action: 'getImages' }, async (images) => {
-        if (chrome.runtime.lastError) {
-          console.error('선택된 이미지 요청 실패:', chrome.runtime.lastError.message);
-          alert('선택된 이미지를 다시 가져올 수 없습니다.');
-          return;
-        }
-        if (!Array.isArray(images) || images.length < 3) {
-          alert('최소 3장의 이미지를 선택해야 합니다.');
-          return;
-        }
+      if (loadingContainer) loadingContainer.style.display = 'block';
 
-        renderThumbnails(images);
-
-        try {
-          const res = await fetch(`${SERVER_BASE_URL}/upload`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'ngrok-skip-browser-warning': 'true'
-            },
-            body: JSON.stringify({ images })
-          });
-          const data = await res.json();
-
-          if (data.status === 'success') {
-            showStatus('✅ 3D 변환 요청이 성공적으로 전송되었습니다!', true);
-          } else {
-            showStatus('❌ 3D 변환 요청 중 오류가 발생했습니다.', false);
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'getImages' }, async (images) => {
+          if (chrome.runtime.lastError) {
+            console.error('선택된 이미지 요청 실패:', chrome.runtime.lastError.message);
+            alert('선택된 이미지를 다시 가져올 수 없습니다.');
+            return;
           }
-        } catch (err) {
-          console.error('3D 변환 요청 중 오류:', err);
-          showStatus('❌ 서버 통신 오류가 발생했습니다.', false);
-        }
+          if (!Array.isArray(images) || images.length < 3) {
+            alert('최소 3장의 이미지를 선택해야 합니다.');
+            return;
+          }
+
+          renderThumbnails(images);
+
+          try {
+            const res = await fetch(`${SERVER_BASE_URL}/3d_upload`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': 'true'
+              },
+              body: JSON.stringify({ images })
+            });
+            const data = await res.json();
+
+            if (data.status === 'success') {
+              showStatus('✅ Fast3R 처리 완료 응답 받음!', true);
+              console.log('✅ Fast3R 응답:', data);
+
+              // 2D 버튼 활성화
+              if (create2DBtn) {
+                create2DBtn.disabled = false;
+                create2DBtn.setAttribute('data-tooltip', '선택된 이미지 2D 재생성');
+              }
+            } else {
+              showStatus('❌ Fast3R 처리 중 오류가 발생했습니다.', false);
+            }
+          } catch (err) {
+            console.error('Fast3R 요청 중 오류:', err);
+            showStatus('❌ 서버 통신 오류가 발생했습니다.', false);
+          } finally {
+            if (loadingContainer) loadingContainer.style.display = 'none';
+          }
+        });
       });
     });
   }
 
-  // ── 5) 상태 메시지 표시 함수 ──
+  // 2D 생성 버튼 클릭 이벤트
+  if (create2DBtn) {
+    create2DBtn.addEventListener('click', async () => {
+      clickSound.currentTime = 0;
+      clickSound.play();
+
+      if (loadingContainer) loadingContainer.style.display = 'block';
+
+      create2DBtn.disabled = true;
+      create2DBtn.innerHTML  = '2D<br>생성 중...';
+
+      try {
+        const res = await fetch(`${SERVER_BASE_URL}/2d_upload`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true'
+          },
+          body: JSON.stringify({})
+        });
+        const data = await res.json();
+
+        if (data.status === 'success') {
+          showStatus('✅ 2D 생성 완료!', true);
+          console.log('✅ 2D 생성 응답:', data);
+        } else {
+          showStatus('❌ 2D 생성 중 오류 발생.', false);
+        }
+      } catch (err) {
+        console.error('2D 생성 요청 중 오류:', err);
+        showStatus('❌ 2D 생성 중 서버 오류.', false);
+      } finally {
+        if (loadingContainer) loadingContainer.style.display = 'none';
+        create2DBtn.disabled = false;
+        create2DBtn.textContent = '2D 생성';
+      }
+    });
+  }
+
+  // 상태 표시 함수
   function showStatus(message, isSuccess = true) {
     const statusEl = document.getElementById('status');
     statusEl.textContent = message;
     statusEl.className = isSuccess ? 'success' : 'error';
     statusEl.style.display = 'block';
-    setTimeout(() => {
-      statusEl.style.display = 'none';
-    }, 3000);
+    setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
   }
 
-  // ── 6) 댓글 요약 페이지 로직 ──
+  // 리뷰 요약 로직
   if (analyzeBtn) {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      const tab = tabs[0];
-      if (tab.url.includes('airbnb.co.kr/rooms/')) {
-        analyzeBtn.disabled = false;
-      }
+      if (tabs[0].url.includes('airbnb.co.kr/rooms/')) analyzeBtn.disabled = false;
     });
 
     analyzeBtn.addEventListener('click', () => {
@@ -179,30 +226,24 @@ document.addEventListener('DOMContentLoaded', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url })
         })
-        .then(res => res.json())
-        .then(data => {
-          if (data.view_url) {
-            window.open(data.view_url, '_blank');
-          } else {
-            showStatus('❌ 분석 실패: ' + (data.error || 'Unknown error'), false);
-          }
-        })
-        .catch(e => {
-          showStatus('❌ 서버 오류: ' + e, false);
-        })
-        .finally(() => {
-          analyzeBtn.disabled = false;
-          analyzeBtn.textContent = '댓글 요약 시작';
-        });
+          .then(res => res.json())
+          .then(data => {
+            if (data.view_url) window.open(data.view_url, '_blank');
+            else showStatus('❌ 분석 실패: ' + (data.error || 'Unknown error'), false);
+          })
+          .catch(e => showStatus('❌ 서버 오류: ' + e, false))
+          .finally(() => {
+            analyzeBtn.disabled = false;
+            analyzeBtn.textContent = '댓글 요약 시작';
+          });
       });
     });
   }
 
-  // ── 7) 기능 토글 버튼 로직 ──
+  // 기능 토글 버튼
   if (toggleBtn) {
     chrome.storage.local.get('enabled', data => {
-      const isOn = !!data.enabled;
-      toggleBtn.textContent = isOn ? 'off' : 'on';
+      toggleBtn.textContent = data.enabled ? 'off' : 'on';
     });
 
     toggleBtn.addEventListener('click', () => {
@@ -218,15 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ── 8) 페이지 간 네비게이션(댓글→3D, 3D→댓글) ──
-  if (gotoBtn) {
-    gotoBtn.addEventListener('click', () => {
-      window.location.href = 'popup2.html';
-    });
-  }
-  if (backBtn) {
-    backBtn.addEventListener('click', () => {
-      window.location.href = 'popup.html';
-    });
-  }
+  // 페이지 이동 버튼
+  if (gotoBtn) gotoBtn.addEventListener('click', () => window.location.href = 'popup2.html');
+  if (backBtn) backBtn.addEventListener('click', () => window.location.href = 'popup.html');
 });
