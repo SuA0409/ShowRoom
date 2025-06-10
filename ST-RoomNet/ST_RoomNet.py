@@ -156,10 +156,12 @@ class ShowRoomProcessor:
         # Theta만 별도로 뽑아내기 위한 서브 모델
         self.theta_model = Model(inputs=base_model.input, outputs=theta_layer)
     
-    def is_front_view(self, layout_mask: np.ndarray, 
-                     class_id: Optional[int] = None,
-                     center_threshold: Optional[float] = None, 
-                     pixel_threshold: Optional[int] = None) -> bool:
+    def is_front_view(self,
+                      layout_mask: np.ndarray, 
+                      class_id: Optional[int] = None,
+                      center_threshold: Optional[float] = None, 
+                      pixel_threshold: Optional[int] = None,
+                      ) -> bool:
         """
         주어진 layout segmentation을 기반으로 이미지가 정면인지 판별
 
@@ -227,7 +229,10 @@ class ShowRoomProcessor:
         direction = pose[:3, 2] # irection: 행렬의 (0:3,2) 칼럼 (Z축) / 반환 좌표계 기준으로
         return position, direction / np.linalg.norm(direction)
 
-    def compute_relative_angle(self, pose1: np.ndarray, pose2: np.ndarray) -> float:
+    def compute_relative_angle(self,
+                               pose1: np.ndarray,
+                               pose2: np.ndarray,
+                               ) -> float:
         """
         두 카메라 pose 간의 시점 벡터 간 각도를 계산 (deg)
 
@@ -250,7 +255,10 @@ class ShowRoomProcessor:
         angle_deg = np.degrees(angle_rad)
         return angle_deg
 
-    def determine_relative_side(self, pose1: np.ndarray, pose2: np.ndarray) -> str:
+    def determine_relative_side(self,
+                                pose1: np.ndarray,
+                                pose2: np.ndarray,
+                                ) -> str:
         """
         두 카메라의 상대적 위치를 기준으로 왼쪽 또는 오른쪽 방향 판별
 
@@ -277,7 +285,9 @@ class ShowRoomProcessor:
         return 'left' if direction_indicator > 0 else 'right'
 
     @staticmethod
-    def get_class_area(layout_seg: np.ndarray, class_id: int) -> int:
+    def get_class_area(layout_seg: np.ndarray,
+                       class_id: int,
+                       ) -> int:
         """
         layout segmentation에서 주어진 클래스의 면적(픽셀 수)을 계산
 
@@ -291,8 +301,14 @@ class ShowRoomProcessor:
         
         return np.sum(layout_seg == class_id)
 
-    def decide_regeneration_from_angle_and_side(self, layout1: np.ndarray, layout2: np.ndarray, 
-                                              angle: float, side: str, z1: str, z2: str) -> Union[str, Tuple[str, str]]:
+    def decide_regeneration_from_angle_and_side(self,
+                                                layout1: np.ndarray,
+                                                layout2: np.ndarray, 
+                                                angle: float,
+                                                side: str,
+                                                z1: str,
+                                                z2: str,
+                                                ) -> Union[str, Tuple[str, str]]:
         """
         두 정면 이미지 간의 시점 각도 및 위치를 기반으로 재생성 이미지 방향을 결정
 
