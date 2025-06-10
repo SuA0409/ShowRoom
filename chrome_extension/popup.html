@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>3D 재생성</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <!-- 팝업 컨테이너 -->
+  <div class="popup-container">
+
+    <!-- 닫기 버튼 -->
+    <button id="close-popup" class="close-btn" aria-label="팝업 닫기">✕</button>
+
+    <!-- 헤더 -->
+    <header class="popup-header">
+      <h3>🏠ShowRoom</h3>
+      <p id="instruction">최소 3장의 이미지를 선택해야 합니다.</p>
+    </header>
+
+    <!-- 선택된 이미지 개수 표시 -->
+    <div class="count-section">
+      <span id="selected-count">선택된 이미지: 0장</span>
+    </div>
+
+    <!-- 썸네일 영역 -->
+    <section class="thumbnail-section">
+      <div id="selected-thumbnails" class="thumbnail-container">
+        <!-- JavaScript로 썸네일이 동적으로 추가됩니다 -->
+      </div>
+    </section>
+
+    <!-- 로딩 GIF -->
+    <div id="loading-container">
+      <img id="loading-gif" src="icons/loading.gif" alt="로딩 중..."/>
+    </div>
+
+    <!-- 버튼 그룹 -->
+    <section class="button-section">
+      <div class="button-group">
+        <!-- 3D 변환 버튼 -->
+        <button id="convert" class="btn-showroom-cube" data-tooltip="선택된 이미지를 3D로 변환" disabled>
+          <img src="icons/cube.png" alt="큐브 아이콘" class="cube-icon">
+        </button>
+
+        <!-- 2D 생성 버튼 (새로 추가된 부분) -->
+        <button id="create-2d"
+              class="btn-showroom-2d"
+              data-tooltip="3D 생성을 최소 1회 진행해 주세요."
+              disabled>
+          2D 생성
+        </button>
+
+        <!-- 이미지 선택 모드 토글 버튼 -->
+        <button id="toggle" data-tooltip="Airbnb 이미지 선택 모드 on/off">
+          on
+        </button>
+
+        <!-- 리뷰 화면 이동 버튼 -->
+        <button id="goto-comments" class="btn-showroom-text" data-tooltip="리뷰 화면으로 이동">
+          review
+        </button>
+      </div>
+    </section>
+
+    <!-- 상태 메시지 영역 -->
+    <footer class="status-section">
+      <p id="status"></p>
+    </footer>
+  </div>
+
+  <!-- 클릭 효과음 -->
+  <audio id="click-sound" src="sounds/coin.mp3"></audio>
+
+  <!-- JavaScript 파일 연결 -->
+  <script src="popup.js"></script>
+</body>
+</html>
