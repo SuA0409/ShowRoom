@@ -11,14 +11,14 @@ app = create_ngrok_flask_app(token="2xwkthyPz15CsSbartjgnt9aQde_3RoEvuB7Mz7oHHzu
 @app.route('/2d_upload', methods=['POST'])
 def handle_2d_request():
     try:
-        print("🔔 ST-RoomNet 실행 시작!")
+        print("🔔 ST_RoomNet 실행 시작!")
         subprocess.run(
     ["python", "ST_RoomNet.py"],
-    cwd="/content/drive/MyDrive/Final_Server/2d_server/ST-RoomNet",
+    cwd="/content/drive/MyDrive/Final_Server/2d_server/ST_RoomNet",
     check=True
 )
 
-        print("✅ ST-RoomNet 실행 완료!")
+        print("✅ ST_RoomNet 실행 완료!")
 
         print("🔔 rotate_and_inpainting.py 실행 시작!")
         subprocess.run(

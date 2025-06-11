@@ -50,7 +50,7 @@ poses_map = {name: pose for name, pose in zip(img_names, pose_list)}
 
 # 기준 이미지(ref_img2.png) 불러오기
 # Colab 환경에 'ref_img2.png' 를 업로드해두거나, Drive와 연동해 경로 지정해 주세요.
-ref_img_path = '/content/drive/MyDrive/Final_Server/2d/ST-RoomNet/ref_img2.png'
+ref_img_path = '/content/drive/MyDrive/Final_Server/2d/ST_RoomNet/ref_img2.png'
 if not os.path.exists(ref_img_path):
     raise FileNotFoundError(f"{ref_img_path} 파일을 Colab 환경에 업로드하셨는지 확인하세요.")
 
@@ -85,7 +85,7 @@ model = Model(inputs=base_model.input, outputs=stl)
 
 # 사전에 학습된 가중치(.h5) 불러오기
 # Colab 환경에 Weight_ST_RroomNet_ConvNext.h5 를 업로드하거나 Drive 연동 후 경로 수정하세요.
-weight_path = '/content/drive/MyDrive/Final_Server/2d/ST-RoomNet/weights/Weight_ST_RroomNet_ConvNext.h5'
+weight_path = '/content/drive/MyDrive/Final_Server/2d/ST_RoomNet/weights/Weight_ST_RroomNet_ConvNext.h5'
 if not os.path.exists(weight_path):
     raise FileNotFoundError(f"{weight_path} 파일을 Colab 환경에 업로드하셨는지 확인하세요.")
 

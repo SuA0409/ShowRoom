@@ -88,17 +88,17 @@ class ServerMaker:
                 return jsonify({"status": "fail", "error": str(e)})
 
     def set_2d(self,
-               st_room_net_path='/content/drive/MyDrive/Final_Server/2d_server/ST-RoomNet',
+               st_room_net_path='/content/drive/MyDrive/Final_Server/2d_server/ST_RoomNet',
                sd_path='/content/drive/MyDrive/Final_Server/2d_server/'
                ):
         @self.app.route('/2d_upload', methods=['POST'])
         def handle_2d_request():
             try:
-                print(" ST-RoomNet 실행 시작!")
+                print(" ST_RoomNet 실행 시작!")
                 processor = ShowRoomProcessor()
                 processor.process()
 
-                print(" ST-RoomNet 실행 완료!")
+                print(" ST_RoomNet 실행 완료!")
 
                 print(" rotate_and_inpainting.py 실행 시작!")
                 sd_main()
