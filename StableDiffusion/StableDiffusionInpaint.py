@@ -8,6 +8,13 @@ from PIL import Image
 from diffusers import StableDiffusionInpaintPipeline, EulerAncestralDiscreteScheduler
 from torch import autocast
 
+torch.backends.cudnn.benchmark = True
+
+# 경로 설정
+image_input = '/content/drive/MyDrive/Colab Notebooks/Images'
+st_result_txt = '/content/drive/MyDrive/Colab Notebooks/Images/ST_result.txt'
+
+
 class SimpleRotator:
     """
     SimpleRotator 클래스는 2D 이미지를 3D 공간에서 회전시키고
@@ -19,7 +26,6 @@ class SimpleRotator:
     3. 이 과정에서 생긴 빈 영역(out-of-view)을 마스크로 생성합니다.
     4. Stable Diffusion Inpainting 모델을 사용하여 생성된 마스크 영역을 자연스럽게 채웁니다.
     """
-
     def __init__(self, device='cuda', max_depth_m=5.0, depth_model='MiDaS_small'):
         '''
         클래스 초기화 함수, 필요한 모델들을 로드하고 초기 설정을 수행
@@ -34,7 +40,6 @@ class SimpleRotator:
         self.max_depth_m = max_depth_m
 
         # MiDaS 깊이 예측 모델 로딩
-        print("[*] MiDaS_small을 로컬 캐시에서 불러옵니다...")
         self.midas = torch.hub.load(
             "intel-isl/MiDaS",
             depth_model,
@@ -54,10 +59,8 @@ class SimpleRotator:
             self.transform = trans.small_transform
         else:
             self.transform = trans.dpt_transform
-        print("[✓] MiDaS_small 로드 완료.")
 
         # Stable Diffusion Inpainting 파이프라인 로딩
-        print("[*] Stable Diffusion Inpainting을 로컬 캐시에서 불러옵니다...")
         self.pipe = StableDiffusionInpaintPipeline.from_pretrained(
             "stabilityai/stable-diffusion-2-inpainting",
             revision="fp16",
@@ -65,7 +68,6 @@ class SimpleRotator:
             safety_checker=None,
             local_files_only=True  # 로컬 캐시에 모델이 없으면 에러 발생
         ).to(self.device)
-        print("[✓] SD Inpainting 로드 완료.")
 
         # 모델 최적화 설정
         self.pipe.enable_attention_slicing()
@@ -90,7 +92,7 @@ class SimpleRotator:
         # 이미지의 높이와 너비 추출
         H, W = img_rgb.shape[:2]
 
-        # MiDaS 모델의 전처리기를 적용하고 텐서를 지정된 디바이스로 이동
+       # MiDaS 모델의 전처리기를 적용하고 텐서를 지정된 디바이스로 이동
         inp = self.transform(img_rgb).to(self.device)
         with torch.no_grad():
             depth = self.midas(inp)
@@ -216,7 +218,7 @@ class SimpleRotator:
         return new_rgb, depth, mask
 
     def inpaint(self, init_image: Image.Image, mask_image: Image.Image,
-                prompt: str, steps: int = 50, guidance: float = 8.5) -> Image.Image:
+            prompt: str, steps: int = 50, guidance: float = 8.5) -> Image.Image:
         '''
         Stable Diffusion Inpainting 파이프라인을 사용하여 이미지의 마스크된 영역을 채웁니다.
         Args:
@@ -239,7 +241,6 @@ class SimpleRotator:
             ).images[0]
         return result
 
-
 def main():
     '''
     메인 실행 함수. 명령줄 인자를 파싱하여 이미지 회전 및 인페인팅 파이프라인을 실행
@@ -255,12 +256,12 @@ def main():
                         default="Extend only the background wall and floor. Do not add new objects or decorations."
                                 "Match color and lighting. Keep everything minimal.")
     parser.add_argument("--st-path", type=str,
-                        default="/content/drive/MyDrive/Final_Server/Input/ST/ST_result.txt")
+                        default=st_result_txt)
     parser.add_argument("--img-folder", type=str,
-                        default="/content/drive/MyDrive/Final_Server/Input/Images")
+                        default=image_input)
     parser.add_argument("--out-folder", type=str,
-                        default="/content/drive/MyDrive/Final_Server/Input/Images")
-    args, unknown = parser.parse_known_args()
+                        default=image_input)
+    args = parser.parse_args()
 
     # 결과물을 저장할 출력 폴더가 없으면 생성
     os.makedirs(args.out_folder, exist_ok=True)
@@ -289,18 +290,16 @@ def main():
             img_id = int(img_id_str)
             direction = int(direction_str)
         except Exception:
-            print(f"잘못된 형식 건너뜀: '{line}' (예상: '<번호> <0,1,2>')")
+            print(f"잘못된 형식 건너뜀: '{line}'")
             continue
 
         # direction 값에 따라 회전할 각도를 리스트로 정의
         if direction == 0:
-            angles = [args.angle]  # +angle만
-        elif direction == 1:
-            angles = [-args.angle]  # -angle만
+            angles = [args.angle] # +angle만
         elif direction == 2:
-            angles = [args.angle, -args.angle]  # +angle, -angle 둘 다
+            angles = [-args.angle] # -angle만
         else:
-            print(f"알 수 없는 direction 값: {direction} (0,1,2만 허용). 건너뜀.")
+            print(f"알 수 없는 direction 값: {direction} (0,2만 허용). 건너뜀.")
             continue
 
         # 입력 이미지 경로를 조합하고 파일 존재 여부 확인
@@ -324,8 +323,6 @@ def main():
             new_rgb, depth, mask = rotator.rotate_frame(img_rgb, angle_deg)
 
             # 회전된 텐서(new_rgb)를 후처리하여 PIL이 다룰 수 있는 NumPy 배열로 변환
-            # [-1, 1] 범위를 [0, 255]로 되돌림
-            # 수정
             out_rgb = ((new_rgb[0].cpu().permute(1, 2, 0) + 1) * 127.5).clamp(0, 255).byte().numpy()
 
             # 마스크 텐서(mask)도 NumPy 배열로 변환
@@ -354,22 +351,7 @@ def main():
             # 최종 결과 이미지를 지정된 경로에 저장
             output_path = os.path.join(args.out_folder, output_filename)
             result.save(output_path)
-            print(f"[완료] 이미지 {img_id}.jpg → 회전 {angle_deg}° → 인페인팅 → 저장: {output_path}")
-
-def init_sd():
-    torch.hub.load("intel-isl/MiDaS", "MiDaS_small", offline=False)
-
-    # transforms는 offline 옵션 없이!
-    torch.hub.load("intel-isl/MiDaS", "transforms")
-
-    # Stable Diffusion Inpainting 다운로드
-    pipe = StableDiffusionInpaintPipeline.from_pretrained(
-        "stabilityai/stable-diffusion-2-inpainting",
-        revision="fp16",
-        torch_dtype=torch.float16,
-        safety_checker=None,
-        local_files_only=False
-    )
+            print(f"이미지 저장: {output_path}")
 
 if __name__ == '__main__':
     main()

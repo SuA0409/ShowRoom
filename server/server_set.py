@@ -17,7 +17,7 @@ def set_2d_server(
 
 def set_3d_server(
         token_3d='2y7j0XIpN1f2A76HJseTWFBqgqI_7Ma2wrEyqoveyw2JMeP6G',
-        token_2d='2xwLYd6T4TFcrLjwgJZpxbDgaOJ_7oCZnw8f4Bkx2sYX3zkGQ',
+        token_viser='2xwLYd6T4TFcrLjwgJZpxbDgaOJ_7oCZnw8f4Bkx2sYX3zkGQ',
         url_type='FAST3R_SERVER_URL',
         json_path='/content/drive/MyDrive/Final_Server/ngrok_path.json',
         model_path='jedyang97/Fast3R_ViT_Large_512',
@@ -26,14 +26,14 @@ def set_3d_server(
         data_path='/content/drive/MyDrive/Final_Server/Input/Pts/fast3r_output.npz',
         info=True
 ):
+    viz = ViserMaker(token_viser)
+
+    sr = ShowRoom(model_path=model_path, img_path=img_path, camera_path=camera_path, data_path=data_path, info=info, viser=viz)
+
     s3 = ServerMaker(token=token_3d, url_type=url_type, json_path=json_path)
 
-    sr = ShowRoom(model_path=model_path, img_path=img_path, camera_path=camera_path, data_path=data_path, info=info)
-
     s3.set_3d(sr)
-
-    viz = ViserMaker(token_2d)
-
     s3.set_viser(viz)
+    s3.set_3d()
 
     s3.run()

@@ -15,7 +15,8 @@ class ShowRoom:
                  img_path,
                  camera_path='/content/drive/MyDrive/Final_Server/Input/Poses/poses.txt',
                  data_path='/content/drive/MyDrive/Final_Server/Input/Pts/fast3r_output.npz',
-                 info=True
+                 info=True,
+                 viz=None
                  ):
         '''Fast3r과 spr 을 활용한 3d reconstruction 클래스
         Args:
@@ -34,6 +35,8 @@ class ShowRoom:
         self.data_path = data_path
 
         self.info = info
+
+        self.viz = viz
 
     # MultiViewDUSt3RLitModule에 camera pose 추정하는 함수 사용 하여 카메라 포즈 추정
     def _get_camera_pose(self, pred):
@@ -154,20 +157,24 @@ class ShowRoom:
 
     # reconstruction을 하는 main 함수
     def reconstruction(self, depth=9):
-        point_cloud, color = self._predict()
+        self.point_cloud, self.color = self._predict()
+        np.savez(self.data_path, point_cloud=self.point_cloud, color=self.color)
+        self.viz.add_point_cloud('ShowRoom')
+        if self.info:
+            print('    ShowRoom 저장 완료 !')
+
+    def building_spr(self, depth=9):
 
         start_time = time.time()
-        vertices1, color1 = self._spr(point_cloud, color, depth=depth)
+        vertices1, color1 = self._spr(self.point_cloud, self.color, depth=depth)
+        np.savez(self.data_path, point_cloud=vertices1, color=color1)
+        self.viz.add_point_cloud('spr_1')
+        if self.info:
+            print(f'SPR 1회 적용 완료! ({time.time() - start_time:.2f})')
+            start_time = time.time()
 
         vertices2, color2 = self._spr(vertices1, color1, depth=depth)
-
-        point_clouds = np.concatenate([point_cloud, vertices1, vertices2], axis=0)
-        colors = np.concatenate([color, color1, color2], axis=0)
-
+        np.savez(self.data_path, point_cloud=vertices2, color=color2)
+        self.viz.add_point_cloud('spr_2')
         if self.info:
-            print(f'SPR 적용 완료! ({time.time()-start_time:.2f})')
-
-        np.savez(self.data_path, point_cloud=point_clouds, color=colors)
-
-        if self.info:
-            print('    point_cloud 저장 완료 !')
+            print(f'SPR 2회 적용 완료! ({time.time() - start_time:.2f})')

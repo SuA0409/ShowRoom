@@ -106,10 +106,53 @@ class ShowRoomProcessor:
         if len(self.img_names) != len(pose_list):
             raise ValueError(f"이미지 수 ({len(self.img_names)})와 포즈 수 ({len(pose_list)})가 일치하지 않습니다")
 
+        pose_list = self.apply_fast3r_camera_alignment(pose_list)
+
         # 포즈 매핑
         self.poses_map = {name: pose for name, pose in zip(self.img_names, pose_list)}
 
         print(f" 데이터 로드 완료: 이미지 {len(self.img_names)}개, 포즈 {len(pose_list)}개")
+
+    def apply_fast3r_camera_alignment(self, pose_list: list[np.ndarray]) -> list[np.ndarray]:
+        """
+        Fast3R에서 사용한 viser 시각화 기준 (카메라 방향 및 상방)으로 포즈 회전 정렬.
+
+        - 카메라 시야 방향 (Z축): position → look_at
+        - 상방 기준 (Y축): (0, -1, 0)
+
+        Returns:
+            회전 정렬된 4x4 포즈 행렬 리스트
+        """
+
+        #  Fast3R 기준 카메라 위치 및 각도
+        cam_position = np.array([-0.00141163, -0.01910395, -0.06794288], dtype=np.float32)
+        cam_look_at = np.array([-0.00352821, -0.01143425, 0.0154939], dtype=np.float32)
+        up_vector = np.array([0.0, -1.0, 0.0], dtype=np.float32)
+
+        # 기준 좌표계 계산: Z(forward), X(right), Y(up)
+        forward = cam_look_at - cam_position
+        forward /= np.linalg.norm(forward)
+
+        right = np.cross(up_vector, forward)
+        right /= np.linalg.norm(right)
+
+        up = np.cross(forward, right)
+        up /= np.linalg.norm(up)
+
+        # 회전행렬: world → fast3r 기준 좌표계
+        R_align = np.stack([right, up, forward], axis=0)
+
+        # 동차변환행렬 생성
+        T_align = np.eye(4, dtype=np.float32)
+        T_align[:3, :3] = R_align
+
+        # 전체 포즈 적용
+        aligned_poses = []
+        for pose in pose_list:
+            aligned_pose = T_align @ pose
+            aligned_poses.append(aligned_pose)
+
+        return aligned_poses
 
     def _build_model(self) -> None:
         """ConvNeXt 기반 모델 구축 및 가중치(.h5) 로드 수행"""
@@ -320,7 +363,7 @@ class ShowRoomProcessor:
             z2 (str): 두 번째 이미지 이름
 
         Returns:
-            Union[str, Tuple[str, str]]: 'both' 또는 (선택 이미지명, 방향) 튜플
+            Union[str, Tuple[str, str]]: 'None' 또는 (선택 이미지명, 방향) 튜플
 
         """
 
@@ -329,8 +372,8 @@ class ShowRoomProcessor:
         # 1) 거의 중첩이거나 정반대(180도)인 경우
         # angle <=45 or >=135 → 두 이미지가 거의 동일 정면이거나 정반대 뷰 → 양쪽 모두 재생성
         if angle <= 45 or angle >= 135:
-            print("   겹치거나 반대 시점이므로 → 양쪽 모두 재생성")
-            return 'both'
+            print("   겹치거나 반대 시점이므로 → 왼쪽 생성")
+            return (z1, 'right')
 
         print("   옆 시점이므로 → 사다리꼴(왼/오른쪽 벽) 넓이 비교 시작")
 
@@ -409,7 +452,7 @@ class ShowRoomProcessor:
         # 정면 이미지 개수에 따른 재생성 판단
         if len(front_views) >= 3:
             print("   → 정면 이미지가 3개 이상 → 재생성 불필요")
-            return None
+            return 'None'
 
         elif len(front_views) == 2:
             z1, z2 = front_views
@@ -428,12 +471,12 @@ class ShowRoomProcessor:
             )
 
         elif len(front_views) == 1:
-            print("   → 정면 이미지가 1개 → 양쪽 모두 생성 고려")
-            return 'both'
+            print("   → 정면 이미지가 1개 → 재생성 불가")
+            return 'None'
 
         else:
-            print("   → 정면 이미지 없음 → 전체 재생성 필요")
-            return 'both'
+            print("   → 정면 이미지 없음 → 재생성 불가")
+            return 'None'
 
     def save_result(self, decision: Union[str, Tuple[str, str], None]) -> str:
         """
@@ -451,9 +494,8 @@ class ShowRoomProcessor:
         with open(output_txt_path, "w") as f:
 
             # 정면 0개 또는 1개인 경우, 모든 이미지에 대해 '2' 처리
-            if decision == 'both':
-                for name in self.img_names:
-                    f.write(f"{name} 2\n")
+            if decision == 'None':
+                f.write("0 2\n")
             elif isinstance(decision, tuple):
                 selected_img, side = decision
                 side_code = {'left': 0, 'right': 1}.get(side, 2)
@@ -473,8 +515,6 @@ class ShowRoomProcessor:
         - 이미지 전처리 및 분석 수행
         - 결과 판단 및 저장
 
-        Returns:
-            Union[str, Tuple[str, str], None]: 최종 재생성 판단 결과 / ('both', (이미지명, 방향), None)
         """
 
         print("ShowRoom 레이아웃 처리를 시작합니다...")
