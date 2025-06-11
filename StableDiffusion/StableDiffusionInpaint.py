@@ -12,7 +12,7 @@ torch.backends.cudnn.benchmark = True
 
 # 경로 설정
 image_input = '/content/drive/MyDrive/Colab Notebooks/Images'
-st_result_txt = '/content/drive/MyDrive/Colab Notebooks/Images/ST_result.txt'
+st_result_txt = '/content/drive/MyDrive/Final_Server/Input/ST/ST_result.txt'
 
 
 class SimpleRotator:
