@@ -1,18 +1,21 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // 공통: 효과음
+  // 서버 기본 URL 설정
+  const SERVER_BASE_URL = 'https://d677-34-169-56-80.ngrok-free.app';
+
+  // 공통: 버튼 클릭 효과음 엘리먼트
   const clickSound = document.getElementById('click-sound');
 
-  // 서버 주소
-  const SERVER_BASE_URL = 'https://4f8d-34-87-1-83.ngrok-free.app';
-
-  // 닫기 버튼
+   // UI 엘리먼트 정의: 닫기, 로딩 컨테이너
   const closeBtn = document.getElementById('close-popup');
-  const loadingContainer = document.getElementById('loading-container');
+  const loadingContainer = document.getElementById
+  ('loading-container');
+  
+  // 닫기 버튼 클릭 시 팝업 닫기
   if (closeBtn) {
     closeBtn.addEventListener('click', () => window.close());
   }
 
-  // (옵션) 로고 버튼
+  // (옵션) 로고 버튼 클릭 시 사운드 재생 및 새 탭으로 쇼룸 열기
   const logoBtn = document.getElementById('logo-button');
   if (logoBtn) {
     logoBtn.addEventListener('click', () => {
@@ -22,20 +25,28 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 3D 변환 관련 버튼
+  // UI 엘리먼트 정의: 3D 변환, 2D 생성, 상태 표시, 리뷰 요약, 토글, 페이지 이동 버튼
   const convertBtn = document.getElementById('convert');
-  // 2D 생성 버튼
   const create2DBtn = document.getElementById('create-2d');
-  // 상태 표시 엘리먼트
   const status = document.getElementById('status');
-  // 리뷰 요약 버튼
   const analyzeBtn = document.getElementById('analyze-review');
-  // 공통 버튼: 토글, 댓글 이동, 뒤로가기
   const toggleBtn = document.getElementById('toggle');
   const gotoBtn = document.getElementById('goto-comments');
   const backBtn = document.getElementById('back');
 
-  // 썸네일 렌더링 함수
+  // 팝업 로드 시 저장된 이미지 목록 복원 및 썸네일 렌더링
+  chrome.storage.local.get({ selectedImages: [] }, ({ selectedImages }) => {
+    if (selectedImages.length > 0) {
+      renderThumbnails(selectedImages);
+      convertBtn.disabled = selectedImages.length < 3;
+      if (selectedImages.length >= 3) {
+        create2DBtn.disabled = false;
+        create2DBtn.setAttribute('data-tooltip', '선택된 이미지 2D 재생성');
+      }
+    }
+  });
+
+  // 썸네일 렌더링 및 클릭 이벤트 처리 함수
   function renderThumbnails(images) {
     const container = document.getElementById('selected-thumbnails');
     const countEl = document.getElementById('selected-count');
@@ -47,10 +58,18 @@ document.addEventListener('DOMContentLoaded', () => {
     images.forEach(src => {
       const img = document.createElement('img');
       img.src = src;
+
+      // 썸네일 클릭 시 이미지 선택/해제 및 UI 업데이트
       img.addEventListener('click', () => {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
           chrome.tabs.sendMessage(tabs[0].id, { action: 'toggleImage', src }, (newImages) => {
             renderThumbnails(newImages);
+            chrome.storage.local.set({ selectedImages: newImages });
+            convertBtn.disabled = newImages.length < 3;
+            if (newImages.length >= 3) {
+              create2DBtn.disabled = false;
+              create2DBtn.setAttribute('data-tooltip', '선택된 이미지 2D 재생성');
+            }
           });
         });
       });
@@ -58,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 3D 변환 버튼 초기화 및 페이지 로직
+  // 3D 변환 버튼 초기화 및 Airbnb 페이지 이미지 로드
   if (convertBtn) {
     const wrapper = convertBtn.parentElement;
     wrapper.addEventListener('click', () => {
@@ -68,6 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const tab = tabs[0];
+      // Airbnb 페이지 확인 및 이미지 가져오기
       if (!tab.url.includes('airbnb.co.kr') && !tab.url.includes('airbnb.com')) {
         alert('Airbnb 상세 페이지에서 실행해주세요.');
         return;
@@ -87,11 +107,14 @@ document.addEventListener('DOMContentLoaded', () => {
         renderThumbnails(response);
         convertBtn.disabled = response.length < 3;
         setupConvertButton(tab.id);
+
+        // 최초 이미지 로드 직후 저장
+        chrome.storage.local.set({ selectedImages: response });
       });
     });
   }
 
-  // 3D 변환 요청 셋업 함수
+  // 3D 변환 요청 설정 및 처리 함수
   function setupConvertButton(tabId) {
     convertBtn.replaceWith(convertBtn.cloneNode(true));
     const newBtn = document.getElementById('convert');
@@ -118,6 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
           renderThumbnails(images);
 
           try {
+            // 서버에 3D 변환 요청 전송
             const res = await fetch(`${SERVER_BASE_URL}/3d_upload`, {
               method: 'POST',
               headers: {
@@ -127,10 +151,19 @@ document.addEventListener('DOMContentLoaded', () => {
               body: JSON.stringify({ images })
             });
             const data = await res.json();
-
+            
+            // 서버 응답 처리 및 UI 업데이트
             if (data.status === 'success') {
               showStatus('✅ Fast3R 처리 완료 응답 받음!', true);
               console.log('✅ Fast3R 응답:', data);
+
+              //viser 창 띄우기
+              if (data.viser_response && data.viser_response.status) {
+                const match = data.viser_response.status.match(/"(https:\/\/[^\s"]+)"/);
+                if (match && match[1]) {
+                  window.open(match[1], '_blank');   // 새 창으로 자동 열기
+                }
+              }
 
               // 2D 버튼 활성화
               if (create2DBtn) {
@@ -151,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 2D 생성 버튼 클릭 이벤트
+  // 2D 생성 버튼 클릭 이벤트 처리
   if (create2DBtn) {
     create2DBtn.addEventListener('click', async () => {
       clickSound.currentTime = 0;
@@ -163,6 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
       create2DBtn.innerHTML  = '2D<br>생성 중...';
 
       try {
+        // 서버에 2D 생성 요청 전송
         const res = await fetch(`${SERVER_BASE_URL}/2d_upload`, {
           method: 'POST',
           headers: {
@@ -173,9 +207,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         const data = await res.json();
 
+        // 서버 응답 처리
         if (data.status === 'success') {
           showStatus('✅ 2D 생성 완료!', true);
           console.log('✅ 2D 생성 응답:', data);
+            
+          //viser 새 창 띄우기
+          if (data.viser_result && data.viser_result.status) {
+            const match = data.viser_result.status.match(/"(https:\/\/[^\s"]+)"/);
+            if (match && match[1]) {
+              window.open(match[1], '_blank');   // 새 창으로 자동 열기
+            }
+          }
+
         } else {
           showStatus('❌ 2D 생성 중 오류 발생.', false);
         }
@@ -190,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 상태 표시 함수
+  // 상태 메시지 표시 함수
   function showStatus(message, isSuccess = true) {
     const statusEl = document.getElementById('status');
     statusEl.textContent = message;
@@ -199,9 +243,10 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
   }
 
-  // 리뷰 요약 로직
+  // 리뷰 요약 버튼 초기화 및 클릭 이벤트
   if (analyzeBtn) {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      // Airbnb 숙소 페이지에서만 버튼 활성화
       if (tabs[0].url.includes('airbnb.co.kr/rooms/')) analyzeBtn.disabled = false;
     });
 
@@ -210,10 +255,12 @@ document.addEventListener('DOMContentLoaded', () => {
       clickSound.play();
 
       analyzeBtn.disabled = true;
+      // 버튼 텍스트 변경
       analyzeBtn.textContent = '분석 중...';
 
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         const url = tabs[0].url;
+        // Airbnb 숙소 페이지 확인 및 오류 처리
         if (!url.includes('airbnb.co.kr/rooms/')) {
           alert('Airbnb 숙소 상세 페이지에서만 사용할 수 있습니다.');
           analyzeBtn.disabled = false;
@@ -221,6 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
 
+        // 서버에 리뷰 분석 요청 전송
         fetch(`${SERVER_BASE_URL}/analyze_review`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -228,6 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
           .then(res => res.json())
           .then(data => {
+            // 분석 결과 URL이 있으면 새 탭으로 열기, 아니면 오류 표시
             if (data.view_url) window.open(data.view_url, '_blank');
             else showStatus('❌ 분석 실패: ' + (data.error || 'Unknown error'), false);
           })
@@ -240,7 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 기능 토글 버튼
+  // 기능 토글 버튼 (확장 기능 활성/비활성)
   if (toggleBtn) {
     chrome.storage.local.get('enabled', data => {
       toggleBtn.textContent = data.enabled ? 'off' : 'on';
@@ -259,7 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 페이지 이동 버튼
+  // 페이지 이동 버튼 (팝업 간 이동)
   if (gotoBtn) gotoBtn.addEventListener('click', () => window.location.href = 'popup2.html');
   if (backBtn) backBtn.addEventListener('click', () => window.location.href = 'popup.html');
 });

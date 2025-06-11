@@ -1,0 +1,244 @@
+/* 기본 여백 제거 및 박스 모델 통일 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* 바디: 전체 폰트, 배경, 텍스트 색상, 줄 간격, 여백 지정 */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+  background-color: #fafafa;
+  color: #484848;
+  line-height: 1.6;
+  padding: 20px 0;
+}
+
+/* 링크 스타일 초기화 */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+
+/* ===== 전체 레이아웃 컨테이너 ===== */
+/* 가운데 정렬, 가로 최대 너비 제한, 좌우 여백 */
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* 페이지 타이틀 */
+h1 {
+  font-size: 1.75rem;
+  color: #383838;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+
+/* ===== 필터 버튼 그룹 (상단 고정) ===== */
+/* 스크롤해도 상단에 고정되며 버튼 간격 유지 */
+.filter-group {
+  position: sticky;
+  top: 0;
+  background: #fafafa;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+/* 필터 버튼 공통 스타일 */
+.filter-btn {
+  font-size: 0.95rem;
+  padding: 8px 16px;
+  border-radius: 16px;
+  border: 1px solid #ebebeb;
+  background-color: #fff;
+  color: #484848;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* 마우스 오버 시 배경 변경 */
+.filter-btn:hover {
+  background-color: #f0f0f0;
+}
+
+/* 선택된 버튼 강조 색상 */
+.filter-btn.active {
+  background-color: #ff5a5f;
+  color: #fff;
+  border-color: #ff5a5f;
+}
+
+
+/* ===== 토픽 카드 디자인 ===== */
+/* 카드 기본 박스 디자인 및 마우스오버 효과 */
+.topic-card {
+  background-color: #fff;
+  border: 1px solid #ebebeb;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+  position: relative;
+}
+
+.topic-card:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* ===== 카드 상단 헤더 ===== */
+/* 아이콘 + 토픽 이름 배치 */
+.topic-header {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #ebebeb;
+  background-color: #fff;
+  position: relative;
+}
+
+/* 토픽 아이콘 크기와 간격 */
+.topic-icon {
+  font-size: 1.3rem;
+  margin-right: 8px;
+  z-index: 1;
+}
+
+/* 토픽 제목 텍스트 처리 (넘칠 경우 말줄임) */
+.topic-header h3 {
+  position: relative;
+  font-size: 1.125rem;
+  color: #222222;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  z-index: 1;
+}
+
+/* ===== 토픽별 카드 색상 강조 ===== */
+.topic-card[data-topic="청결도"] {
+  border-left: 4px solid #A8E6CF;
+}
+.topic-card[data-topic="위치"] {
+  border-left: 4px solid #82CAFA;
+}
+.topic-card[data-topic="가격"] {
+  background-color: #FFF8E1;
+  border-left: 4px solid #FFB74D;
+}
+.topic-card[data-topic="시설"] {
+  border-left: 4px solid #B0BEC5;
+}
+.topic-card[data-topic="호스트"] {
+  border-left: 4px solid #FF8A80;
+}
+.topic-card[data-topic="소음"] {
+  border-left: 4px solid #607D8B;
+}
+
+/* ===== 리뷰 리스트 ===== */
+/* 기본 리스트 스타일 제거 */
+.review-list {
+  list-style: none;
+  padding: 0;
+}
+
+/* 각 리뷰 항목 디자인 */
+.review-list li {
+  padding: 14px 20px;
+  font-size: 0.95rem;
+  color: #484848;
+  border-bottom: 1px solid #f0f0f0;
+  background-color: #fff;
+  transition: background-color 0.15s ease;
+}
+
+/* 마우스 오버 시 약간 밝게 */
+.review-list li:hover {
+  background-color: #fbfaf9;
+}
+
+/* 6개 이후 항목은 기본적으로 숨김 */
+.review-list li.hidden {
+  display: none;
+}
+
+/* 마지막 항목에 테두리 제거 및 하단 둥글게 처리 */
+.review-list li:last-child {
+  border-bottom: none;
+  border-radius: 0 0 8px 8px;
+}
+
+/* ===== “더 보기 / 접기” 버튼 ===== */
+/* 카드 하단 버튼 정렬 */
+.actions {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid #ebebeb;
+  background-color: #fff;
+}
+
+/* 공통 버튼 스타일 (더 보기 / 접기) */
+.actions .btn-expand,
+.actions .btn-collapse {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ff5a5f;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 12px 0;
+  transition: color 0.2s ease;
+  line-height: 1;
+}
+
+/* 접기 버튼 숨김 상태 */
+.actions .btn-collapse.hidden {
+  display: none;
+}
+
+/* 가운데 구분선 (얇은 선) */
+.actions .separator {
+  width: 1px;
+  background-color: #ebebeb;
+  margin: 8px 0;
+}
+
+
+/* ===== 카드 간 간격용 구분 영역 ===== */
+.divider {
+  height: 16px;
+  background-color: #fafafa;
+}
+
+/* ===== 반응형 대응 (모바일 전용) ===== */
+@media (max-width: 600px) {
+  .topic-header {
+    padding: 12px 16px;
+  }
+  .topic-header h3 {
+    font-size: 1rem;
+  }
+  .review-list li {
+    padding: 12px 16px;
+    font-size: 0.9rem;
+  }
+  .actions .btn-expand,
+  .actions .btn-collapse {
+    padding: 10px 0;
+    font-size: 0.95rem;
+  }
+  .actions .separator {
+    margin: 6px 0;
+  }
+}
