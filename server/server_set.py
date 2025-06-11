@@ -28,7 +28,7 @@ def set_3d_server(
 ):
     viz = ViserMaker(token_viser)
 
-    sr = ShowRoom(model_path=model_path, img_path=img_path, camera_path=camera_path, data_path=data_path, info=info, viser=viz)
+    sr = ShowRoom(model_path=model_path, img_path=img_path, camera_path=camera_path, data_path=data_path, info=info, viz=viz)
 
     s3 = ServerMaker(token=token_3d, url_type=url_type, json_path=json_path)
 
