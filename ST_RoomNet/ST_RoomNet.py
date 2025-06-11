@@ -105,7 +105,7 @@ class ShowRoomProcessor:
 
         if len(self.img_names) != len(pose_list):
             raise ValueError(f"이미지 수 ({len(self.img_names)})와 포즈 수 ({len(pose_list)})가 일치하지 않습니다")
-
+        
         pose_list = self.apply_fast3r_camera_alignment(pose_list)
 
         # 포즈 매핑
@@ -126,8 +126,8 @@ class ShowRoomProcessor:
 
         #  Fast3R 기준 카메라 위치 및 각도
         cam_position = np.array([-0.00141163, -0.01910395, -0.06794288], dtype=np.float32)
-        cam_look_at = np.array([-0.00352821, -0.01143425, 0.0154939], dtype=np.float32)
-        up_vector = np.array([0.0, -1.0, 0.0], dtype=np.float32)
+        cam_look_at  = np.array([-0.00352821, -0.01143425,  0.0154939],  dtype=np.float32)
+        up_vector    = np.array([0.0, -1.0, 0.0], dtype=np.float32)
 
         # 기준 좌표계 계산: Z(forward), X(right), Y(up)
         forward = cam_look_at - cam_position
@@ -458,9 +458,48 @@ class ShowRoomProcessor:
             z1, z2 = front_views
             pose1 = self.poses_map[z1]
             pose2 = self.poses_map[z2]
+            non_fronts = [name for name in self.img_names if name not in front_views]
+
+            related_angles = []
+            for nf in non_fronts:
+                nf_pose = self.poses_map.get(nf)
+                if nf_pose is None:
+                    continue
+                angle1 = self.compute_relative_angle(pose1, nf_pose)
+                angle2 = self.compute_relative_angle(pose2, nf_pose)
+                related_angles.append((nf, angle1, angle2))
+
+            for nf_name, angle1, angle2 in related_angles:
+                print(f"   → {nf_name}와의 각도 차이: {z1}: {angle1:.1f}°, {z2}: {angle2:.1f}°")
+
+            # 조건에 따라 판단 분기
+            for nf_name, angle1, angle2 in related_angles:
+                if (angle1 <= 55 and angle2 <= 55) or (angle1 >= 90 and angle2 >= 90):
+                    # → decide_regeneration_from_angle_and_side로 판별
+                    print("   → 두 정면 이미지 모두와 시점 차이가 크거나 매우 작음 → 정밀 판별 수행")
+                    angle = self.compute_relative_angle(pose1, pose2)
+                    side = self.determine_relative_side(pose1, pose2)
+                    print(f"   → 두 정면 이미지 간 각도: {angle:.2f}°, 방향: {side}")
+                    return self.decide_regeneration_from_angle_and_side(
+                        layout1=layout_map[z1],
+                        layout2=layout_map[z2],
+                        angle=angle,
+                        side=side,
+                        z1=z1,
+                        z2=z2
+                    )
+                elif angle1 <= 55 < angle2:
+                    print(f"   → {z2}와의 각도가 커서 상대적 방향으로 판단")
+                    side = self.determine_relative_side(pose2, self.poses_map[nf_name])
+                    return (z2, side)
+                elif angle2 <= 55 < angle1:
+                    print(f"   → {z1}와의 각도가 커서 상대적 방향으로 판단")
+                    side = self.determine_relative_side(pose1, self.poses_map[nf_name])
+                    return (z1, side)
+
+            print("   → 유효한 비교 대상 없음 → 기본 판별 수행")
             angle = self.compute_relative_angle(pose1, pose2)
             side = self.determine_relative_side(pose1, pose2)
-            print(f"   → 두 정면 이미지 간 각도: {angle:.2f}°, 방향: {side}")
             return self.decide_regeneration_from_angle_and_side(
                 layout1=layout_map[z1],
                 layout2=layout_map[z2],
