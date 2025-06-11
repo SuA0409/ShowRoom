@@ -1,10 +1,15 @@
-#review_analysis.py로 저장
+"""
+ review_analysis.py
+- Airbnb 숙소의 리뷰를 수집하고 문장 단위로 분해
+- BERTopic으로 토픽 모델링 및 주제별 문장 분류
+"""
+
 import base64, re, requests, json
 import pandas as pd
 from bs4 import BeautifulSoup
 from collections import defaultdict
 
-# 모델 및 분석 도구 관련 라이브러리
+# 모델 및 분석 도구
 import torch
 from bertopic import BERTopic
 from sentence_transformers import SentenceTransformer
@@ -13,11 +18,16 @@ import hdbscan
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import kss
-
 from urllib.parse import quote, urlencode
 
-# 리뷰 내용에서 한글 또는 번역본 코멘트를 추출
+
+# ==========================================
+#  한글 리뷰 혹은 번역본 추출 함수
+# ==========================================
 def comments(r):
+    """
+    한글 리뷰 또는 번역본 리뷰를 반환
+    """
     if r["language"] == 'ko':
         return r["comments"]
     else:
@@ -26,7 +36,10 @@ def comments(r):
         except:
             return None
 
-# Airbnb 리뷰 API 요청 시 필요한 헤더
+
+# ==========================================
+#  Airbnb 리뷰 API 요청 함수
+# ==========================================
 headers = {
     "Content-Type": "application/json",
     "User-Agent": "Mozilla/5.0",
@@ -37,64 +50,80 @@ headers = {
 }
 
 def getReviewsJson(stay_id, limit, offset, headers=headers):
+    """
+    Airbnb API를 통해 JSON 형식의 리뷰 데이터 수집
+    """
     jurl = "https://www.airbnb.co.kr/api/v3/StaysPdpReviewsQuery/dec1c8061483e78373602047450322fd474e79ba9afa8d3dbbc27f504030f91d?"
     variables = {
-        "id":stay_id,
-        "pdpReviewsRequest":{
-            "fieldSelector":"for_p3_translation_only",
-            "forPreview":False,
-            "limit":limit,
-            "offset":str(offset),
-            "showingTranslationButton":False,
-            "first":limit,
-            "sortingPreference":"MOST_RECENT",
-            "checkinDate":"2025-06-27",
-            "checkoutDate":"2025-07-02",
-            "numberOfAdults":"1",
-            "numberOfChildren":"0",
-            "numberOfInfants":"0",
-            "numberOfPets":"0",
-            "after":None
+        "id": stay_id,
+        "pdpReviewsRequest": {
+            "fieldSelector": "for_p3_translation_only",
+            "forPreview": False,
+            "limit": limit,
+            "offset": str(offset),
+            "showingTranslationButton": False,
+            "first": limit,
+            "sortingPreference": "MOST_RECENT",
+            "checkinDate": "2025-06-27",
+            "checkoutDate": "2025-07-02",
+            "numberOfAdults": "1",
+            "numberOfChildren": "0",
+            "numberOfInfants": "0",
+            "numberOfPets": "0",
+            "after": None
         }
     }
-
     extensions = {
-        "persistedQuery":{
-            "version":1,
-            "sha256Hash":"dec1c8061483e78373602047450322fd474e79ba9afa8d3dbbc27f504030f91d"
+        "persistedQuery": {
+            "version": 1,
+            "sha256Hash": "dec1c8061483e78373602047450322fd474e79ba9afa8d3dbbc27f504030f91d"
         }
     }
-
     params = {
-        "operationName":"StaysPdpReviewsQuery",
-        "locale":"ko",
-        "currency":"KRW",
-        "variables":json.dumps(variables, separators=(',',':')),
-        "extensions":json.dumps(extensions, separators=(',',':'))
+        "operationName": "StaysPdpReviewsQuery",
+        "locale": "ko",
+        "currency": "KRW",
+        "variables": json.dumps(variables, separators=(',', ':')),
+        "extensions": json.dumps(extensions, separators=(',', ':'))
     }
-
-    resp = requests.get(jurl+urlencode(params, quote_via=quote), headers=headers)
+    resp = requests.get(jurl + urlencode(params, quote_via=quote), headers=headers)
     return resp.json()
 
-# 리뷰 텍스트 전처리 함수
+
+# ==========================================
+#  리뷰 텍스트 전처리 함수
+# ==========================================
 def clean_text(text):
+    """
+    텍스트에서 특수문자, 태그, 개행문자 제거 및 정리
+    """
     text = text.replace('\n', ' ').replace('\r', ' ')
-    text = re.sub(r'<br.*?>', ' ', text)  # br 태그 제거
-    text = re.sub(r'[^\w\s.,!?가-힣]', '', text)  # 특수문자 제거
-    text = re.sub(r'([.!?])', r'\1 ', text)  # 구두점 뒤에 공백
+    text = re.sub(r'<br.*?>', ' ', text)
+    text = re.sub(r'[^\w\s.,!?가-힣]', '', text)
+    text = re.sub(r'([.!?])', r'\1 ', text)
     text = re.sub(r'\s+', ' ', text).strip()
     return text
 
-# 숙소 URL 기반으로 리뷰 분석 수행 함수
+
+# ==========================================
+#  숙소 URL 기반 리뷰 분석 실행
+# ==========================================
 def run_topic_model_on_room(room_url):
-    # 1. 숙소 ID 추출 및 stay_id 인코딩
+    """
+    1️⃣ 숙소 ID 추출 및 인코딩
+    2️⃣ Airbnb API로 리뷰 수집
+    3️⃣ 문장 단위 분해 및 전처리
+    4️⃣ BERTopic으로 토픽 모델링 및 유사도 기반 매핑
+    5️⃣ 주제별 문장 분류 결과 반환
+    """
+    # 1️⃣ 숙소 ID 인코딩
     p1, _ = room_url.split("?")
     _, num = p1.split("/rooms/")
     num = num.split("/")[0]
     encoding = 'StayListing:' + num
     stay_id = base64.b64encode(encoding.encode('utf-8')).decode('utf-8')
 
-    # 2. 리뷰 수집
+    # 2️⃣ 리뷰 수집
     data = []
     offset = 0
     limit = 50
@@ -121,12 +150,12 @@ def run_topic_model_on_room(room_url):
         offset += 50
         limit += 50
 
-    # 3. 리뷰 DataFrame 생성 및 검증
+    # 3️⃣ 리뷰 DataFrame 생성 및 검증
     reviews = pd.DataFrame(data).dropna()
     if len(reviews) < 5:
         raise ValueError("리뷰가 충분하지 않습니다.")
 
-    # 4. 리뷰 문장 단위로 분해
+    # 4️⃣ 문장 단위로 분해
     rows = []
     for j, row in reviews.reset_index(drop=True).iterrows():
         cleaned_comment = clean_text(row['comment'])
@@ -139,35 +168,42 @@ def run_topic_model_on_room(room_url):
                 start = cleaned_comment.find(s, idx)
                 end = start + len(s) - 1
                 idx = end + 1
-                rows.append({"stay_id": num, "user_id": row['user_id'], "splitNum": split_num, "sentence": s, "start": start, "end": end})
+                rows.append({
+                    "stay_id": num,
+                    "user_id": row['user_id'],
+                    "splitNum": split_num,
+                    "sentence": s,
+                    "start": start,
+                    "end": end
+                })
                 split_num += 1
 
-    # 5. 고유 문장 리스트 준비
+    # 5️⃣ 고유 문장 리스트 준비
     sentence_df = pd.DataFrame(rows).dropna()
     docs = sentence_df['sentence'].drop_duplicates().tolist()
     if len(docs) < 5:
         raise ValueError("문장 수가 너무 적습니다.")
 
-    # 6. 임베딩 모델 설정
+    # 6️⃣ 임베딩 모델 설정
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     embedding_model = SentenceTransformer("jhgan/ko-sbert-nli", device=device)
 
-    # 7. 사전 정의된 토픽 키워드 (seed_topics)와 이름
-    seed_topics = [  # 주제별 시드 키워드 정의
-        ["청결도", "깨끗함", "깨끗", "더럽", "드러움", "드럽", "개더럽", "개드러움", "개드럽", "개드러움", "위생", "청소", "더러움", "청결", "불결", "정리", "오염", "깔끔함", "먼지", "청소상태", "냄새", "악취", "향기", "쾌쾌함", "냄새남", "냄새나", "향", "지린내", "곰팡이냄새", "청국장냄새", "냄새문제", "상쾌함", "환기"],
-        ["위치", "교통", "가까움", "편리함", "접근성", "원거리", "교통편", "중앙", "외진", "이동", "전망", "근처"],
-        ["가격", "비쌈", "저렴함", "가성비", "비용", "고가", "합리적", "경제적", "비싸", "저렴", "요금", "가치", "지불"],
-        ["시설", "편리함", "새거", "새것", "새", "편함", "구비", "편의", "시설물", "장비", "부족", "완비", "기능", "설비", "낡음", "오래됨"],
-        ["호스트", "서비스", "친절함", "응대", "도움", "불친절", "서비스품질", "관리", "지원", "배려", "체크인", "체크아웃", "입실", "퇴실", "환영", "지연", "빠름", "수속", "접수", "퇴소", "안내"],
-        ["소음", "조용함", "시끄러움", "시끄럼", "방음", "소음문제", "고요", "고요함", "소란", "방음효과", "조용", "잡음", "소음원", "방해"],
+    # 7️⃣ 주제별 시드 키워드 & 이름 정의
+    seed_topics = [
+        ["청결도", "깨끗함", "위생", "청소", "정리", "깔끔", "냄새", "쾌쾌함", "곰팡이냄새", "환기"],
+        ["위치", "교통", "편리함", "접근성", "중앙", "근처"],
+        ["가격", "저렴", "가성비", "비용", "고가", "경제적", "요금", "가치"],
+        ["시설", "편리함", "새것", "구비", "장비", "기능", "설비", "낡음"],
+        ["호스트", "서비스", "친절", "응대", "도움", "불친절", "관리", "체크인", "체크아웃"],
+        ["소음", "조용", "시끄러움", "방음", "소란", "방해"]
     ]
-    topic_names = ["청결도", "소음" "위치", "가격", "시설", "호스트"]  # 주제 이름 정의
+    topic_names = ["청결도", "소음", "위치", "가격", "시설", "호스트"]
 
-    # 8. 차원 축소 및 클러스터링 모델 정의
+    # 8️⃣ 차원 축소 및 클러스터링 모델 정의
     umap_model = UMAP(n_components=2, random_state=42, metric='cosine', n_neighbors=30, min_dist=0.1)
     hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=6, min_samples=3, cluster_selection_method='leaf')
 
-    # 9. BERTopic 모델 구성 및 학습
+    # 9️⃣ BERTopic 모델 학습
     topic_model = BERTopic(
         embedding_model=embedding_model,
         language="multilingual",
@@ -179,23 +215,22 @@ def run_topic_model_on_room(room_url):
         verbose=True,
         vectorizer_model=TfidfVectorizer()
     )
-
     topics, probs = topic_model.fit_transform(docs)
     topic_info = topic_model.get_topic_info()
     topic_ids = topic_info[topic_info['Topic'] != -1]['Topic'].tolist()
 
-    # 10. seed topic과 cosine similarity로 실제 토픽 이름 매핑
+    # 🔟 Cosine Similarity로 토픽 이름 매핑
     topic_embeddings = topic_model.topic_embeddings_[1:]
     seed_embeddings = embedding_model.encode([" ".join(keywords) for keywords in seed_topics])
     similarity = cosine_similarity(topic_embeddings, seed_embeddings)
     mapped_topics = {topic_ids[i]: topic_names[sim_row.argmax()] for i, sim_row in enumerate(similarity)}
 
-    # 11. 문장들을 주제별로 분류
+    # 🔟 문장들을 주제별로 분류
     topic_sentences = defaultdict(list)
     for doc, topic_id in zip(docs, topics):
         label = mapped_topics.get(topic_id, "기타")
         if label != "기타":
             topic_sentences[label].append(doc)
 
-    # 12. 최종 결과 반환
+    # 🔟 최종 결과 반환
     return {"stay_id": num, "topics": topic_sentences}

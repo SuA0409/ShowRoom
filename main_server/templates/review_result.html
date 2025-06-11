@@ -3,13 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <title>Sho三Room 리뷰 분석</title>
+
+  <!--
+  CSS 파일 로드
+  - Flask static 폴더에서 review_result.css를 불러옴
+  - 페이지 전반의 레이아웃 및 스타일 정의
+  -->
   <link rel="stylesheet" href="/static/css/review_result.css" />
 </head>
 <body>
+
+  <!--
+  컨테이너: 전체 리뷰 분석 내용을 담는 최상위 div
+  -->
   <div class="container">
     <h1>Sho三Room 리뷰 분석</h1>
 
-    <!-- 토픽 필터 버튼 -->
+    <!--
+    🔔 토픽 필터 버튼 그룹
+    - '전체 보기' 버튼 + 각 토픽별 필터 버튼 생성
+    - Jinja2로 topics.keys()를 순회하며 버튼 생성
+    -->
     <div class="filter-group">
       <button class="filter-btn active" data-topic="All">전체 보기</button>
       {% for topic in topics.keys() %}
@@ -17,27 +31,50 @@
       {% endfor %}
     </div>
 
-    <!-- 리뷰 카드들 -->
+    <!--
+    🔔 각 토픽별 리뷰 카드
+    - topics.items() 순회: topic 이름 & 해당 topic의 리뷰 리스트 표시
+    -->
     {% for topic, sentences in topics.items() %}
       <div class="topic-card" data-topic="{{ topic }}" id="card-{{ loop.index }}">
-        <!-- 카드 헤더: 아이콘 + 제목 -->
+        
+        <!--
+        카드 헤더
+        - 아이콘: 토픽별 이모지
+        - 제목: 토픽명
+        -->
         <div class="topic-header">
           <span class="topic-icon">
-            {% if topic == '청결도' %}🧼{% elif topic == '위치' %}📍{% elif topic == '가격' %}💰{% elif topic == '시설' %}🛋️{% elif topic == '호스트' %}🤝{% elif topic == '소음' %}🔇{% endif %}
+            {% if topic == '청결도' %} 🧼
+            {% elif topic == '위치' %} 📍
+            {% elif topic == '가격' %} 💰
+            {% elif topic == '시설' %} 🛋️
+            {% elif topic == '호스트' %} 🤝
+            {% elif topic == '소음' %} 🔇
+            {% endif %}
           </span>
           <h3>{{ topic }}</h3>
         </div>
 
-        <!-- 리뷰 리스트 -->
+        <!--
+        리뷰 리스트
+        - 최대 5개의 리뷰만 기본 표시
+        - 이후 항목은 hidden 클래스 적용 (JS로 확장/축소)
+        - "깔끔" 키워드는 강조(span.highlight-clean)
+        -->
         <ul class="review-list" id="list-{{ loop.index }}">
           {% for sentence in sentences %}
-            <li class="{{ 'hidden' if loop.index > 5 else '' }}">
+            <li class="{% if loop.index > 5 %}hidden{% endif %}">
               {{ sentence | replace("깔끔", '<span class="highlight-clean">깔끔</span>') | safe }}
             </li>
           {% endfor %}
         </ul>
 
-        <!-- 하단 버튼: 더 보기 / 접기 -->
+        <!--
+        더 보기 / 접기 버튼
+        - 리뷰가 5개 이상인 경우에만 표시
+        - JS에서 expandList / collapseList 함수로 리스트 조작
+        -->
         {% if sentences|length > 5 %}
           <div class="actions">
             <button class="btn-expand"
@@ -55,10 +92,18 @@
           </div>
         {% endif %}
       </div>
+
+      <!--
+      카드 사이의 구분선
+      -->
       <div class="divider"></div>
     {% endfor %}
   </div>
 
+  <!--
+  JS 파일 로드
+  - review_result.js: 리뷰 카드의 더보기/접기 동작 구현
+  -->
   <script src="/static/js/review_result.js"></script>
 </body>
 </html>
