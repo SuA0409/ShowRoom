@@ -242,20 +242,7 @@ class SimpleRotator:
         return result
 
 def main():
-    torch.hub.load("intel-isl/MiDaS", "MiDaS_small", offline=False)
 
-    # transforms는 offline 옵션 없이!
-    torch.hub.load("intel-isl/MiDaS", "transforms")
-
-    # Stable Diffusion Inpainting 다운로드
-    pipe = StableDiffusionInpaintPipeline.from_pretrained(
-        "stabilityai/stable-diffusion-2-inpainting",
-        revision="fp16",
-        torch_dtype=torch.float16,
-        safety_checker=None,
-        local_files_only=False
-    )
-    print("다운로드 완료!")
 
     '''
     메인 실행 함수. 명령줄 인자를 파싱하여 이미지 회전 및 인페인팅 파이프라인을 실행
