@@ -14,7 +14,7 @@
 
     <!-- 헤더 -->
     <header class="popup-header">
-      <h3>🏠ShowRoom</h3>
+      <img src="icons/cube.png" alt="큐브 아이콘" class="cube-icon">
       <p id="instruction">최소 3장의 이미지를 선택해야 합니다.</p>
     </header>
 
@@ -26,7 +26,6 @@
     <!-- 썸네일 영역 -->
     <section class="thumbnail-section">
       <div id="selected-thumbnails" class="thumbnail-container">
-        <!-- JavaScript로 썸네일이 동적으로 추가됩니다 -->
       </div>
     </section>
 
@@ -40,7 +39,7 @@
       <div class="button-group">
         <!-- 3D 변환 버튼 -->
         <button id="convert" class="btn-showroom-cube" data-tooltip="선택된 이미지를 3D로 변환" disabled>
-          <img src="icons/cube.png" alt="큐브 아이콘" class="cube-icon">
+          3D
         </button>
 
         <!-- 2D 생성 버튼 (새로 추가된 부분) -->
@@ -48,7 +47,7 @@
               class="btn-showroom-2d"
               data-tooltip="3D 생성을 최소 1회 진행해 주세요."
               disabled>
-          2D 생성
+          Generate
         </button>
 
         <!-- 이미지 선택 모드 토글 버튼 -->
@@ -57,7 +56,7 @@
         </button>
 
         <!-- 리뷰 화면 이동 버튼 -->
-        <button id="goto-comments" class="btn-showroom-text" data-tooltip="리뷰 화면으로 이동">
+        <button id="goto-comments" data-tooltip="리뷰 화면으로 이동"> 
           review
         </button>
       </div>
