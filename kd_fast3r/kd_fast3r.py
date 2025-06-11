@@ -4,6 +4,7 @@ import numpy as np
 import time
 import pymeshlab
 
+from torchvision.utils import save_image
 from fast3r.models.multiview_dust3r_module import MultiViewDUSt3RLitModule
 from fast3r.models.fast3r import Fast3R
 from kd_fast3r.utils.data_preprocess import batch_images_load
@@ -55,8 +56,12 @@ class ShowRoom:
 
         room, color = batch_images_load(self.img_path, batch_size=1, size=512, sample=sample)
 
-        # input data를 device 타입에 맞게 조정
         for i, image in enumerate(room):
+            # 전처리 된 순서에 맞춰 이미지 순서 바꾸기 (이미지 판별)
+            save_path = os.path.join(self.img_path, f'{i}.jpg')
+            save_image((image['img'][0]+1) / 2, save_path)
+
+            # input data를 device 타입에 맞게 조정
             room[i]['img'] = image['img'].to(self.device)
             room[i]['true_shape'] = image['true_shape'].to(self.device)
 
@@ -155,8 +160,8 @@ class ShowRoom:
 
         vertices2, color2 = self._spr(vertices1, color1, depth=depth)
 
-        point_clouds = [point_cloud, vertices1, vertices2]
-        colors = [color, color1, color2]
+        point_clouds = np.concatenate([point_cloud, vertices1, vertices2], axis=0)
+        colors = np.concatenate([color, color1, color2], axis=0)
 
         np.savez(self.data_path, point_cloud=point_clouds, color=colors)
 
