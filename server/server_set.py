@@ -34,6 +34,5 @@ def set_3d_server(
 
     s3.set_3d(sr)
     s3.set_viser(viz)
-    s3.set_3d()
 
     s3.run()
