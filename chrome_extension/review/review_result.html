@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sho三Room 리뷰 분석</title>
+  <link rel="stylesheet" href="/static/css/review_result.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Sho三Room 리뷰 분석</h1>
+
+    <!-- 토픽별 리뷰 필터 버튼 그룹 -->
+    <div class="filter-group">
+      <!-- 전체 보기 버튼 -->
+      <button class="filter-btn active" data-topic="All">전체 보기</button>
+      
+      <!-- 각 토픽별 버튼 생성 -->
+      {% for topic in topics.keys() %}
+        <button class="filter-btn" data-topic="{{ topic }}">{{ topic }}</button>
+      {% endfor %}
+    </div>
+
+    <!-- 토픽별 리뷰 카드 출력 -->
+    {% for topic, sentences in topics.items() %}
+      <div class="topic-card" data-topic="{{ topic }}" id="card-{{ loop.index }}">
+        <!-- 카드 상단: 토픽 아이콘과 제목 -->
+        <div class="topic-header">
+          <span class="topic-icon">
+            {% if topic == '청결도' %}🧼{% elif topic == '위치' %}📍{% elif topic == '가격' %}💰{% elif topic == '시설' %}🛋️{% elif topic == '호스트' %}🤝{% elif topic == '소음' %}🔇{% endif %}
+          </span>
+          <h3>{{ topic }}</h3>
+        </div>
+
+        <!-- 리뷰 문장 리스트 (최대 5개 기본 노출) -->
+        <ul class="review-list" id="list-{{ loop.index }}">
+          {% for sentence in sentences %}
+            <li class="{{ 'hidden' if loop.index > 5 else '' }}">
+              {{ sentence }}
+            </li>
+          {% endfor %}
+        </ul>
+
+        <!-- 더 보기/접기 버튼 (리뷰 6개 이상일 때만 노출) -->
+        {% if sentences|length > 5 %}
+          <div class="actions">
+            <button class="btn-expand"
+                    onclick="expandList({{ loop.index }})"
+                    id="btn-expand-{{ loop.index }}"
+                    data-shown="5">
+              ▼ 더 보기
+            </button>
+            <div class="separator"></div>
+            <button class="btn-collapse hidden"
+                    onclick="collapseList({{ loop.index }})"
+                    id="btn-collapse-{{ loop.index }}">
+              ▲ 접기
+            </button>
+          </div>
+        {% endif %}
+      </div>
+      <!-- 토픽 카드 구분선 -->
+      <div class="divider"></div>
+    {% endfor %}
+  </div>
+
+  <!-- 리뷰 리스트 확장/축소 기능 JS -->
+  <script src="/static/js/review_result.js"></script>
+</body>
+</html>
