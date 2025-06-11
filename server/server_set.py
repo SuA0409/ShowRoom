@@ -16,7 +16,7 @@ def set_2d_server(
     s2.run()
 
 def set_3d_server(
-        token_3d='2y4uNQkm8QMIYvPjxLUDvuqcADc_3WvHwXubWpCB3gx3N64BZ',
+        token_3d='2y7j0XIpN1f2A76HJseTWFBqgqI_7Ma2wrEyqoveyw2JMeP6G',
         token_2d='2xwLYd6T4TFcrLjwgJZpxbDgaOJ_7oCZnw8f4Bkx2sYX3zkGQ',
         url_type='FAST3R_SERVER_URL',
         json_path='/content/drive/MyDrive/Final_Server/ngrok_path.json',
