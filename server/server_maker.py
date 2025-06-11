@@ -93,7 +93,6 @@ class ServerMaker:
         @self.app.route('/viser', methods=['POST'])
         def viser_route():
             try:
-                self.show_viz.add_point_cloud()
                 return jsonify({"status": str(self.show_viz.ngrok_url)})
             except Exception as e:
                 return jsonify({"status": "fail", "error": str(e)})
