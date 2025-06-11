@@ -286,16 +286,16 @@ def use_model(docs, device=torch.device('cuda' if torch.cuda.is_available() else
 
 # 헤더 정보
 headers = {
-    "Content-Type": "application/json",  # 요청 콘텐츠 타입
-    "User-Agent": "",  # 사용자 에이전트 (필요 시 입력)
-    "Accept": "*/*",  # 모든 응답 타입 수락
-    "Referer": "",  # 참조 URL (필요 시 입력)
-    "Accept-Language": "",  # 언어 설정 (필요 시 입력)
-    "api-key": "",  # API 키 (필요 시 입력)
+    "Content-Type": "application/json",
+    "User-Agent": "",
+    "Accept": "*/*",
+    "Referer": "",
+    "Accept-Language": "",
+    "api-key": "",
 }
 
 # URL 지정
-url = ''  # 분석할 Airbnb 숙소 URL
+url = ''  # 분석할 숙소 URL
 # 리뷰 크롤링
 data, num = getReviews(url, headers)  # 리뷰 데이터와 숙소 번호 가져오기
 # 리뷰 전처리
