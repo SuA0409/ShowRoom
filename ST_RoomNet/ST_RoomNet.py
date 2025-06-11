@@ -510,7 +510,38 @@ class ShowRoomProcessor:
             )
 
         elif len(front_views) == 1:
-            print("   → 정면 이미지가 1개 → 재생성 불가")
+            z_front = front_views[0]
+            print(f"   → 정면 이미지가 1개: {z_front}")
+
+            non_fronts = [name for name in self.img_names if name != z_front]
+            if len(non_fronts) != 2:
+                print("   → 정면이 1개지만 비교할 이미지가 부족 → 재생성 불가")
+                return 'None'
+
+            pose_f = self.poses_map[z_front]
+            pose_nf1 = self.poses_map[non_fronts[0]]
+            pose_nf2 = self.poses_map[non_fronts[1]]
+
+            # Z축 방향 벡터 추출
+            _, z_dir1 = self.get_camera_position_and_direction(pose_nf1)
+            _, z_dir2 = self.get_camera_position_and_direction(pose_nf2)
+
+            z_dir1 = z_dir1 / np.linalg.norm(z_dir1)
+            z_dir2 = z_dir2 / np.linalg.norm(z_dir2)
+
+            dot_product = np.dot(z_dir1, z_dir2)  # -1 ~ 1
+            print(f"   → 두 비정면 이미지 간 Z축 방향 유사도 (cosθ): {dot_product:.3f}")
+
+            if dot_product > 0.8:  # 방향이 매우 유사함 (약 36도 이하 차이)
+                # 정면 이미지 기준 반대 방향 계산
+                pos_f, dir_f = self.get_camera_position_and_direction(pose_f)
+                pos_nf1, _ = self.get_camera_position_and_direction(pose_nf1)
+                side = self.determine_relative_side(pose_f, pose_nf1)
+                opposite_side = 'right' if side == 'left' else 'left'
+                print(f"   → 비정면 이미지 둘 다 {side} 방향에 있음 → 반대쪽 {opposite_side}로 생성")
+                return (z_front, opposite_side)
+
+            print("   → 비정면 이미지 방향이 달라서 기준이 불분명 → 재생성 불가")
             return 'None'
 
         else:
