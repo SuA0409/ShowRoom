@@ -12,7 +12,7 @@ torch.backends.cudnn.benchmark = True
 
 # 경로 설정
 image_input = '/content/drive/MyDrive/Colab Notebooks/Images'
-st_result_txt = '/content/drive/MyDrive/Colab Notebooks/Images/ST_result.txt'
+st_result_txt = '/content/drive/MyDrive/Final_Server/Input/ST/ST_result.txt'
 
 
 class SimpleRotator:
@@ -242,6 +242,8 @@ class SimpleRotator:
         return result
 
 def main():
+
+
     '''
     메인 실행 함수. 명령줄 인자를 파싱하여 이미지 회전 및 인페인팅 파이프라인을 실행
     '''
@@ -261,7 +263,7 @@ def main():
                         default=image_input)
     parser.add_argument("--out-folder", type=str,
                         default=image_input)
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
 
     # 결과물을 저장할 출력 폴더가 없으면 생성
     os.makedirs(args.out_folder, exist_ok=True)
