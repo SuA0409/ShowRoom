@@ -4,7 +4,6 @@ import socket
 import viser
 import threading
 import numpy as np
-import re
 
 def find_free_port():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:

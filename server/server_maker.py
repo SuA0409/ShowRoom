@@ -16,7 +16,7 @@ class ServerMaker:
         self.url_type = url_type
         self.json_path = json_path
 
-        self.app = self._create_ngrok_flask_app()
+        self._create_ngrok_flask_app()
 
     def _url_saver(self,
                   public_url=None,
@@ -55,7 +55,11 @@ class ServerMaker:
 
         self._url_saver(public_url=public_url, url_type=self.url_type, json_path=self.json_path)
 
-        return app
+        self.app = app
+        self.port = port
+
+    def run(self):
+        self.app.run(host='0.0.0.0', port=self.port)
 
     def set_3d(self, showroom):
 
