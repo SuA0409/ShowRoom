@@ -251,7 +251,7 @@ def main():
     parser.add_argument("--angle", type=float, default=30)
     parser.add_argument("--max-depth", type=float, default=3.0)
     parser.add_argument("--steps", type=int, default=50)
-    parser.add_argument("--guidance", type=float, default=8.5)
+    parser.add_argument("--guidance", type=float, default=7.0)
     parser.add_argument("--prompt", type=str,
                         default="Extend only the background wall and floor. Do not add new objects or decorations."
                                 "Match color and lighting. Keep everything minimal.")
@@ -296,10 +296,10 @@ def main():
         # direction 값에 따라 회전할 각도를 리스트로 정의
         if direction == 0:
             angles = [args.angle] # +angle만
-        elif direction == 2:
+        elif direction == 1:
             angles = [-args.angle] # -angle만
         else:
-            print(f"알 수 없는 direction 값: {direction} (0,2만 허용). 건너뜀.")
+            print(f"알 수 없는 direction 값: {direction} (0,1만 허용). 건너뜀.")
             continue
 
         # 입력 이미지 경로를 조합하고 파일 존재 여부 확인
@@ -311,7 +311,7 @@ def main():
         # OpenCV를 사용하여 이미지를 BGR 형식으로 로드
         img_bgr = cv2.imread(input_path)
         if img_bgr is None:
-            print(f"이미지를 로드할 수 없습니다: {input_path} (건너뜀)")
+            print(f"이미지를 로드할 수 없습니다: {input_path} 생성 불가")
             continue
 
         # BGR 이미지를 RGB 형식으로 변환
