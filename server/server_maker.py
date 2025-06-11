@@ -6,6 +6,7 @@ from viz import find_free_port
 import time
 from ST_RoomNet.ST_RoomNet import ShowRoomProcessor
 from StableDiffusion.StableDiffusionInpaint import main as sd_main
+import threading
 
 class ServerMaker:
     def __init__(self,
@@ -72,6 +73,8 @@ class ServerMaker:
                 print(' main에서 입력 받음 !')
                 time.sleep(1)
                 self.showroom.reconstruction()
+
+                threading.Thread(target=self.showroom.building_spr).start()
                 return jsonify({"status": "success"})
             except Exception as e:
                 return jsonify({"status": str(e)})
