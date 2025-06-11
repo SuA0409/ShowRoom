@@ -94,15 +94,15 @@ class ServerMaker:
         @self.app.route('/2d_upload', methods=['POST'])
         def handle_2d_request():
             try:
-                print(" ST_RoomNet 실행 시작!")
+                print("    ST_RoomNet 실행 시작!")
                 processor = ShowRoomProcessor()
                 processor.process()
 
-                print(" ST_RoomNet 실행 완료!")
+                print("    ST_RoomNet 실행 완료!")
 
-                print(" rotate_and_inpainting.py 실행 시작!")
+                print("    Stable Diffusion Inpaint .py 실행 시작!")
                 sd_main()
-                print(" rotate_and_inpainting.py 실행 완료!")
+                print("    Stable Diffusion Inpaint.py 실행 완료!")
 
                 return jsonify({"status": "success", "message": "2D 생성 완료!"})
 
