@@ -29,7 +29,7 @@ class ProcessorConfig:
     weight_path: str = '/content/drive/MyDrive/Final_Server/2d_server/ST-RoomNet/weights/Weight_ST_RroomNet_ConvNext.h5'
     
     # 출력 경로 설정
-    save_path: str = '/content/drive/MyDrive/Final_Server/Input/Images'
+    save_path: str = '/content/drive/MyDrive/Final_Server/Input/ST'
     
     # 모델 설정
     image_size: Tuple[int, int] = (400, 400)
@@ -500,7 +500,7 @@ def main():
     # 기본 설정으로 프로세서 생성 및 실행
     processor = ShowRoomProcessor()
     result = processor.process()
-    return result
+    
 
 
 if __name__ == "__main__":
