@@ -51,7 +51,7 @@ class ShowRoom:
     # Fast3r 모델을 활용한 3d point could 및 camera_pose 추정
     def _predict(self):
 
-        sample = len(os.listdir(self.img_path))
+        sample = len([f for f in os.listdir(self.img_path) if f.lower().endswith('.jpg')])
         assert sample > 0, 'Failed to find files'
 
         room, color = batch_images_load(self.img_path, batch_size=1, size=512, sample=sample)

@@ -15,17 +15,16 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.applications.convnext import ConvNeXtTiny, preprocess_input
 
 # spatial_transformer.py 에 정의된 ProjectiveTransformer 클래스
-from spatial_transformer import ProjectiveTransformer
+from ST_RoomNet.spatial_transformer import ProjectiveTransformer
 
 
 @dataclass
 class ProcessorConfig:
     """프로세서 설정을 위한 데이터클래스"""
-    
     # 입력 경로 설정
     val_path: str = '/content/drive/MyDrive/Final_Server/Input/Images'  # chrome extension에서 저장한 이미지
     pose_path: str = '/content/drive/MyDrive/Final_Server/Input/Poses/poses.txt'
-    ref_img_path: str = '/content/drive/MyDrive/Final_Server/2d_server/ST_RoomNet/ref_img2.png'
+    ref_img_path: str = '/content/ShowRoom/ST_RoomNet/ref_img2.png'
     weight_path: str = '/content/drive/MyDrive/Final_Server/2d_server/ST_RoomNet/weights/Weight_ST_RroomNet_ConvNext.h5'
     
     # 출력 경로 설정
