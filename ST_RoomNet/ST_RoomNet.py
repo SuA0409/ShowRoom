@@ -26,7 +26,7 @@ class ProcessorConfig:
     val_path: str = '/content/drive/MyDrive/Final_Server/Input/Images'  # chrome extension에서 저장한 이미지
     pose_path: str = '/content/drive/MyDrive/Final_Server/Input/Poses/poses.txt'
     ref_img_path: str = '/content/ShowRoom/ST_RoomNet/ref_img2.png'
-    weight_path: str = '/content/drive/MyDrive/Final_Server/2d_server/ST-RoomNet/weights/Weight_ST_RoomNet_ConvNext.h5'
+    weight_path: str = '/content/drive/MyDrive/Final_Server/2d_server/ST_RoomNet/weights/Weight_ST_RoomNet_ConvNext.h5'
 
     # 출력 경로 설정
     save_path: str = '/content/drive/MyDrive/Final_Server/Input/ST'
