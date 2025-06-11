@@ -11,7 +11,7 @@ from torch import autocast
 torch.backends.cudnn.benchmark = True
 
 # 경로 설정
-image_input = '/content/drive/MyDrive/Colab Notebooks/Images'
+image_input = '/content/drive/MyDrive/Final_Server/Input/Images'
 st_result_txt = '/content/drive/MyDrive/Final_Server/Input/ST/ST_result.txt'
 
 
