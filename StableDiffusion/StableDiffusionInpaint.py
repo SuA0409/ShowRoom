@@ -261,7 +261,7 @@ def main():
                         default=image_input)
     parser.add_argument("--out-folder", type=str,
                         default=image_input)
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
 
     # 결과물을 저장할 출력 폴더가 없으면 생성
     os.makedirs(args.out_folder, exist_ok=True)
