@@ -166,6 +166,7 @@ class ShowRoom:
 
         if self.info:
             print(f'SPR 적용 완료! ({time.time()-start_time:.2f})')
+
         np.savez(self.data_path, point_cloud=point_clouds, color=colors)
 
         if self.info:
