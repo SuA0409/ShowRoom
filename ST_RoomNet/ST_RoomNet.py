@@ -565,7 +565,7 @@ class ShowRoomProcessor:
 
             # 정면 0개 또는 1개인 경우, 모든 이미지에 대해 '2' 처리
             if decision == 'None':
-                f.write("0 2\n")
+                return None
             elif isinstance(decision, tuple):
                 selected_img, side = decision
                 side_code = {'left': 0, 'right': 1}.get(side, 2)
