@@ -20,7 +20,7 @@ def set_3d_server(
         url_type='FAST3R_SERVER_URL',
         json_path='/content/drive/MyDrive/Final_Server/ngrok_path.json',
         model_path='jedyang97/Fast3R_ViT_Large_512',
-        img_path='/content/drive/MyDrive/Final_Server/Input/Poses/Image',
+        img_path='/content/drive/MyDrive/Final_Server/Input/Images',
         camera_path='/content/drive/MyDrive/Final_Server/Input/Poses/poses.txt',
         data_path='/content/drive/MyDrive/Final_Server/Input/Pts/fast3r_output.npz',
         info=True

@@ -60,3 +60,7 @@ bertopic
 umap-learn
 hdbscan
 bertopic
+
+# --------- web --------- #
+flask_cors
+kornia

@@ -4,7 +4,8 @@ from pyngrok import ngrok
 from flask_cors import CORS
 from viz import find_free_port
 import time
-import subprocess
+from ST_RoomNet.ST_RoomNet import ShowRoomProcessor
+from StableDiffusion.StableDiffusionInpaint import main as sd_main
 
 class ServerMaker:
     def __init__(self,
@@ -94,24 +95,17 @@ class ServerMaker:
         def handle_2d_request():
             try:
                 print(" ST-RoomNet 실행 시작!")
-                subprocess.run(
-                    ["python", "ST_RoomNet.py"],
-                    cwd=st_room_net_path,
-                    check=True
-                )
+                processor = ShowRoomProcessor()
+                processor.process()
 
                 print(" ST-RoomNet 실행 완료!")
 
                 print(" rotate_and_inpainting.py 실행 시작!")
-                subprocess.run(
-                    ["python", "rotate_and_inpaint.py"],
-                    cwd=sd_path,
-                    check=True
-                )
+                sd_main()
                 print(" rotate_and_inpainting.py 실행 완료!")
 
                 return jsonify({"status": "success", "message": "2D 생성 완료!"})
 
-            except subprocess.CalledProcessError as e:
+            except Exception as e:
                 print(" 2D 생성 중 오류:", e)
                 return jsonify({"status": "error", "message": str(e)}), 500
