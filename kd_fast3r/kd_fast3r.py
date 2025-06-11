@@ -163,6 +163,7 @@ class ShowRoom:
 
         point_clouds = np.concatenate([point_cloud, vertices1, vertices2], axis=0)
         colors = np.concatenate([color, color1, color2], axis=0)
+        
         if self.info:
             print(f'SPR 적용 완료! ({time.time()-start_time:.2f})')
         np.savez(self.data_path, point_cloud=point_clouds, color=colors)
