@@ -8,8 +8,6 @@ from PIL import Image
 from diffusers import StableDiffusionInpaintPipeline, EulerAncestralDiscreteScheduler
 from torch import autocast
 
-torch.backends.cudnn.benchmark = True
-
 class SimpleRotator:
     """
     SimpleRotator 클래스는 2D 이미지를 3D 공간에서 회전시키고
@@ -21,6 +19,7 @@ class SimpleRotator:
     3. 이 과정에서 생긴 빈 영역(out-of-view)을 마스크로 생성합니다.
     4. Stable Diffusion Inpainting 모델을 사용하여 생성된 마스크 영역을 자연스럽게 채웁니다.
     """
+
     def __init__(self, device='cuda', max_depth_m=5.0, depth_model='MiDaS_small'):
         '''
         클래스 초기화 함수, 필요한 모델들을 로드하고 초기 설정을 수행
@@ -30,7 +29,7 @@ class SimpleRotator:
             depth_model (str): 깊이 예측에 사용할 MiDaS 모델의 이름.
         '''
         self.device = torch.device(device if torch.cuda.is_available() else 'cpu')
-        
+
         # 깊이 정규화 최대값
         self.max_depth_m = max_depth_m
 
@@ -91,7 +90,7 @@ class SimpleRotator:
         # 이미지의 높이와 너비 추출
         H, W = img_rgb.shape[:2]
 
-       # MiDaS 모델의 전처리기를 적용하고 텐서를 지정된 디바이스로 이동
+        # MiDaS 모델의 전처리기를 적용하고 텐서를 지정된 디바이스로 이동
         inp = self.transform(img_rgb).to(self.device)
         with torch.no_grad():
             depth = self.midas(inp)
@@ -136,10 +135,10 @@ class SimpleRotator:
 
         # 카메라 내부 행렬의 역행렬을 사용하여 3D 좌표로 변환
         Kinv = torch.inverse(Kmat)
-        
+
         # 각 픽셀의 3D 좌표/값을 변환
         flat = xyz.view(-1, 3) @ Kinv.T
-        
+
         return flat.view(1, H, W, 3)
 
     @staticmethod
@@ -240,6 +239,7 @@ class SimpleRotator:
             ).images[0]
         return result
 
+
 def main():
     '''
     메인 실행 함수. 명령줄 인자를 파싱하여 이미지 회전 및 인페인팅 파이프라인을 실행
@@ -255,12 +255,12 @@ def main():
                         default="Extend only the background wall and floor. Do not add new objects or decorations."
                                 "Match color and lighting. Keep everything minimal.")
     parser.add_argument("--st-path", type=str,
-                        default="/content/drive/MyDrive/Colab Notebooks/Images/ST_result.txt")
+                        default="/content/drive/MyDrive/Final_Server/Input/ST/ST_result.txt")
     parser.add_argument("--img-folder", type=str,
-                        default="/content/drive/MyDrive/Colab Notebooks/Images")
+                        default="/content/drive/MyDrive/Final_Server/Input/Images")
     parser.add_argument("--out-folder", type=str,
-                        default="/content/drive/MyDrive/Colab Notebooks/Images")
-    args = parser.parse_args()
+                        default="/content/drive/MyDrive/Final_Server/Input/Images")
+    args, unknown = parser.parse_known_args()
 
     # 결과물을 저장할 출력 폴더가 없으면 생성
     os.makedirs(args.out_folder, exist_ok=True)
@@ -294,11 +294,11 @@ def main():
 
         # direction 값에 따라 회전할 각도를 리스트로 정의
         if direction == 0:
-            angles = [args.angle]                # +angle만
+            angles = [args.angle]  # +angle만
         elif direction == 1:
-            angles = [-args.angle]               # -angle만
+            angles = [-args.angle]  # -angle만
         elif direction == 2:
-            angles = [args.angle, -args.angle]   # +angle, -angle 둘 다
+            angles = [args.angle, -args.angle]  # +angle, -angle 둘 다
         else:
             print(f"알 수 없는 direction 값: {direction} (0,1,2만 허용). 건너뜀.")
             continue
@@ -308,13 +308,13 @@ def main():
         if not os.path.isfile(input_path):
             print(f"입력 이미지가 없습니다: {input_path} (건너뜀)")
             continue
-        
+
         # OpenCV를 사용하여 이미지를 BGR 형식으로 로드
         img_bgr = cv2.imread(input_path)
         if img_bgr is None:
             print(f"이미지를 로드할 수 없습니다: {input_path} (건너뜀)")
             continue
-        
+
         # BGR 이미지를 RGB 형식으로 변환
         img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
 
@@ -330,7 +330,7 @@ def main():
 
             # 마스크 텐서(mask)도 NumPy 배열로 변환
             mask_np = (mask[0, 0].cpu().numpy() * 255).astype(np.uint8)
-            
+
             # 모폴로지 '열기(opening)' 연산을 적용하여 마스크의 작은 노이즈(흰 점) 제거
             kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
             mask_np = cv2.morphologyEx(mask_np, cv2.MORPH_OPEN, kernel)
@@ -356,6 +356,20 @@ def main():
             result.save(output_path)
             print(f"[완료] 이미지 {img_id}.jpg → 회전 {angle_deg}° → 인페인팅 → 저장: {output_path}")
 
+def init_sd():
+    torch.hub.load("intel-isl/MiDaS", "MiDaS_small", offline=False)
+
+    # transforms는 offline 옵션 없이!
+    torch.hub.load("intel-isl/MiDaS", "transforms")
+
+    # Stable Diffusion Inpainting 다운로드
+    pipe = StableDiffusionInpaintPipeline.from_pretrained(
+        "stabilityai/stable-diffusion-2-inpainting",
+        revision="fp16",
+        torch_dtype=torch.float16,
+        safety_checker=None,
+        local_files_only=False
+    )
 
 if __name__ == '__main__':
     main()

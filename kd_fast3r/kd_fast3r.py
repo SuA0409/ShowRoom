@@ -156,12 +156,16 @@ class ShowRoom:
     def reconstruction(self, depth=9):
         point_cloud, color = self._predict()
 
+        start_time = time.time()
         vertices1, color1 = self._spr(point_cloud, color, depth=depth)
 
         vertices2, color2 = self._spr(vertices1, color1, depth=depth)
 
         point_clouds = np.concatenate([point_cloud, vertices1, vertices2], axis=0)
         colors = np.concatenate([color, color1, color2], axis=0)
+
+        if self.info:
+            print(f'SPR 적용 완료! ({time.time()-start_time:.2f})')
 
         np.savez(self.data_path, point_cloud=point_clouds, color=colors)
 
