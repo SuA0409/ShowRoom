@@ -1,5 +1,7 @@
 import os
 import sys
+
+sys.path.append('/content/drive/MyDrive/Final_Server/2d_server/ST_RoomNet')
 import cv2
 import numpy as np
 import tensorflow as tf
@@ -14,18 +16,17 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.applications.convnext import ConvNeXtTiny, preprocess_input
 
 # spatial_transformer.py 에 정의된 ProjectiveTransformer 클래스
-from spatial_transformer import ProjectiveTransformer
+from ST_RoomNet.spatial_transformer import ProjectiveTransformer
 
 
 @dataclass
 class ProcessorConfig:
     """프로세서 설정을 위한 데이터클래스"""
-
     # 입력 경로 설정
     val_path: str = '/content/drive/MyDrive/Final_Server/Input/Images'  # chrome extension에서 저장한 이미지
     pose_path: str = '/content/drive/MyDrive/Final_Server/Input/Poses/poses.txt'
     ref_img_path: str = '/content/ShowRoom/ST_RoomNet/ref_img2.png'
-    weight_path: str = '/content/drive/MyDrive/Final_Server/2d_server/ST_RoomNet/weights/Weight_ST_RroomNet_ConvNext.h5'
+    weight_path: str = '/content/drive/MyDrive/Final_Server/2d_server/ST-RoomNet/weights/Weight_ST_RoomNet_ConvNext.h5'
 
     # 출력 경로 설정
     save_path: str = '/content/drive/MyDrive/Final_Server/Input/ST'
@@ -41,49 +42,7 @@ class ProcessorConfig:
     pixel_threshold: int = 5000
 
     # GPU 설정 (True: GPU 사용, False: CPU 사용)
-    use_gpu: bool = False
-
-
-def apply_fast3r_camera_alignment(pose_list: list[np.ndarray]) -> list[np.ndarray]:
-    """
-    Fast3R에서 사용한 viser 시각화 기준 (카메라 방향 및 상방)으로 포즈 회전 정렬.
-
-    - 카메라 시야 방향 (Z축): position → look_at
-    - 상방 기준 (Y축): (0, -1, 0)
-
-    Returns:
-        회전 정렬된 4x4 포즈 행렬 리스트
-    """
-
-    # ▶ Fast3R 기준값 (당신이 올린 값 그대로 사용)
-    cam_position = np.array([-0.00141163, -0.01910395, -0.06794288], dtype=np.float32)
-    cam_look_at = np.array([-0.00352821, -0.01143425, 0.0154939], dtype=np.float32)
-    up_vector = np.array([0.0, -1.0, 0.0], dtype=np.float32)
-
-    # ▶ 기준 좌표계 계산: Z(forward), X(right), Y(up)
-    forward = cam_look_at - cam_position
-    forward /= np.linalg.norm(forward)
-
-    right = np.cross(up_vector, forward)
-    right /= np.linalg.norm(right)
-
-    up = np.cross(forward, right)
-    up /= np.linalg.norm(up)
-
-    # ▶ 회전행렬: world → fast3r 기준 좌표계
-    R_align = np.stack([right, up, forward], axis=0)
-
-    # ▶ 동차변환행렬 생성 (위치 안 바꿈)
-    T_align = np.eye(4, dtype=np.float32)
-    T_align[:3, :3] = R_align
-
-    # ▶ 전체 포즈에 적용
-    aligned_poses = []
-    for pose in pose_list:
-        aligned_pose = T_align @ pose
-        aligned_poses.append(aligned_pose)
-
-    return aligned_poses
+    use_gpu: bool = True
 
 
 class ShowRoomProcessor:
@@ -147,7 +106,6 @@ class ShowRoomProcessor:
         if len(self.img_names) != len(pose_list):
             raise ValueError(f"이미지 수 ({len(self.img_names)})와 포즈 수 ({len(pose_list)})가 일치하지 않습니다")
 
-        pose_list = apply_fast3r_camera_alignment(pose_list)
         # 포즈 매핑
         self.poses_map = {name: pose for name, pose in zip(self.img_names, pose_list)}
 
@@ -541,6 +499,7 @@ def main():
     # 기본 설정으로 프로세서 생성 및 실행
     processor = ShowRoomProcessor()
     result = processor.process()
+
 
 if __name__ == "__main__":
     # 스크립트로 직접 실행할 때만 동작
