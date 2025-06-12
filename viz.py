@@ -2,7 +2,6 @@ import viser
 from pyngrok import ngrok, conf
 import socket
 import viser
-import threading
 import numpy as np
 
 def find_free_port():

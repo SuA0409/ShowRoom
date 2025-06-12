@@ -5,13 +5,11 @@ from viz import ViserMaker
 def set_2d_server(
         token='2xwkthyPz15CsSbartjgnt9aQde_3RoEvuB7Mz7oHHzuDJFia',
         url_type='TWOD_SERVER_URL',
-        json_path='/content/drive/MyDrive/Final_Server/ngrok_path.json',
-        st_room_net_path='/content/drive/MyDrive/Final_Server/2d_server/discriminator',
-        sd_path='/content/drive/MyDrive/Final_Server/2d_server/'
+        json_path='/content/drive/MyDrive/Final_Server/ngrok_path.json'
 ):
     s2 = ServerMaker(token=token, url_type=url_type, json_path=json_path)
 
-    s2.set_2d(st_room_net_path, sd_path)
+    s2.set_2d()
 
     s2.run()
 

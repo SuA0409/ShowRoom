@@ -9,7 +9,6 @@ from dataclasses import dataclass
 from typing import Optional, Tuple, Union, List, Dict
 
 import base64
-from showroom_processor import ShowRoomProcessor
 
 # TensorFlow Keras ConvNeXtTiny (TF 2.11 이상)
 from tensorflow.keras.models import Model
