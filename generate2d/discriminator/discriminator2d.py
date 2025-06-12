@@ -1,14 +1,12 @@
 import os
 import sys
 
-sys.path.append('/content/drive/MyDrive/Final_Server/2d_server/ST_RoomNet')
+sys.path.append('/content/drive/MyDrive/Final_Server/2d_server/discriminator')
 import cv2
 import numpy as np
 import tensorflow as tf
-import matplotlib.pyplot as plt
-from ast import literal_eval
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Optional, Tuple, Union
 
 # TensorFlow Keras ConvNeXtTiny (TF 2.11 이상)
 from tensorflow.keras.models import Model
@@ -16,8 +14,7 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.applications.convnext import ConvNeXtTiny, preprocess_input
 
 # spatial_transformer.py 에 정의된 ProjectiveTransformer 클래스
-from ST_RoomNet.spatial_transformer import ProjectiveTransformer
-
+from generate2d.discriminator.spatial_transformer import ProjectiveTransformer
 
 @dataclass
 class ProcessorConfig:
@@ -25,8 +22,8 @@ class ProcessorConfig:
     # 입력 경로 설정
     val_path: str = '/content/drive/MyDrive/Final_Server/Input/Images'  # chrome extension에서 저장한 이미지
     pose_path: str = '/content/drive/MyDrive/Final_Server/Input/Poses/poses.txt'
-    ref_img_path: str = '/content/ShowRoom/ST_RoomNet/ref_img2.png'
-    weight_path: str = '/content/drive/MyDrive/Final_Server/2d_server/ST_RoomNet/weights/Weight_ST_RoomNet_ConvNext.h5'
+    ref_img_path: str = '/content/ShowRoom/discriminator/ref_img2.png'
+    weight_path: str = '/content/drive/MyDrive/Final_Server/2d_server/discriminator/weights/Weight_ST_RoomNet_ConvNext.h5'
 
     # 출력 경로 설정
     save_path: str = '/content/drive/MyDrive/Final_Server/Input/ST'
@@ -43,7 +40,6 @@ class ProcessorConfig:
 
     # GPU 설정 (True: GPU 사용, False: CPU 사용)
     use_gpu: bool = True
-
 
 class ShowRoomProcessor:
     """ShowRoom 레이아웃 처리를 위한 메인 클래스"""

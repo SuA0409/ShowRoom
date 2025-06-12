@@ -200,7 +200,7 @@ class MultiviewHabitatSimGenerator:
     def _lazy_initialization(self):
         # Lazy random seeding and instantiation of the simulator to deal with multiprocessing properly
         if self.seed == None:
-            # Re-seed numpy generator
+            # Re-seed numpy discriminator
             np.random.seed()
             self.seed = np.random.randint(2**32 - 1)
             sim_cfg = habitat_sim.SimulatorConfiguration()
