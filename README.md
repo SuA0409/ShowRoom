@@ -1,7 +1,7 @@
-## One-line summary
-Based on the n spatial images selected by the user, missing 2D visual information is complemented through inpainting, and empty regions generated during the 3D reconstruction process are refined to provide a realistic 3D space.
+## ShowRoom: Indoor Scene 3D Reconstruction System
+Based on n user-selected images of a room, this system generates realistic 3D spaces by filling in missing 2D visual information (inpainting) and compensating for empty regions generated during the 3D reconstruction process.
 
-# ShowRoom FlowChart
+## ShowRoom FlowChart
 ![image](https://github.com/user-attachments/assets/f706becb-5712-4f78-bd5b-499ded7b035c)
 
 
@@ -16,69 +16,50 @@ Based on the n spatial images selected by the user, missing 2D visual informatio
     # install ShowRoom as a package
     pip install -e .
 
-## The View of Developer
-  Train dataset : ScnaNet++
+## Usage
+  Demo dataset : demo/data
   
-  Loading Fast3R/Dust3R weight : 
-  ### 1. Preprocess 2D images 
-  1.1. Fixed-interval sampling : 5 images are sampled at regular intervals, with one image selected every (total/20) frames.
+  Loading Fast3R weight : 
   
-  1.2. Min-Max normalization : Each of the 5 images is resized to 196 × 256 and normalized to the range [-1, 1].
+  ※ The demo below only supports model execution and is not running on a server-based demo.
+  ### Run to 3D Reconstruction (Fast3R-SPR-Viser)
+  1.1. Fast3R
   
-  1.3. Adjusting the input shape for model compatibility : The data is structured as a dictionary with the following keys: image, true_shape, index, and instance.
-  ## 2. 3D Reconstruction
-  We apply Knowledge Distillation(KD) of Fast3r. The teacher model is Fast3R (CVPR 2025), and the student model is ShowRoom.
+  1.2. SPR
   
-  The type of KD used in the ShowRoom is relation-based knowledge and offline distillation.
+  1.3. Viser
+  ## Run to 2D Generation (Discriminator -> Generator)
+  1.1. 2D discriminator
   
-  Change only the hidden layer number of head. (Loading encoder-decoder weight of original Fast3R's, and only train the weight of head)
-  ## 3. Train
-  [ 3.1. Dataset ]
+  1.2. 2D generator
   
-  Approximately 500,000 samples from the ScanNet++ dataset are used with the following settings: 
-  
-  3.1.1. 5 sampled images per room
-  
-  3.1.2. a batch size of 4 rooms
-  
-  3.1.3. each image resized to 192 × 256 × 3
-  
-  The resulting data is reshaped to the format [S, B, C, H, W], where S is the number of images per room and B is the number of rooms in a batch.
-  
-  [ 3.2. Loss Function ]
-  
-  Calculate 'distance' and 'angle' between Fast3R(teacher) which is pseudo-GT(groud truth) and ShowRoom(student) output.
-  
-  Making loss more stable, using 'cosine loss'.
-  
-  (Applying normalization of each feature.)
-
-  [ 3.3. Knowledge Distillation ]
-
-  3.3.1. learning rate warm-up (schedular)
-
-  3.3.2. Gradient accumulation 
-  ## 4. Visualization
-  [ SPR ]
-  Used to complement the missing parts of the 3D reconstruction from Fast3R/ShowRoom (scene completion).
-  
-  As a result of comparing performance and execution time, SPR was executed twice with depth 9.
-  
-  [ Viser ]
-  
-  Using 'viser' which is the 3D plot tool made by Meta.
-  
-  Visulize 3D output in local using library.
-
-  ## 5. Generate 2D images based on the input 2D images
-  [ Discriminator ] by ST-RoomNet
-  
-  [ Generator ] by Stable-Diffusion-2-inpainting
-  
-## The View of Users
-  ### 1. Choose 2D images
+## Project Structure
+  ### vg
   Users can choose 3 ~5 images.
-  ### 2. 3D Reconstruction
+  ### gg
   The 3D space is reconstructed by sequentially applying Fast3R and SPR.
-  ## 3. (Option) Choose the button '3D generate'
-  
+  ## gg
+
+## Fas3R KD 학습 방법과 결과
+    ### 1.1. train dataset 설명 및 전처리
+    ### 1.2. Fast3R KD한 구조
+    ### 1.3. Fast3R 학습방법
+    ### 1.4. train/validation 결과
+
+## Citation
+    If you use this project or build upon it, please cite:
+    
+    @inproceedings{lin2023fast3r,
+  title={Fast3R: Fast Room Reconstruction from a Single Panorama Using Transformers},
+  author={Lin, Yen-Chen and Ranjan, Anurag and Liu, Lingjie and Tulsiani, Shubham and Torralba, Antonio and Efros, Alexei A and Abbeel, Pieter and Freeman, William T and Zhang, Richard},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year={2023}
+}
+
+## License
+    MIT License
+
+Copyright (c) 2025 SuA
+
+Permission is hereby granted, free of charge, to any person obtaining a copy...
+
