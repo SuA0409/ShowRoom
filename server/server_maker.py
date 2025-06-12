@@ -4,8 +4,8 @@ from pyngrok import ngrok
 from flask_cors import CORS
 from viz import find_free_port
 import time
-from generator.ST_RoomNet import ShowRoomProcessor
-from generate2d.generator2d.stable_diffusion import main as sd_main
+from generate2d.discriminator.discriminator2d import ShowRoomProcessor
+from generate2d.generator.stable_diffusion import main as sd_main
 from kd_fast3r.utils.data_preprocess import server_images_load
 
 class ServerMaker:
@@ -78,7 +78,8 @@ class ServerMaker:
                 time.sleep(1)
                 self.showroom.reconstruction()
                 self.showroom.building_spr()
-                return jsonify({"status": "success"})
+
+                return jsonify({"pose": self.showroom.pose})
             except Exception as e:
                 return f"Error processing: {str(e)}", 500
 
@@ -92,13 +93,7 @@ class ServerMaker:
             except Exception as e:
                 return jsonify({"status": "fail", "error": str(e)})
 
-    def recevied_file(self):
-        files = request.files['image']
-
-    def set_2d(self,
-               st_room_net_path='/content/drive/MyDrive/Final_Server/2d_server/discriminator',
-               sd_path='/content/drive/MyDrive/Final_Server/2d_server/'
-               ):
+    def set_2d(self):
         @self.app.route('/2d_upload', methods=['POST'])
         def handle_2d_request():
             try:

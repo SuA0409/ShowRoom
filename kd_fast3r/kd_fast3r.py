@@ -28,15 +28,16 @@ class ShowRoom:
         '''
 
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.model = Fast3R.from_pretrained(model_path).to(self.device)
 
-        self.images = None
+        self.model = Fast3R.from_pretrained(model_path).to(self.device)
         self.img_path = img_path
         self.camera_path = camera_path
         self.data_path = data_path
 
         self.info = info
         self.viz = viz
+
+        self.images = None
 
     # MultiViewDUSt3RLitModule에 camera pose 추정하는 함수 사용 하여 카메라 포즈 추정
     def _get_camera_pose(self, pred):
@@ -50,6 +51,8 @@ class ShowRoom:
         # 카메라 포즈를 지정한 path에 txt형태로 저장
         with open(self.camera_path, 'w') as f:
             f.write(str(camera_poses))
+
+        self.pose = camera_poses.tolist()
 
     # Fast3r 모델을 활용한 3d point could 및 camera_pose 추정
     def _predict(self):
@@ -162,22 +165,27 @@ class ShowRoom:
     # reconstruction을 하는 main 함수
     def reconstruction(self):
         self.point_cloud, self.color = self._predict()
-        np.savez(self.data_path, point_cloud=self.point_cloud, color=self.color)
-        self.viz.add_point_cloud('ShowRoom')
+        if self.data_path and os.path.exists(self.data_path):
+            np.savez(self.data_path, point_cloud=self.point_cloud, color=self.color)
+            self.viz.add_point_cloud(f'ShowRoom')
+        else:
+            self.viz.add_point_cloud('ShowRoom', self.point_cloud, self.color)
+
         if self.info:
             print('    ShowRoom 저장 완료 !')
 
-    def building_spr(self, depth=9):
-        start_time = time.time()
-        vertices1, color1 = self._spr(self.point_cloud, self.color, depth=depth)
-        np.savez(self.data_path, point_cloud=vertices1, color=color1)
-        self.viz.add_point_cloud('spr_1')
-        if self.info:
-            print(f'SPR 1회 적용 완료! ({time.time() - start_time:.2f})')
-            start_time = time.time()
+    def building_spr(self, depth=9, repeat=2):
+        vertices, color = self.point_cloud, self.color
 
-        vertices2, color2 = self._spr(vertices1, color1, depth=depth)
-        np.savez(self.data_path, point_cloud=vertices2, color=color2)
-        self.viz.add_point_cloud('spr_2')
-        if self.info:
-            print(f'SPR 2회 적용 완료! ({time.time() - start_time:.2f})')
+        for i in range(repeat):
+            start_time = time.time()
+            vertices, color = self._spr(vertices, color, depth=depth)
+
+            if self.data_path and os.path.exists(self.data_path):
+                np.savez(self.data_path, point_cloud=vertices, color=color)
+                self.viz.add_point_cloud(f'spr_{i+1}')
+            else:
+                self.viz.add_point_cloud(f'spr_{i+1}', vertices, color)
+
+            if self.info:
+                print(f'SPR {i+1}회 적용 완료! ({time.time() - start_time:.2f})')

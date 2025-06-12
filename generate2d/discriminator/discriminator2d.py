@@ -15,6 +15,7 @@ from tensorflow.keras.applications.convnext import ConvNeXtTiny, preprocess_inpu
 
 # spatial_transformer.py 에 정의된 ProjectiveTransformer 클래스
 from generate2d.discriminator.spatial_transformer import ProjectiveTransformer
+import json
 
 @dataclass
 class ProcessorConfig:
@@ -604,8 +605,7 @@ def main():
 
     # 기본 설정으로 프로세서 생성 및 실행
     processor = ShowRoomProcessor()
-    result = processor.process()
-
+    processor.process()
 
 if __name__ == "__main__":
     # 스크립트로 직접 실행할 때만 동작
