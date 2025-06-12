@@ -588,7 +588,7 @@ class ShowRoomProcessor:
         images, poses = self._load_data(request_data)
         return self.process_images_with_pose(images, poses)
 
-def main(request_data: dict) -> List[Dict[str, Union[int, str]]]:
+def dis_main(request_data: dict) -> List[Dict[str, Union[int, str]]]:
     """
     ST-RoomNet 실행 및 결과 직렬화
     Args:
@@ -610,4 +610,4 @@ def main(request_data: dict) -> List[Dict[str, Union[int, str]]]:
     return serialized_result
 
 if __name__ == "__main__":
-    main()
+    dis_main()
