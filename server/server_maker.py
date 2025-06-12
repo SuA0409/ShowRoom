@@ -233,65 +233,71 @@ class ServerMaker:
 
         # 2d_server resp,respone
 
-    def set_main_2d(self):
+        # 2d_server resp,respone
+        def set_main_2d(self):
 
-        @self.app.route('/2d_upload', methods=['POST'])
-        def request_2d_server():
-            print("🔔 2D 서버로 요청 시작!")
-            try:
-                data = {"pose": json.dumps(self.fast3r_response.json())}
-
-                response_2d = requests.post(self.TWOD_SERVER_URL + "/2d_upload", files=copy.deepcopy(self.files),
-                                            data=data,
-                                            timeout=600)
+            @self.app.route('/2d_upload', methods=['POST'])
+            def request_2d_server():
+                print("🔔 2D 서버로 요청 시작!")
                 try:
-                    print(response_2d)
-                except:
-                    print(response_2d.json())
-                    print('ee')
+                    data = {"pose": json.dumps(self.fast3r_response.json())}
 
-                print('1')
-                for name, bytesio_obj in response_2d:
+                    response_2d = requests.post(self.TWOD_SERVER_URL + "/2d_upload", files=copy.deepcopy(self.files),
+                                                data=data,
+                                                timeout=600)
+                    # dict(list[dict[file]])
+
+                    print(response_2d.json())
+                    bytesio_obj = response_2d.json()['images'][0]['data']
+                    print(bytesio_obj)
+                    name = response_2d.json()['images'][0]['name']
                     bytesio_obj.seek(0)  # 포인터를 처음으로 이동 (중요!)
+                    print('aaa1a')
                     image_bytes = bytesio_obj.getvalue()  # 바이트 데이터 추출
                     print(f"{name}: {len(image_bytes)} bytes")
-                print('2')
+                    new_files = copy.deepcopy(self.files)
 
-                if response_2d.status_code == 200:
-                    result_2d = response_2d.json()
-                    print("✅ 2D 서버 처리 완료:", result_2d)
+                    print(new_files)
+                    new_files.append(image_bytes)
+                    print(new_files)
 
-                    # ⭐️ 이어서 FAST3R 서버에 요청
-                    print("🔔 FAST3R 서버로 요청 시작!")
-                    response_3d = requests.post(self.FAST3R_SERVER_URL + "/3d_upload", timeout=600)
+                    if response_2d.status_code == 200:
+                        result_2d = response_2d.json()
+                        print("✅ 2D 서버 처리 완료:", result_2d)
 
-                    if response_3d.status_code == 200:
-                        result_3d = response_3d.json()
-                        print("✅ FAST3R 처리 완료:", result_3d)
+                        # ⭐️ 이어서 FAST3R 서버에 요청
+                        print("🔔 FAST3R 서버로 요청 시작!")
+                        response_3d = requests.post(self.FAST3R_SERVER_URL + "/3d_upload",
+                                                    files=copy.deepcopy(new_files), timeout=600)
 
-                        # ⭐️ ⭐️ 이어서 VISER 요청 추가!
-                        print("🔔 VISER에 요청 시작!")
-                        response_viser = requests.post(self.FAST3R_SERVER_URL + "/viser", timeout=600)
+                        if response_3d.status_code == 200:
+                            result_3d = response_3d.json()
+                            print("✅ FAST3R 처리 완료:", result_3d)
 
-                        if response_viser.status_code == 200:
-                            result_viser = response_viser.json()
-                            print("✅ VISER 처리 완료:", result_viser)
+                            # ⭐️ ⭐️ 이어서 VISER 요청 추가!
+                            print("🔔 VISER에 요청 시작!")
+                            response_viser = requests.post(self.FAST3R_SERVER_URL + "/viser", timeout=600)
 
-                            return jsonify({
-                                "status": "success",
-                                "message": "2D, 3D, Viser까지 모두 완료!",
-                                "2d_result": result_2d,
-                                "3d_result": result_3d,
-                                "viser_result": result_viser
-                            })
+                            if response_viser.status_code == 200:
+                                result_viser = response_viser.json()
+                                print("✅ VISER 처리 완료:", result_viser)
+
+                                return jsonify({
+                                    "status": "success",
+                                    "message": "2D, 3D, Viser까지 모두 완료!",
+                                    "2d_result": result_2d,
+                                    "3d_result": result_3d,
+                                    "viser_result": result_viser
+                                })
+                            else:
+                                return jsonify({"status": "error", "message": f"Viser 오류: {response_viser.text}"}), 500
+
                         else:
-                            return jsonify({"status": "error", "message": f"Viser 오류: {response_viser.text}"}), 500
-
+                            return jsonify({"status": "error", "message": "3D 서버 오류: " + response_3d.text}), 500
                     else:
-                        return jsonify({"status": "error", "message": "3D 서버 오류: " + response_3d.text}), 500
-                else:
-                    return jsonify({"status": "error", "message": "2D 서버 오류: " + response_2d.text}), 500
+                        return jsonify({"status": "error", "message": "2D 서버 오류: " + response_2d.text}), 500
 
-            except Exception as e:
-                print("❌ 2D 서버 요청 실패:", e)
-                return jsonify({"status": "error", "message": str(e)}), 500
+                except Exception as e:
+                    print("ㅇㅁㄹㅇㄴㄹㅇ나ㅓㄹㄴㅇ론ㅇ랴")
+                    print("❌ 2D 서버 요청 실패:", e)
+                    return jsonify({"status": "error", "message": str(e)}), 500
