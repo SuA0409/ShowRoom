@@ -124,8 +124,8 @@ class ShowRoomProcessor:
         import base64
 
         # 요청 데이터에서 이미지와 포즈 추출
-        images = request_data.get('image')
-        poses = request_data.get('pose')
+        images = request_data.files['images']
+        poses = request_data.form['pose']
 
         if images is None or poses is None:
             raise ValueError("요청 데이터에 'image' 또는 'pose'가 없습니다")
