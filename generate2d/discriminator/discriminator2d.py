@@ -6,7 +6,10 @@ import cv2
 import numpy as np
 import tensorflow as tf
 from dataclasses import dataclass
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, List, Dict
+
+import base64
+from showroom_processor import ShowRoomProcessor
 
 # TensorFlow Keras ConvNeXtTiny (TF 2.11 이상)
 from tensorflow.keras.models import Model
@@ -15,19 +18,13 @@ from tensorflow.keras.applications.convnext import ConvNeXtTiny, preprocess_inpu
 
 # spatial_transformer.py 에 정의된 ProjectiveTransformer 클래스
 from generate2d.discriminator.spatial_transformer import ProjectiveTransformer
-import json
 
 @dataclass
 class ProcessorConfig:
     """프로세서 설정을 위한 데이터클래스"""
-    # 입력 경로 설정
-    val_path: str = '/content/drive/MyDrive/Final_Server/Input/Images'  # chrome extension에서 저장한 이미지
-    pose_path: str = '/content/drive/MyDrive/Final_Server/Input/Poses/poses.txt'
-    ref_img_path: str = '/content/ShowRoom/discriminator/ref_img2.png'
-    weight_path: str = '/content/drive/MyDrive/Final_Server/2d_server/discriminator/weights/Weight_ST_RoomNet_ConvNext.h5'
 
-    # 출력 경로 설정
-    save_path: str = '/content/drive/MyDrive/Final_Server/Input/ST'
+    # 가중치 파일 경로
+    weight_path: str = '/content/drive/MyDrive/Final_Server/2d_server/ST_RoomNet/weights/Weight_ST_RroomNet_ConvNext.h5'
 
     # 모델 설정
     image_size: Tuple[int, int] = (400, 400)
@@ -56,11 +53,8 @@ class ShowRoomProcessor:
         self.config = config if config is not None else ProcessorConfig()
         self.model = None
         self.theta_model = None
-        self.img_names = []
-        self.poses_map = {}
 
         self._setup_gpu()
-        self._load_data()
         self._build_model()
 
     def _setup_gpu(self) -> None:
@@ -71,85 +65,6 @@ class ShowRoomProcessor:
             print("CPU")
         else:
             print("GPU")
-
-    def _load_data(self) -> None:
-        """이미지 파일 및 포즈 데이터(.txt)를 로드하고 내부 구조로 매핑"""
-
-        # 이미지 파일명 로드
-        if not os.path.exists(self.config.val_path):
-            raise FileNotFoundError(f"이미지 경로를 찾을 수 없습니다: {self.config.val_path}")
-
-        img_filenames = sorted([f for f in os.listdir(self.config.val_path)
-                                if f.endswith(('.jpg', '.png'))])
-        self.img_names = [os.path.splitext(f)[0] for f in img_filenames]
-
-        # 포즈 데이터 로드
-        if not os.path.exists(self.config.pose_path):
-            raise FileNotFoundError(f"포즈 파일을 찾을 수 없습니다: {self.config.pose_path}")
-
-        with open(self.config.pose_path, "r") as f:
-            pose_text = f.read()
-
-        try:
-            # 'array'와 'float32'만 정의해주는 안전한 eval 환경
-            safe_env = {
-                "array": np.array,
-                "float32": np.float32,
-            }
-            pose_list = eval(pose_text, safe_env)
-        except Exception as e:
-            raise ValueError(f"포즈 파일 파싱 오류: {e}")
-
-        if len(self.img_names) != len(pose_list):
-            raise ValueError(f"이미지 수 ({len(self.img_names)})와 포즈 수 ({len(pose_list)})가 일치하지 않습니다")
-        
-        pose_list = self.apply_fast3r_camera_alignment(pose_list)
-
-        # 포즈 매핑
-        self.poses_map = {name: pose for name, pose in zip(self.img_names, pose_list)}
-
-        print(f" 데이터 로드 완료: 이미지 {len(self.img_names)}개, 포즈 {len(pose_list)}개")
-
-    def apply_fast3r_camera_alignment(self, pose_list: list[np.ndarray]) -> list[np.ndarray]:
-        """
-        Fast3R에서 사용한 viser 시각화 기준 (카메라 방향 및 상방)으로 포즈 회전 정렬.
-
-        - 카메라 시야 방향 (Z축): position → look_at
-        - 상방 기준 (Y축): (0, -1, 0)
-
-        Returns:
-            회전 정렬된 4x4 포즈 행렬 리스트
-        """
-
-        #  Fast3R 기준 카메라 위치 및 각도
-        cam_position = np.array([-0.00141163, -0.01910395, -0.06794288], dtype=np.float32)
-        cam_look_at  = np.array([-0.00352821, -0.01143425,  0.0154939],  dtype=np.float32)
-        up_vector    = np.array([0.0, -1.0, 0.0], dtype=np.float32)
-
-        # 기준 좌표계 계산: Z(forward), X(right), Y(up)
-        forward = cam_look_at - cam_position
-        forward /= np.linalg.norm(forward)
-
-        right = np.cross(up_vector, forward)
-        right /= np.linalg.norm(right)
-
-        up = np.cross(forward, right)
-        up /= np.linalg.norm(up)
-
-        # 회전행렬: world → fast3r 기준 좌표계
-        R_align = np.stack([right, up, forward], axis=0)
-
-        # 동차변환행렬 생성
-        T_align = np.eye(4, dtype=np.float32)
-        T_align[:3, :3] = R_align
-
-        # 전체 포즈 적용
-        aligned_poses = []
-        for pose in pose_list:
-            aligned_pose = T_align @ pose
-            aligned_poses.append(aligned_pose)
-
-        return aligned_poses
 
     def _build_model(self) -> None:
         """ConvNeXt 기반 모델 구축 및 가중치(.h5) 로드 수행"""
@@ -194,6 +109,112 @@ class ShowRoomProcessor:
 
         # Theta만 별도로 뽑아내기 위한 서브 모델
         self.theta_model = Model(inputs=base_model.input, outputs=theta_layer)
+
+    def _load_data(self, request_data: dict) -> Tuple[List[np.ndarray], List[list]]:
+        """
+        서버 요청에서 받은 {image: [base64_str | bytes | np.ndarray, ...], pose: [list, list, list]} 데이터를 로드
+
+        Args:
+            request_data (dict): {image: [base64_str | bytes | np.ndarray, ...], pose: [list, list, list]} 형식의 입력 데이터
+
+        Returns:
+            Tuple[List[np.ndarray], List[list]]: 처리된 이미지 리스트와 포즈 리스트
+        """
+        import base64
+
+        # 요청 데이터에서 이미지와 포즈 추출
+        images = request_data.get('image')
+        poses = request_data.get('pose')
+
+        if images is None or poses is None:
+            raise ValueError("요청 데이터에 'image' 또는 'pose'가 없습니다")
+
+        if not isinstance(images, list) or not isinstance(poses, list):
+            raise ValueError("'image'와 'pose'는 리스트 형식이어야 합니다")
+
+        if len(images) != 3 or len(poses) != 3:
+            raise ValueError("이미지와 포즈는 각각 3개씩이어야 합니다")
+
+        # 이미지 처리 (base64 | bytes | np.ndarray -> np.ndarray)
+        processed_images = []
+        for img_data in images:
+            if isinstance(img_data, str):  # base64 문자열
+                try:
+                    img_bytes = base64.b64decode(img_data)
+                    nparr = np.frombuffer(img_bytes, np.uint8)
+                    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                except Exception as e:
+                    raise ValueError(f"base64 이미지 디코딩 실패: {e}")
+            elif isinstance(img_data, bytes):  # bytes
+                nparr = np.frombuffer(img_data, np.uint8)
+                img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            elif isinstance(img_data, np.ndarray):  # np.ndarray
+                img = img_data
+            else:
+                raise ValueError("이미지는 base64 문자열, bytes, 또는 np.ndarray 형식이어야 합니다")
+
+            if img is None:
+                raise ValueError("이미지 디코딩 실패")
+            processed_images.append(img)
+
+        # 포즈 데이터 처리 (리스트 형식 그대로 사용)
+        processed_poses = []
+        for pose in poses:
+            if not isinstance(pose, (list, np.ndarray)):
+                raise ValueError("각 'pose'는 리스트 또는 np.ndarray 형식이어야 합니다")
+            pose_array = np.array(pose, dtype=np.float32)
+            if pose_array.shape != (4, 4):
+                raise ValueError("각 포즈는 4x4 행렬이어야 합니다")
+            processed_poses.append(pose_array)
+
+        # 포즈 데이터 카메라 정렬 적용
+        processed_poses = self.apply_fast3r_camera_alignment(processed_poses)
+
+        print(f"데이터 로드 완료: 이미지 {len(processed_images)}개, 포즈 {len(processed_poses)}개")
+        return processed_images, processed_poses
+
+    def apply_fast3r_camera_alignment(self, pose_list: list[np.ndarray]) -> list[np.ndarray]:
+        """
+        Fast3R에서 사용한 viser 시각화 기준 (카메라 방향 및 상방)으로 포즈 회전 정렬.
+
+        Args:
+            pose_list (list[np.ndarray]): 4x4 포즈 행렬 리스트
+
+        Returns:
+            list[np.ndarray]: 회전 정렬된 4x4 포즈 행렬 리스트
+        """
+
+        #  Fast3R 기준 카메라 위치 및 각도
+        cam_position = np.array([-0.00141163, -0.01910395, -0.06794288], dtype=np.float32)
+        cam_look_at  = np.array([-0.00352821, -0.01143425,  0.0154939],  dtype=np.float32)
+        up_vector    = np.array([0.0, -1.0, 0.0], dtype=np.float32)
+
+        # 기준 좌표계 계산: Z(forward), X(right), Y(up)
+        forward = cam_look_at - cam_position
+        forward /= np.linalg.norm(forward)
+
+        right = np.cross(up_vector, forward)
+        right /= np.linalg.norm(right)
+
+        up = np.cross(forward, right)
+        up /= np.linalg.norm(up)
+
+        # 회전행렬: world → fast3r 기준 좌표계
+        R_align = np.stack([right, up, forward], axis=0)
+
+        # 동차변환행렬 생성
+        T_align = np.eye(4, dtype=np.float32)
+        T_align[:3, :3] = R_align
+
+        # 전체 포즈 적용
+        aligned_poses = []
+        for pose in pose_list:
+            aligned_pose = T_align @ pose
+            aligned_poses.append(aligned_pose)
+
+        return aligned_poses
+
+
 
     def is_front_view(self,
                       layout_mask: np.ndarray,
@@ -389,33 +410,34 @@ class ShowRoomProcessor:
             return (z1, 'right') if area1 > area2 else (z2, 'left')
 
         print(f"   잘못된 side 값: {side}")
-        return None
+        return 'None'
 
-    def process_images_with_pose(self) -> Union[str, Tuple[str, str], None]:
+    def process_images_with_pose(self,
+                                 images: List[np.ndarray],
+                                 poses: List[np.ndarray],
+                                 ) -> List[Dict[str, Union[int, np.ndarray]]]:
         """
         전체 이미지에 대해 처리 수행:
         - 세그멘테이션 및 Theta 추론
         - 정면 이미지 판별
         - 정면 수에 따라 재생성 판단 수행
 
+        Args:
+            images (List[np.ndarray]): 입력 이미지 리스트 (3개)
+            poses (List[np.ndarray]): 입력 포즈 리스트 (3개)
+
         Returns:
-            Union[str, Tuple[str, str], None]: 재생성 판단 결과
+            List[Dict[str, Union[int, np.ndarray]]]: [{key: int, image: np.ndarray}, ...] 형식의 결과 리스트
         """
 
-        os.makedirs(self.config.save_path, exist_ok=True)
         front_views = []
         layout_map = {}  # {이미지명: layout_seg}
         theta_map = {}
+        results = []
 
-        for img_name in self.img_names:
-            print(f"\n 처리 중: {img_name}.jpg")
-            img_path = os.path.join(self.config.val_path, img_name + '.jpg')
-            if not os.path.exists(img_path):
-                print(f"   {img_path}을(를) 찾을 수 없음 → 건너뜀")
-                continue
-
-            # 이미지 읽고 RGB 전처리
-            img = cv2.imread(img_path)
+        for idx, img in enumerate(images):
+            print(f"\n 처리 중: 이미지 {idx}")
+            # 이미지 전처리
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             img = cv2.resize(img, self.config.image_size)
             img_input = preprocess_input(img[tf.newaxis, ...])  # (1,400,400,3), float32
@@ -425,43 +447,41 @@ class ShowRoomProcessor:
 
             # layout_pred[0,:,:,0]는 실수형 예측 결과 → 반올림 후 uint8로 바꿔서 mask 생성
             layout_seg = np.rint(layout_pred[0, :, :, 0]).astype(np.uint8)
-            layout_map[img_name] = layout_seg
+            layout_map[idx] = layout_seg
 
             # Theta 값 추출
             theta_values = self.theta_model.predict(img_input)[0]
-            theta_map[img_name] = theta_values
+            theta_map[idx] = theta_values
 
-            # θ를 파일로 저장
-            np.savez(os.path.join(self.config.save_path, f'{img_name}_theta.npz'), theta=theta_values)
+            # # θ를 파일로 저장
+            # np.savez(os.path.join(self.config.save_path, f'{img_name}_theta.npz'), theta=theta_values)
 
-            # Segmentation mask를 시각화(51*레이블)하여 PNG로 저장
-            cv2.imwrite(os.path.join(self.config.save_path, f'{img_name}_pred.png'), layout_seg * 51)
+            # # Segmentation mask를 시각화(51*레이블)하여 PNG로 저장
+            # cv2.imwrite(os.path.join(self.config.save_path, f'{img_name}_pred.png'), layout_seg * 51)
 
             # 정면 판별
             if self.is_front_view(layout_seg):
-                front_views.append(img_name)
-                print(f"   > {img_name}: 정면(True)")
+                front_views.append(idx)
+                print(f"   > {idx}: 정면(True)")
             else:
-                print(f"   > {img_name}: 정면(False)")
+                print(f"   > {idx}: 정면(False)")
 
         print(f"\n 최종 정면 이미지: {front_views}")
 
         # 정면 이미지 개수에 따른 재생성 판단
         if len(front_views) >= 3:
             print("   → 정면 이미지가 3개 이상 → 재생성 불필요")
-            return 'None'
+            return [{"key": 2, "image": None}]
 
         elif len(front_views) == 2:
             z1, z2 = front_views
-            pose1 = self.poses_map[z1]
-            pose2 = self.poses_map[z2]
-            non_fronts = [name for name in self.img_names if name not in front_views]
+            pose1 = poses[z1]
+            pose2 = poses[z2]
+            non_fronts = [i for i in range(3) if i not in front_views]
 
             related_angles = []
             for nf in non_fronts:
-                nf_pose = self.poses_map.get(nf)
-                if nf_pose is None:
-                    continue
+                nf_pose = poses[nf]
                 angle1 = self.compute_relative_angle(pose1, nf_pose)
                 angle2 = self.compute_relative_angle(pose2, nf_pose)
                 related_angles.append((nf, angle1, angle2))
@@ -472,141 +492,122 @@ class ShowRoomProcessor:
             # 조건에 따라 판단 분기
             for nf_name, angle1, angle2 in related_angles:
                 if (angle1 <= 55 and angle2 <= 55) or (angle1 >= 90 and angle2 >= 90):
-                    # → decide_regeneration_from_angle_and_side로 판별
                     print("   → 두 정면 이미지 모두와 시점 차이가 크거나 매우 작음 → 정밀 판별 수행")
                     angle = self.compute_relative_angle(pose1, pose2)
                     side = self.determine_relative_side(pose1, pose2)
                     print(f"   → 두 정면 이미지 간 각도: {angle:.2f}°, 방향: {side}")
-                    return self.decide_regeneration_from_angle_and_side(
+                    result = self.decide_regeneration_from_angle_and_side(
                         layout1=layout_map[z1],
                         layout2=layout_map[z2],
                         angle=angle,
                         side=side,
-                        z1=z1,
-                        z2=z2
+                        z1=str(z1),
+                        z2=str(z2)
                     )
+                    if result == 'None':
+                        return [{"key": 2, "image": None}]
+                    img_idx, direction = result
+                    key = 0 if direction == 'left' else 1
+                    return [{"key": key, "image": images[int(img_idx)]}]
                 elif angle1 <= 55 < angle2:
-                    print(f"   → {z2}와의 각도가 커서 상대적 방향으로 판단")
-                    side = self.determine_relative_side(pose2, self.poses_map[nf_name])
-                    return (z2, side)
+                    print(f"   → 이미지 {z2}와의 각도가 커서 상대적 방향으로 판단")
+                    side = self.determine_relative_side(pose2, poses[nf_name])
+                    key = 0 if side == 'left' else 1
+                    return [{"key": key, "image": images[z2]}]
                 elif angle2 <= 55 < angle1:
-                    print(f"   → {z1}와의 각도가 커서 상대적 방향으로 판단")
-                    side = self.determine_relative_side(pose1, self.poses_map[nf_name])
-                    return (z1, side)
+                    print(f"   → 이미지 {z1}와의 각도가 커서 상대적 방향으로 판단")
+                    side = self.determine_relative_side(pose1, poses[nf_name])
+                    key = 0 if side == 'left' else 1
+                    return [{"key": key, "image": images[z1]}]
 
             print("   → 유효한 비교 대상 없음 → 기본 판별 수행")
             angle = self.compute_relative_angle(pose1, pose2)
             side = self.determine_relative_side(pose1, pose2)
-            return self.decide_regeneration_from_angle_and_side(
+            result = self.decide_regeneration_from_angle_and_side(
                 layout1=layout_map[z1],
                 layout2=layout_map[z2],
                 angle=angle,
                 side=side,
-                z1=z1,
-                z2=z2
+                z1=str(z1),
+                z2=str(z2)
             )
+            if result == 'None':
+                return [{"key": 2, "image": None}]
+            img_idx, direction = result
+            key = 0 if direction == 'left' else 1
+            return [{"key": key, "image": images[int(img_idx)]}]
 
         elif len(front_views) == 1:
             z_front = front_views[0]
-            print(f"   → 정면 이미지가 1개: {z_front}")
+            print(f"   → 정면 이미지가 1개: 이미지 {z_front}")
 
-            non_fronts = [name for name in self.img_names if name != z_front]
+            non_fronts = [i for i in range(3) if i != z_front]
             if len(non_fronts) != 2:
                 print("   → 정면이 1개지만 비교할 이미지가 부족 → 재생성 불가")
-                return 'None'
+                return [{"key": 2, "image": None}]
 
-            pose_f = self.poses_map[z_front]
-            pose_nf1 = self.poses_map[non_fronts[0]]
-            pose_nf2 = self.poses_map[non_fronts[1]]
+            pose_f = poses[z_front]
+            pose_nf1 = poses[non_fronts[0]]
+            pose_nf2 = poses[non_fronts[1]]
 
-            # Z축 방향 벡터 추출
             _, z_dir1 = self.get_camera_position_and_direction(pose_nf1)
             _, z_dir2 = self.get_camera_position_and_direction(pose_nf2)
 
             z_dir1 = z_dir1 / np.linalg.norm(z_dir1)
             z_dir2 = z_dir2 / np.linalg.norm(z_dir2)
 
-            dot_product = np.dot(z_dir1, z_dir2)  # -1 ~ 1
+            dot_product = np.dot(z_dir1, z_dir2)
             print(f"   → 두 비정면 이미지 간 Z축 방향 유사도 (cosθ): {dot_product:.3f}")
 
-            if dot_product > 0.8:  # 방향이 매우 유사함 (약 36도 이하 차이)
-                # 정면 이미지 기준 반대 방향 계산
+            if dot_product > 0.8:
                 pos_f, dir_f = self.get_camera_position_and_direction(pose_f)
                 pos_nf1, _ = self.get_camera_position_and_direction(pose_nf1)
                 side = self.determine_relative_side(pose_f, pose_nf1)
                 opposite_side = 'right' if side == 'left' else 'left'
                 print(f"   → 비정면 이미지 둘 다 {side} 방향에 있음 → 반대쪽 {opposite_side}로 생성")
-                return (z_front, opposite_side)
+                key = 0 if opposite_side == 'left' else 1
+                return [{"key": key, "image": images[z_front]}]
 
             print("   → 비정면 이미지 방향이 달라서 기준이 불분명 → 재생성 불가")
-            return 'None'
+            return [{"key": 2, "image": None}]
 
         else:
             print("   → 정면 이미지 없음 → 재생성 불가")
-            return 'None'
+            return [{"key": 2, "image": None}]
 
-    def save_result(self, decision: Union[str, Tuple[str, str], None]) -> str:
+    def process(self, request_data: dict) -> List[Dict[str, Union[int, np.ndarray]]]:
         """
-        처리 결과를 텍스트 파일(.txt)로 저장
+        모델 처리 후 결과를 {key, image} 형식으로 반환
 
         Args:
-            decision (Union[str, Tuple[str, str], None]): 재생성 판단 결과
+            request_data (dict): {image: [bytes, bytes, bytes], pose: [list, list, list]} 형식의 입력 데이터
 
         Returns:
-            str: 저장된 파일 경로
+            List[Dict[str, Union[int, np.ndarray]]]: [{key: int, image: np.ndarray}, ...] 형식의 결과 리스트
         """
+        images, poses = self._load_data(request_data)
+        return self.process_images_with_pose(images, poses)
 
-        output_txt_path = os.path.join(self.config.save_path, "ST_result.txt")
-
-        with open(output_txt_path, "w") as f:
-
-            # 정면 0개 또는 1개인 경우, 모든 이미지에 대해 '2' 처리
-            if decision == 'None':
-                return None
-            elif isinstance(decision, tuple):
-                selected_img, side = decision
-                side_code = {'left': 0, 'right': 1}.get(side, 2)
-                f.write(f"{selected_img} {side_code}\n")
-
-            # 예외 처리 (None 등)
-            else:
-                f.write("none 2\n")
-
-        print(f"\n 결과 텍스트 저장 완료: {output_txt_path}")
-        return output_txt_path
-
-    def process(self) -> Union[str, Tuple[str, str], None]:
-        """
-        전체 프로세스를 실행하는 메인 메서드
-
-        - 이미지 전처리 및 분석 수행
-        - 결과 판단 및 저장
-
-        """
-
-        print("ShowRoom 레이아웃 처리를 시작합니다...")
-
-        # 이미지 처리 및 분석
-        decision = self.process_images_with_pose()
-
-        # 결과 저장
-        self.save_result(decision)
-
-        print(f"\n 최종 재생성 판단 결과: {decision}")
-        return decision
-
-
-def main():
+def main(request_data: dict) -> List[Dict[str, Union[int, str]]]:
     """
-    메인 실행 함수
-
-    스크립트 실행 시 ShowRoomProcessor를 실행하고 결과를 출력함
+    ST-RoomNet 실행 및 결과 직렬화
+    Args:
+        request_data: {image: [base64_str, ...], pose: [list, ...]}
+    Returns:
+        List[Dict[str, Union[int, str]]]: [{key: int, image: str | None}, ...]
     """
-
-    # 기본 설정으로 프로세서 생성 및 실행
     processor = ShowRoomProcessor()
-    processor.process()
+    result = processor.process(request_data)
+    serialized_result = []
+    for item in result:
+        serialized_item = {"key": item["key"]}
+        if item["image"] is not None:
+            _, img_encoded = cv2.imencode('.jpg', item["image"])
+            serialized_item["image"] = base64.b64encode(img_encoded.tobytes()).decode('utf-8')
+        else:
+            serialized_item["image"] = None
+        serialized_result.append(serialized_item)
+    return serialized_result
 
 if __name__ == "__main__":
-    # 스크립트로 직접 실행할 때만 동작
     main()
