@@ -1,11 +1,12 @@
 import json
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from pyngrok import ngrok
 from flask_cors import CORS
 from viz import find_free_port
 import time
 from generator.ST_RoomNet import ShowRoomProcessor
 from generate2d.generator2d.stable_diffusion import main as sd_main
+from kd_fast3r.utils.data_preprocess import server_images_load
 
 class ServerMaker:
     def __init__(self,
@@ -63,29 +64,23 @@ class ServerMaker:
         self.app.run(host='0.0.0.0', port=self.port)
 
     def set_3d(self, showroom):
-
         self.showroom = showroom
 
         @self.app.route('/3d_upload', methods=['POST'])
         def echo():
             try:
                 print(' main에서 입력 받음 !')
+                try:
+                    self.showroom.images = server_images_load(request.files)
+                except:
+                    self.showroom.images = None
+
                 time.sleep(1)
                 self.showroom.reconstruction()
-
-                return jsonify({"status": "success"})
-            except Exception as e:
-                return jsonify({"status": str(e)})
-
-
-        @self.app.route('/spr', methods=['POST'])
-        def spr():
-            try:
                 self.showroom.building_spr()
-
                 return jsonify({"status": "success"})
             except Exception as e:
-                return jsonify({"status": str(e)})
+                return f"Error processing: {str(e)}", 500
 
     def set_viser(self, show_viz):
         self.show_viz = show_viz
@@ -96,6 +91,9 @@ class ServerMaker:
                 return jsonify({"status": str(self.show_viz.ngrok_url)})
             except Exception as e:
                 return jsonify({"status": "fail", "error": str(e)})
+
+    def recevied_file(self):
+        files = request.files['image']
 
     def set_2d(self,
                st_room_net_path='/content/drive/MyDrive/Final_Server/2d_server/discriminator',
