@@ -7,11 +7,11 @@ import argparse
 from PIL import Image
 from diffusers import StableDiffusionInpaintPipeline, EulerAncestralDiscreteScheduler
 from torch import autocast
+from io import BytesIO
 
 torch.backends.cudnn.benchmark = True
 
 # ST-RoomNet에서 판별 정보 받는 곳
-output_data = {"key": 0,"image": np.ndarray(shape=(512, 384, 3), dtype=np.uint8)}
 
 class SimpleRotator:
     """
@@ -239,48 +239,64 @@ class SimpleRotator:
             ).images[0]
         return result
 
+    def to_bytesio(self, image_np: np.ndarray, filename: str = "result.jpg") -> BytesIO:
 
-def gen_main():
+        success, encoded_image = cv2.imencode('.jpg', image_np)
+        if not success:
+            raise ValueError("JPEG 인코딩 실패")
+        
+        img_file = BytesIO(encoded_image.tobytes())
+        img_file.name = filename
+        return img_file 
 
-    # 생성 판별
+def main(output_data, file):
     key = output_data.get("key")
     if key not in (0, 1):
         print(f"지원되지 않는 key: {key} (0:left, 1:right 만 지원)")
         return
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--angle", type=float, default=30)
-    parser.add_argument("--steps", type=int, default=50)
-    parser.add_argument("--guidance", type=float, default=8.5)
-    parser.add_argument("--prompt", type=str,
-                        default="Extend only the background wall and floor. Do not add new objects.")
-    args, _ = parser.parse_known_args()
 
-    torch.manual_seed(args.seed)
-    np.random.seed(args.seed)
+    # 하드코딩된 설정값 (argparse 제거)
+    seed = 42
+    angle_value = 30
+    steps = 50
+    guidance = 8.5
+    prompt = "Extend only the background wall and floor. Do not add new objects."
+
+    torch.manual_seed(seed)
+    np.random.seed(seed)
     rotator = SimpleRotator(device='cuda', max_depth_m=3.0)
 
-    angle = args.angle if key == 0 else -args.angle
+    angle = angle_value if key == 0 else -angle_value
     img_np = output_data.get('image')
 
-    # 회전 및 마스크 생성
+    # 회전 + 마스크 생성
     new_rgb, depth, mask = rotator.rotate_frame(img_np, angle)
     out_rgb = ((new_rgb[0].cpu().permute(1,2,0)+1)*127.5).clamp(0,255).byte().cpu().numpy()
+
+    # 마스크 후처리
     mask_np = (mask[0,0].cpu().numpy()*255).astype(np.uint8)
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5))
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5,5))
     mask_np = cv2.morphologyEx(mask_np, cv2.MORPH_OPEN, kernel)
 
     # 인페인팅
-    init_img = Image.fromarray(out_rgb).convert("RGB").resize((512,384))
-    mask_img = Image.fromarray(mask_np).convert("L").resize((512,384))
+    init_img = Image.fromarray(out_rgb).convert("RGB").resize((512,512))
+    mask_img = Image.fromarray(mask_np).convert("L").resize((512,512))
     result = rotator.inpaint(init_img, mask_img,
-                             prompt=args.prompt, steps=args.steps, guidance=args.guidance)
+                             prompt=prompt, steps=steps, guidance=guidance)
 
-    # 기존 원본 이미지 경로에 넣기
+    # np.ndarray로 변환 후 BytesIO 파일로 저장
     result_np = np.array(result)
-    out = {"image":result_np}
-    print('이미지 반환 완료')
-    return out
+    img_file = rotator.to_bytesio(result_np, filename=f"{key}.jpg")
 
-if __name__=='__main__':
-    gen_main()
+    # 리스트에 추가
+    file.append((f"images{key}", img_file))
+    print(f"이미지 images{key} 변환 및 파일 추가 완료")
+
+if __name__ == '__main__':
+    for output_data in result:
+        if output_data["key"] in (0, 1):
+            main(output_data, file)  # ✅ 외부 리스트 전달
+        else:
+            print(f"⚠️ 건너뜀: key={output_data['key']} (0,1만 지원)")
+
+    print("최종 파일 리스트:", [name for name, _ in file])
