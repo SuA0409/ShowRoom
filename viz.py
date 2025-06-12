@@ -59,9 +59,10 @@ class ViserMaker:
         self.server.scene.world_axes.visible = False
 
     # point_cloud를 viser에 추가하는 함수
-    def add_point_cloud(self, name):
-        data = np.load(self.data_path, allow_pickle=True)
-        point_cloud, color = data['point_cloud'], data['color']
+    def add_point_cloud(self, name, point_cloud=None, color=None):
+        if point_cloud is None and color is None:
+            data = np.load(self.data_path, allow_pickle=True)
+            point_cloud, color = data['point_cloud'], data['color']
 
         self.server.add_point_cloud(
             name=name,

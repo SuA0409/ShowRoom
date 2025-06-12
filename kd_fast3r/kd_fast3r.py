@@ -7,12 +7,12 @@ import pymeshlab
 from torchvision.utils import save_image
 from fast3r.models.multiview_dust3r_module import MultiViewDUSt3RLitModule
 from fast3r.models.fast3r import Fast3R
-from kd_fast3r.utils.data_preprocess import batch_images_load
+from kd_fast3r.utils.data_preprocess import batch_images_load, server_images_load
 
 class ShowRoom:
     def __init__(self,
                  model_path,
-                 img_path,
+                 img_path='/content/drive/MyDrive/Final_Server/Input/Images',
                  camera_path='/content/drive/MyDrive/Final_Server/Input/Poses/poses.txt',
                  data_path='/content/drive/MyDrive/Final_Server/Input/Pts/fast3r_output.npz',
                  info=True,
@@ -28,15 +28,16 @@ class ShowRoom:
         '''
 
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.model = Fast3R.from_pretrained(model_path).to(self.device)
 
+        self.model = Fast3R.from_pretrained(model_path).to(self.device)
         self.img_path = img_path
         self.camera_path = camera_path
         self.data_path = data_path
 
         self.info = info
-
         self.viz = viz
+
+        self.images = None
 
     # MultiViewDUSt3RLitModule에 camera pose 추정하는 함수 사용 하여 카메라 포즈 추정
     def _get_camera_pose(self, pred):
@@ -51,20 +52,26 @@ class ShowRoom:
         with open(self.camera_path, 'w') as f:
             f.write(str(camera_poses))
 
+        self.pose = [pose.tolist() for pose in camera_poses]
+
     # Fast3r 모델을 활용한 3d point could 및 camera_pose 추정
     def _predict(self):
+        if self.images is None:
+            sample = len([f for f in os.listdir(self.img_path) if f.lower().endswith('.jpg')])
+            assert sample > 0, 'Failed to find files'
 
-        sample = len([f for f in os.listdir(self.img_path) if f.lower().endswith('.jpg')])
-        assert sample > 0, 'Failed to find files'
+            room, color = batch_images_load(self.img_path, batch_size=1, size=512, sample=sample)
 
-        room, color = batch_images_load(self.img_path, batch_size=1, size=512, sample=sample)
+            for i, image in enumerate(room):
+                # 전처리 된 순서에 맞춰 이미지 순서 바꾸기 (이미지 판별)
+                save_path = os.path.join(self.img_path, f'{i}.jpg')
+                save_image((image['img'][0]+1) / 2, save_path)
+        else:
+            room, color = self.images
+            sample = len(room)
 
         for i, image in enumerate(room):
-            # 전처리 된 순서에 맞춰 이미지 순서 바꾸기 (이미지 판별)
-            save_path = os.path.join(self.img_path, f'{i}.jpg')
-            save_image((image['img'][0]+1) / 2, save_path)
-
-            # input data를 device 타입에 맞게 조정
+        # input data를 device 타입에 맞게 조정
             room[i]['img'] = image['img'].to(self.device)
             room[i]['true_shape'] = image['true_shape'].to(self.device)
 
@@ -156,25 +163,30 @@ class ShowRoom:
         return vertices, color
 
     # reconstruction을 하는 main 함수
-    def reconstruction(self, depth=9):
+    def reconstruction(self):
         self.point_cloud, self.color = self._predict()
-        np.savez(self.data_path, point_cloud=self.point_cloud, color=self.color)
-        self.viz.add_point_cloud('ShowRoom')
+
+        if self.images is None:
+            np.savez(self.data_path, point_cloud=self.point_cloud, color=self.color)
+            self.viz.add_point_cloud(f'ShowRoom')
+        else:
+            self.viz.add_point_cloud('ShowRoom', self.point_cloud, self.color)
+
         if self.info:
             print('    ShowRoom 저장 완료 !')
 
-    def building_spr(self, depth=9):
+    def building_spr(self, depth=9, repeat=2):
+        vertices, color = self.point_cloud, self.color
 
-        start_time = time.time()
-        vertices1, color1 = self._spr(self.point_cloud, self.color, depth=depth)
-        np.savez(self.data_path, point_cloud=vertices1, color=color1)
-        self.viz.add_point_cloud('spr_1')
-        if self.info:
-            print(f'SPR 1회 적용 완료! ({time.time() - start_time:.2f})')
+        for i in range(repeat):
             start_time = time.time()
+            vertices, color = self._spr(vertices, color, depth=depth)
 
-        vertices2, color2 = self._spr(vertices1, color1, depth=depth)
-        np.savez(self.data_path, point_cloud=vertices2, color=color2)
-        self.viz.add_point_cloud('spr_2')
-        if self.info:
-            print(f'SPR 2회 적용 완료! ({time.time() - start_time:.2f})')
+            if self.images is None:
+                np.savez(self.data_path, point_cloud=vertices, color=color)
+                self.viz.add_point_cloud(f'spr_{i+1}')
+            else:
+                self.viz.add_point_cloud(f'spr_{i+1}', vertices, color)
+
+            if self.info:
+                print(f'SPR {i+1}회 적용 완료! ({time.time() - start_time:.2f})')
