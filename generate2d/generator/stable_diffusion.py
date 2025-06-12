@@ -10,10 +10,8 @@ from torch import autocast
 
 torch.backends.cudnn.benchmark = True
 
-# 경로 설정
-image_input = '/content/drive/MyDrive/Final_Server/Input/Images'
-st_result_txt = '/content/drive/MyDrive/Final_Server/Input/ST/ST_result.txt'
-
+# ST-RoomNet에서 판별 정보 받는 곳
+output_data = {"key": 0,"image": np.ndarray(shape=(512, 328, 3), dtype=np.uint8)}
 
 class SimpleRotator:
     """
@@ -241,119 +239,48 @@ class SimpleRotator:
             ).images[0]
         return result
 
+
 def main():
 
-
-    '''
-    메인 실행 함수. 명령줄 인자를 파싱하여 이미지 회전 및 인페인팅 파이프라인을 실행
-    '''
-    # argparse를 사용하여 명령줄 인자를 설정하고 파싱
+    # 생성 판별
+    key = output_data.get("key")
+    if key not in (0, 1):
+        print(f"지원되지 않는 key: {key} (0:left, 1:right 만 지원)")
+        return
     parser = argparse.ArgumentParser()
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--angle", type=float, default=30)
-    parser.add_argument("--max-depth", type=float, default=3.0)
     parser.add_argument("--steps", type=int, default=50)
-    parser.add_argument("--guidance", type=float, default=7.0)
+    parser.add_argument("--guidance", type=float, default=8.5)
     parser.add_argument("--prompt", type=str,
-                        default="Extend only the background wall and floor. Do not add new objects or decorations."
-                                "Match color and lighting. Keep everything minimal.")
-    parser.add_argument("--st-path", type=str,
-                        default=st_result_txt)
-    parser.add_argument("--img-folder", type=str,
-                        default=image_input)
-    parser.add_argument("--out-folder", type=str,
-                        default=image_input)
-    args, unknown = parser.parse_known_args()
+                        default="Extend only the background wall and floor. Do not add new objects.")
+    args, _ = parser.parse_known_args()
 
-    # 결과물을 저장할 출력 폴더가 없으면 생성
-    os.makedirs(args.out_folder, exist_ok=True)
-
-    # 재현성을 위해 PyTorch와 NumPy의 랜덤 시드 고정
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
+    rotator = SimpleRotator(device='cuda', max_depth_m=3.0)
 
-    # SimpleRotator 클래스 인스턴스화 (모델 로딩 포함)
-    rotator = SimpleRotator(device='cuda', max_depth_m=args.max_depth)
+    angle = args.angle if key == 0 else -args.angle
+    img_np = output_data.get('image')
 
-    # 처리할 이미지 목록 파일(ST_result.txt)을 읽어들임
-    try:
-        with open(args.st_path, 'r') as f:
-            lines = [line.strip() for line in f if line.strip()]
-    except FileNotFoundError:
-        raise FileNotFoundError(f"'{args.st_path}' 파일을 찾을 수 없습니다.")
-    except Exception as e:
-        raise RuntimeError(f"ST_result.txt 파싱 중 오류 발생: {e}")
+    # 회전 및 마스크 생성
+    new_rgb, depth, mask = rotator.rotate_frame(img_np, angle)
+    out_rgb = ((new_rgb[0].cpu().permute(1,2,0)+1)*127.5).clamp(0,255).byte().cpu().numpy()
+    mask_np = (mask[0,0].cpu().numpy()*255).astype(np.uint8)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5))
+    mask_np = cv2.morphologyEx(mask_np, cv2.MORPH_OPEN, kernel)
 
-    # 파일에서 읽어온 각 라인에 대해 이미지 처리 반복
-    for line in lines:
-        try:
-            # 라인을 공백 기준으로 분리하여 이미지 ID와 방향(direction)을 추출
-            img_id_str, direction_str = line.split()
-            img_id = int(img_id_str)
-            direction = int(direction_str)
-        except Exception:
-            print(f"잘못된 형식 건너뜀: '{line}'")
-            continue
+    # 인페인팅
+    init_img = Image.fromarray(out_rgb).convert("RGB").resize((512,512))
+    mask_img = Image.fromarray(mask_np).convert("L").resize((512,512))
+    result = rotator.inpaint(init_img, mask_img,
+                             prompt=args.prompt, steps=args.steps, guidance=args.guidance)
 
-        # direction 값에 따라 회전할 각도를 리스트로 정의
-        if direction == 0:
-            angles = [args.angle] # +angle만
-        elif direction == 1:
-            angles = [-args.angle] # -angle만
-        else:
-            print(f"알 수 없는 direction 값: {direction} (0,1만 허용). 건너뜀.")
-            continue
+    # 기존 원본 이미지 경로에 넣기
+    result_np = np.array(result)
+    out = {"image":result_np}
+    print('이미지 반환 완료')
+    return out
 
-        # 입력 이미지 경로를 조합하고 파일 존재 여부 확인
-        input_path = os.path.join(args.img_folder, f"{img_id}.jpg")
-        if not os.path.isfile(input_path):
-            print(f"입력 이미지가 없습니다: {input_path} (건너뜀)")
-            continue
-
-        # OpenCV를 사용하여 이미지를 BGR 형식으로 로드
-        img_bgr = cv2.imread(input_path)
-        if img_bgr is None:
-            print(f"이미지를 로드할 수 없습니다: {input_path} 생성 불가")
-            continue
-
-        # BGR 이미지를 RGB 형식으로 변환
-        img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-
-        # 정의된 각도(angles) 리스트를 순회하며 각각 처리
-        for angle_deg in angles:
-            # 이미지 회전 및 마스크 생성
-            new_rgb, depth, mask = rotator.rotate_frame(img_rgb, angle_deg)
-
-            # 회전된 텐서(new_rgb)를 후처리하여 PIL이 다룰 수 있는 NumPy 배열로 변환
-            out_rgb = ((new_rgb[0].cpu().permute(1, 2, 0) + 1) * 127.5).clamp(0, 255).byte().numpy()
-
-            # 마스크 텐서(mask)도 NumPy 배열로 변환
-            mask_np = (mask[0, 0].cpu().numpy() * 255).astype(np.uint8)
-
-            # 모폴로지 '열기(opening)' 연산을 적용하여 마스크의 작은 노이즈(흰 점) 제거
-            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-            mask_np = cv2.morphologyEx(mask_np, cv2.MORPH_OPEN, kernel)
-
-            # 인페인팅 모델 입력 사이즈(512x512)에 맞게 이미지와 마스크를 PIL Image로 변환 및 리사이즈
-            init_img = Image.fromarray(out_rgb).convert("RGB").resize((512, 512))
-            mask_img = Image.fromarray(mask_np).convert("L").resize((512, 512))
-
-            # 인페인팅 수행
-            result = rotator.inpaint(
-                init_img, mask_img,
-                args.prompt, steps=args.steps, guidance=args.guidance
-            )
-
-            # 회전 방향에 따라 결과 파일 이름 결정
-            if angle_deg > 0:
-                output_filename = f"left1{img_id}.jpg"
-            else:
-                output_filename = f"right1{img_id}.jpg"
-
-            # 최종 결과 이미지를 지정된 경로에 저장
-            output_path = os.path.join(args.out_folder, output_filename)
-            result.save(output_path)
-            print(f"이미지 저장: {output_path}")
-
-if __name__ == '__main__':
+if __name__=='__main__':
     main()
