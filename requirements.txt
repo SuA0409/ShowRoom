@@ -44,8 +44,8 @@ huggingface-hub[torch]>=0.22
 pymeshlab
 pyngrok
 # Using python, install below. (Using colab, you don't need)
-socket
-cv2
+# socket
+# cv2
 
 # --------- BERTopic --------- #
 pandas
