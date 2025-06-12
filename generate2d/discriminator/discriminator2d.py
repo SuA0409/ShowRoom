@@ -23,8 +23,8 @@ class ProcessorConfig:
     """프로세서 설정을 위한 데이터클래스"""
 
     # 가중치 파일 경로
-    weight_path: str = '/content/drive/MyDrive/Final_Server/2d_server/ST_RoomNet/weights/Weight_ST_RoomNet_ConvNext.h5'
-    ref_img_path: str = '/content/drive/MyDrive/Final_Server/2d_server/ST_RoomNet/ref_img2.png'
+    weight_path: str = '/content/drive/MyDrive/Final_Server/2d_server/ST_RoomNet/weights/Weight_ST_RroomNet_ConvNext.h5'
+    ref_img_path: str = '/content/drive/MyDrive/Final_Server/2d_server/ST-RoomNet/ref_img2.png'
 
     # 모델 설정
     image_size: Tuple[int, int] = (400, 400)
@@ -110,7 +110,7 @@ class ShowRoomProcessor:
         # Theta만 별도로 뽑아내기 위한 서브 모델
         self.theta_model = Model(inputs=base_model.input, outputs=theta_layer)
 
-    def _load_data(self, request_data: dict) -> Tuple[List[np.ndarray], List[list]]:
+    def _load_data(self, images, poses):
         """
         서버 요청에서 받은 {image: [base64_str | bytes | np.ndarray, ...], pose: [list, list, list]} 데이터를 로드
 
@@ -122,36 +122,15 @@ class ShowRoomProcessor:
         """
         import base64
 
-        # 요청 데이터에서 이미지와 포즈 추출
-        images = request_data.files['images']
-        poses = request_data.form['pose']
-
-        if images is None or poses is None:
-            raise ValueError("요청 데이터에 'image' 또는 'pose'가 없습니다")
-
-        if not isinstance(images, list) or not isinstance(poses, list):
-            raise ValueError("'image'와 'pose'는 리스트 형식이어야 합니다")
-
-        if len(images) != 3 or len(poses) != 3:
-            raise ValueError("이미지와 포즈는 각각 3개씩이어야 합니다")
-
         # 이미지 처리 (base64 | bytes | np.ndarray -> np.ndarray)
         processed_images = []
-        for img_data in images:
-            if isinstance(img_data, str):  # base64 문자열
-                try:
-                    img_bytes = base64.b64decode(img_data)
-                    nparr = np.frombuffer(img_bytes, np.uint8)
-                    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-                except Exception as e:
-                    raise ValueError(f"base64 이미지 디코딩 실패: {e}")
-            elif isinstance(img_data, bytes):  # bytes
-                nparr = np.frombuffer(img_data, np.uint8)
-                img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            elif isinstance(img_data, np.ndarray):  # np.ndarray
-                img = img_data
-            else:
-                raise ValueError("이미지는 base64 문자열, bytes, 또는 np.ndarray 형식이어야 합니다")
+        for idx, f in enumerate(images.values()):
+            try:
+                image_bytes = f.read()
+                file_bytes = np.frombuffer(image_bytes, np.uint8)
+                img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+            except Exception as e:
+                raise ValueError(f"base64 이미지 {idx} 디코딩 실패: {e}")
 
             if img is None:
                 raise ValueError("이미지 디코딩 실패")
@@ -159,12 +138,9 @@ class ShowRoomProcessor:
 
         # 포즈 데이터 처리 (리스트 형식 그대로 사용)
         processed_poses = []
+        print(poses, type(poses[0][0][0]))
         for pose in poses:
-            if not isinstance(pose, (list, np.ndarray)):
-                raise ValueError("각 'pose'는 리스트 또는 np.ndarray 형식이어야 합니다")
             pose_array = np.array(pose, dtype=np.float32)
-            if pose_array.shape != (4, 4):
-                raise ValueError("각 포즈는 4x4 행렬이어야 합니다")
             processed_poses.append(pose_array)
 
         # 포즈 데이터 카메라 정렬 적용
@@ -575,7 +551,7 @@ class ShowRoomProcessor:
             print("   → 정면 이미지 없음 → 재생성 불가")
             return [{"key": 2, "image": None}]
 
-    def process(self, request_data: dict) -> List[Dict[str, Union[int, np.ndarray]]]:
+    def process(self, request_data, pose) -> List[Dict[str, Union[int, np.ndarray]]]:
         """
         모델 처리 후 결과를 {key, image} 형식으로 반환
 
@@ -585,10 +561,10 @@ class ShowRoomProcessor:
         Returns:
             List[Dict[str, Union[int, np.ndarray]]]: [{key: int, image: np.ndarray}, ...] 형식의 결과 리스트
         """
-        images, poses = self._load_data(request_data)
+        images, poses = self._load_data(request_data, pose)
         return self.process_images_with_pose(images, poses)
 
-def dis_main(request_data: dict) -> List[Dict[str, Union[int, str]]]:
+def main(request_data, pose) -> List[Dict[str, Union[int, str]]]:
     """
     ST-RoomNet 실행 및 결과 직렬화
     Args:
@@ -597,7 +573,7 @@ def dis_main(request_data: dict) -> List[Dict[str, Union[int, str]]]:
         List[Dict[str, Union[int, str]]]: [{key: int, image: str | None}, ...]
     """
     processor = ShowRoomProcessor()
-    result = processor.process(request_data)
+    result = processor.process(request_data, pose)
     serialized_result = []
     for item in result:
         serialized_item = {"key": item["key"]}
@@ -610,4 +586,4 @@ def dis_main(request_data: dict) -> List[Dict[str, Union[int, str]]]:
     return serialized_result
 
 if __name__ == "__main__":
-    dis_main()
+    main()

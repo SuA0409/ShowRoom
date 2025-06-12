@@ -9,6 +9,7 @@ from generate2d.generator.stable_diffusion import main as sd_main
 from kd_fast3r.utils.data_preprocess import server_images_load
 from io import BytesIO
 import requests
+import copy
 
 class ServerMaker:
     def __init__(self,
@@ -99,6 +100,7 @@ class ServerMaker:
 
                 return jsonify({"pose": self.showroom.pose})
             except Exception as e:
+                print(e, 'sdfosjdfosadmfkosdm')
                 return f"Error processing: {str(e)}", 500
 
     def set_viser(self, show_viz):
@@ -165,10 +167,11 @@ class ServerMaker:
                 except Exception as e:
                     print(f"Failed to load image from {url}: {e}")
 
+            print(self.files)
             # ✅ Fast3R 서버에 "폴더 전체 처리" 요청
             try:
                 print("[⚡️] Fast3R에 요청 전송!")
-                self.fast3r_response = requests.post(self.FAST3R_SERVER_URL + "/3d_upload", files=self.files, timeout=600)
+                self.fast3r_response = requests.post(self.FAST3R_SERVER_URL + "/3d_upload", files=copy.deepcopy(self.files), timeout=600)
                 print(f"[⚡️] Fast3R 응답코드: {self.fast3r_response.status_code}")
 
                 if self.fast3r_response.status_code == 200:
@@ -213,7 +216,9 @@ class ServerMaker:
         @self.app.route('/2d_upload', methods=['POST'])
         def request_2d_server():
             try:
-                response_2d = requests.post(self.FAST3R_SERVER_URL + "/32_upload", files=self.files, json=self.fast3r_response,
+                data = {"pose": json.dumps(self.fast3r_response.json())}
+
+                response_2d = requests.post(self.TWOD_SERVER_URL + "/2d_upload", files=copy.deepcopy(self.files), data=data,
                                             timeout=600)
                 print("🔔 2D 서버로 요청 시작!")
 
@@ -223,7 +228,7 @@ class ServerMaker:
 
                     # ⭐️ 이어서 FAST3R 서버에 요청
                     print("🔔 FAST3R 서버로 요청 시작!")
-                    response_3d = requests.post(self.FAST3R_SERVER_URL + "/3d_upload", timeout=600)
+                    response_3d = requests.post(self.FAST3R_SERVER_URL + "/3d_upload", files=copy.deepcopy(self.files), timeout=600)
 
                     if response_3d.status_code == 200:
                         result_3d = response_3d.json()
