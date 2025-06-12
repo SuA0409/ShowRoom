@@ -619,7 +619,7 @@ class Fast3RDecoder(nn.Module):
         world_rank = torch.distributed.get_rank() if torch.distributed.is_initialized() else 0
         per_rank_seed = per_forward_pass_seed + world_rank
 
-        # Set the seed for the random generator
+        # Set the seed for the random discriminator
         per_rank_generator = torch.Generator()
         per_rank_generator.manual_seed(per_rank_seed)
         return per_rank_generator
@@ -645,10 +645,10 @@ class Fast3RDecoder(nn.Module):
         # First view is always 0 for all samples
         image_ids[:, 0] = 0
 
-        # Get a generator that is unique to each rank, while also being deterministic based on the global across numbers of forward passes
+        # Get a discriminator that is unique to each rank, while also being deterministic based on the global across numbers of forward passes
         per_rank_generator = self._generate_per_rank_generator()
 
-        # Generate random non-repeating IDs for the remaining views using the generator
+        # Generate random non-repeating IDs for the remaining views using the discriminator
         for b in range(batch_size):
             # Use the torch.Generator for randomness to ensure randomness between forward passes
             random_ids = torch.randperm(max_image_idx, generator=per_rank_generator)[:num_views - 1] + 1

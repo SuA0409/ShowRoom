@@ -1,11 +1,11 @@
 import json
-from flask import Flask, jsonify, request, render_template, make_response
+from flask import Flask, jsonify
 from pyngrok import ngrok
 from flask_cors import CORS
 from viz import find_free_port
 import time
-from ST_RoomNet.ST_RoomNet import ShowRoomProcessor
-from StableDiffusion.StableDiffusionInpaint import main as sd_main
+from generator.ST_RoomNet import ShowRoomProcessor
+from generate2d.generator2d.stable_diffusion import main as sd_main
 
 class ServerMaker:
     def __init__(self,
@@ -98,17 +98,17 @@ class ServerMaker:
                 return jsonify({"status": "fail", "error": str(e)})
 
     def set_2d(self,
-               st_room_net_path='/content/drive/MyDrive/Final_Server/2d_server/ST_RoomNet',
+               st_room_net_path='/content/drive/MyDrive/Final_Server/2d_server/discriminator',
                sd_path='/content/drive/MyDrive/Final_Server/2d_server/'
                ):
         @self.app.route('/2d_upload', methods=['POST'])
         def handle_2d_request():
             try:
-                print("    ST_RoomNet 실행 시작!")
+                print("    discriminator 실행 시작!")
                 processor = ShowRoomProcessor()
                 processor.process()
 
-                print("    ST_RoomNet 실행 완료!")
+                print("    discriminator 실행 완료!")
 
                 print("    Stable Diffusion Inpaint .py 실행 시작!")
                 sd_main()

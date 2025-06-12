@@ -1,6 +1,6 @@
 import os
 import sys
-sys.path.append('/content/drive/MyDrive/Final_Server/2d_server/ST_RoomNet')
+sys.path.append('/content/drive/MyDrive/Final_Server/2d_server/discriminator')
 import cv2
 import numpy as np
 import tensorflow as tf
@@ -25,8 +25,8 @@ class ProcessorConfig:
     # 입력 경로 설정
     val_path: str = '/content/drive/MyDrive/Final_Server/Input/Images'  # chrome extension에서 저장한 이미지
     pose_path: str = '/content/drive/MyDrive/Final_Server/Input/Poses/poses.txt'
-    ref_img_path: str = '/content/drive/MyDrive/Final_Server/2d_server/ST_RoomNet/ref_img2.png'
-    weight_path: str = '/content/drive/MyDrive/Final_Server/2d_server/ST_RoomNet/weights/Weight_ST_RroomNet_ConvNext.h5'
+    ref_img_path: str = '/content/drive/MyDrive/Final_Server/2d_server/discriminator/ref_img2.png'
+    weight_path: str = '/content/drive/MyDrive/Final_Server/2d_server/discriminator/weights/Weight_ST_RroomNet_ConvNext.h5'
     
     # 출력 경로 설정
     save_path: str = '/content/drive/MyDrive/Final_Server/Input/ST'

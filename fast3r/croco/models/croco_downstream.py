@@ -47,7 +47,7 @@ class CroCoDownstreamMonocularEncoder(CroCoNet):
         self.head = head
 
     def _set_mask_generator(self, *args, **kwargs):
-        """No mask generator"""
+        """No mask discriminator"""
         return
 
     def _set_mask_token(self, *args, **kwargs):
@@ -90,7 +90,7 @@ class CroCoDownstreamBinocular(CroCoNet):
         self.head = head
 
     def _set_mask_generator(self, *args, **kwargs):
-        """No mask generator"""
+        """No mask discriminator"""
         return
 
     def _set_mask_token(self, *args, **kwargs):
