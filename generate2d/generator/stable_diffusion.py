@@ -11,7 +11,7 @@ from torch import autocast
 torch.backends.cudnn.benchmark = True
 
 # ST-RoomNet에서 판별 정보 받는 곳
-output_data = {"key": 0,"image": np.ndarray(shape=(512, 328, 3), dtype=np.uint8)}
+output_data = {"key": 0,"image": np.ndarray(shape=(512, 384, 3), dtype=np.uint8)}
 
 class SimpleRotator:
     """
@@ -240,7 +240,7 @@ class SimpleRotator:
         return result
 
 
-def main():
+def gen_main():
 
     # 생성 판별
     key = output_data.get("key")
@@ -271,8 +271,8 @@ def main():
     mask_np = cv2.morphologyEx(mask_np, cv2.MORPH_OPEN, kernel)
 
     # 인페인팅
-    init_img = Image.fromarray(out_rgb).convert("RGB").resize((512,512))
-    mask_img = Image.fromarray(mask_np).convert("L").resize((512,512))
+    init_img = Image.fromarray(out_rgb).convert("RGB").resize((512,384))
+    mask_img = Image.fromarray(mask_np).convert("L").resize((512,384))
     result = rotator.inpaint(init_img, mask_img,
                              prompt=args.prompt, steps=args.steps, guidance=args.guidance)
 
@@ -283,4 +283,4 @@ def main():
     return out
 
 if __name__=='__main__':
-    main()
+    gen_main()

@@ -23,7 +23,8 @@ class ProcessorConfig:
     """프로세서 설정을 위한 데이터클래스"""
 
     # 가중치 파일 경로
-    weight_path: str = '/content/drive/MyDrive/Final_Server/2d_server/ST_RoomNet/weights/Weight_ST_RroomNet_ConvNext.h5'
+    weight_path: str = '/content/drive/MyDrive/Final_Server/2d_server/ST_RoomNet/weights/Weight_ST_RoomNet_ConvNext.h5'
+    ref_img_path: str = '/content/drive/MyDrive/Final_Server/2d_server/ST_RoomNet/ref_img2.png'
 
     # 모델 설정
     image_size: Tuple[int, int] = (400, 400)
@@ -122,8 +123,8 @@ class ShowRoomProcessor:
         import base64
 
         # 요청 데이터에서 이미지와 포즈 추출
-        images = request_data.get('image')
-        poses = request_data.get('pose')
+        images = request_data.files['images']
+        poses = request_data.form['pose']
 
         if images is None or poses is None:
             raise ValueError("요청 데이터에 'image' 또는 'pose'가 없습니다")
@@ -587,7 +588,7 @@ class ShowRoomProcessor:
         images, poses = self._load_data(request_data)
         return self.process_images_with_pose(images, poses)
 
-def main(request_data: dict) -> List[Dict[str, Union[int, str]]]:
+def dis_main(request_data: dict) -> List[Dict[str, Union[int, str]]]:
     """
     ST-RoomNet 실행 및 결과 직렬화
     Args:
@@ -609,4 +610,4 @@ def main(request_data: dict) -> List[Dict[str, Union[int, str]]]:
     return serialized_result
 
 if __name__ == "__main__":
-    main()
+    dis_main()
