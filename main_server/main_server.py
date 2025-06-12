@@ -178,7 +178,7 @@ def upload_and_process():
 @app.route('/2d_upload', methods=['POST'])
 def request_2d_server():
     try:
-        response_2d = requests.post(FAST3R_SERVER_URL + "/32_upload", files=files, json=fast3r_response, timeout=600)
+        response_2d = requests.post(FAST3R_SERVER_URL + "/2d_upload", files=files, json=fast3r_response, timeout=600)
         print("🔔 2D 서버로 요청 시작!")
 
         if response_2d.status_code == 200:

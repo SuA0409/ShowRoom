@@ -4,12 +4,13 @@ from pyngrok import ngrok
 from flask_cors import CORS
 from viz import find_free_port
 import time
-from generate2d.discriminator.discriminator2d import ShowRoomProcessor
-from generate2d.generator.stable_diffusion import main as sd_main
+from generate2d.discriminator.discriminator2d import main as di_main
+from generate2d.generator.stable_diffusion import init_set, main as sd_main
 from kd_fast3r.utils.data_preprocess import server_images_load
 from io import BytesIO
 import requests
 import copy
+import base64
 
 class ServerMaker:
     def __init__(self,
@@ -94,7 +95,6 @@ class ServerMaker:
                 except:
                     self.showroom.images = None
 
-                time.sleep(1)
                 self.showroom.reconstruction()
                 self.showroom.building_spr()
 
@@ -114,27 +114,46 @@ class ServerMaker:
                 return jsonify({"status": "fail", "error": str(e)})
 
     def set_2d(self):
+        init_set()
+
         @self.app.route('/2d_upload', methods=['POST'])
         def handle_2d_request():
             try:
                 print("    discriminator 실행 시작!")
-                processor = ShowRoomProcessor()
-                processor.process()
+                pose_json = request.form.get("pose")
+                pose = json.loads(pose_json)
+                result = di_main(request.files, pose)
 
                 print("    discriminator 실행 완료!")
 
                 print("    Stable Diffusion Inpaint .py 실행 시작!")
-                sd_main()
+                result = sd_main(result)
+
                 print("    Stable Diffusion Inpaint.py 실행 완료!")
 
-                return jsonify({"status": "success", "message": "2D 생성 완료!"})
+                encoded_images = []
+                for name, bytesio_obj in result:
+                    bytesio_obj.seek(0)  # 포인터를 처음으로 이동
+                    image_bytes = bytesio_obj.getvalue()
+                    encoded_image = base64.b64encode(image_bytes).decode('utf-8')
+                    encoded_images.append({
+                        'name': name,
+                        'data': encoded_image,
+                        'format': 'base64'
+                    })
+
+                return jsonify({
+                    "status": "success",
+                    "message": "2D 생성 완료!",
+                    "images": encoded_images
+                })
 
             except Exception as e:
                 print(" 2D 생성 중 오류:", e)
                 return jsonify({"status": "error", "message": str(e)}), 500
 
     def set_main_3d(self):
-    # 3d_server resp,respone
+        # 3d_server resp,respone
         @self.app.route('/3d_upload', methods=['POST'])
         def main_3d_process():
             data = request.get_json()
@@ -171,13 +190,15 @@ class ServerMaker:
             # ✅ Fast3R 서버에 "폴더 전체 처리" 요청
             try:
                 print("[⚡️] Fast3R에 요청 전송!")
-                self.fast3r_response = requests.post(self.FAST3R_SERVER_URL + "/3d_upload", files=copy.deepcopy(self.files), timeout=600)
+                self.fast3r_response = requests.post(self.FAST3R_SERVER_URL + "/3d_upload",
+                                                     files=copy.deepcopy(self.files), timeout=600)
                 print(f"[⚡️] Fast3R 응답코드: {self.fast3r_response.status_code}")
 
                 if self.fast3r_response.status_code == 200:
                     fast3r_result = self.fast3r_response.json()
                 else:
-                    return jsonify({"status": "error", "message": f"Fast3R 오류: {self.fast3r_response.status_code}"}), 500
+                    return jsonify(
+                        {"status": "error", "message": f"Fast3R 오류: {self.fast3r_response.status_code}"}), 500
             except Exception as e:
                 print(f"[❌] Fast3R 요청 실패: {e}")
                 return jsonify({"status": "error", "message": f"Fast3R 요청 실패: {e}"}), 500
@@ -210,17 +231,31 @@ class ServerMaker:
             response.headers['Content-Type'] = 'application/json'
             return response
 
-    # 2d_server resp,respone
+        # 2d_server resp,respone
+
     def set_main_2d(self):
 
         @self.app.route('/2d_upload', methods=['POST'])
         def request_2d_server():
+            print("🔔 2D 서버로 요청 시작!")
             try:
                 data = {"pose": json.dumps(self.fast3r_response.json())}
 
-                response_2d = requests.post(self.TWOD_SERVER_URL + "/2d_upload", files=copy.deepcopy(self.files), data=data,
+                response_2d = requests.post(self.TWOD_SERVER_URL + "/2d_upload", files=copy.deepcopy(self.files),
+                                            data=data,
                                             timeout=600)
-                print("🔔 2D 서버로 요청 시작!")
+                try:
+                    print(response_2d)
+                except:
+                    print(response_2d.json())
+                    print('ee')
+
+                print('1')
+                for name, bytesio_obj in response_2d:
+                    bytesio_obj.seek(0)  # 포인터를 처음으로 이동 (중요!)
+                    image_bytes = bytesio_obj.getvalue()  # 바이트 데이터 추출
+                    print(f"{name}: {len(image_bytes)} bytes")
+                print('2')
 
                 if response_2d.status_code == 200:
                     result_2d = response_2d.json()
@@ -228,7 +263,7 @@ class ServerMaker:
 
                     # ⭐️ 이어서 FAST3R 서버에 요청
                     print("🔔 FAST3R 서버로 요청 시작!")
-                    response_3d = requests.post(self.FAST3R_SERVER_URL + "/3d_upload", files=copy.deepcopy(self.files), timeout=600)
+                    response_3d = requests.post(self.FAST3R_SERVER_URL + "/3d_upload", timeout=600)
 
                     if response_3d.status_code == 200:
                         result_3d = response_3d.json()

@@ -138,8 +138,11 @@ class ShowRoomProcessor:
 
         # 포즈 데이터 처리 (리스트 형식 그대로 사용)
         processed_poses = []
-        print(poses, type(poses[0][0][0]))
-        for pose in poses:
+        print('a')
+        print(poses['pose'])
+
+        for pose in poses['pose']:
+            print(pose, '1')
             pose_array = np.array(pose, dtype=np.float32)
             processed_poses.append(pose_array)
 
@@ -574,16 +577,7 @@ def main(request_data, pose) -> List[Dict[str, Union[int, str]]]:
     """
     processor = ShowRoomProcessor()
     result = processor.process(request_data, pose)
-    serialized_result = []
-    for item in result:
-        serialized_item = {"key": item["key"]}
-        if item["image"] is not None:
-            _, img_encoded = cv2.imencode('.jpg', item["image"])
-            serialized_item["image"] = base64.b64encode(img_encoded.tobytes()).decode('utf-8')
-        else:
-            serialized_item["image"] = None
-        serialized_result.append(serialized_item)
-    return serialized_result
+    return result
 
 if __name__ == "__main__":
     main()
