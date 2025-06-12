@@ -101,15 +101,25 @@ def batch_images_load(rooms_path,
 
 
 def server_images_load(files, size=512):
-    imgs = list()
-    colors = list()
+    sample = len(files)
+    imgs = [list() for _ in range(sample)]
+    colors = [list() for _ in range(sample)]
+    rooms = list()
 
-    for idx, file in enumerate(files.values()):
-        image_bytes = file.read()
+    for idx, f in enumerate(files.values()):
+        image_bytes = f.read()
         file_bytes = np.frombuffer(image_bytes, np.uint8)
         img, color = _load_image_process(file_bytes, size=size)
+        imgs[idx].append(
+                dict(img=img, true_shape=torch.from_numpy(np.int32([size * 3 // 4, size])), idx=idx, instance=str(idx)))
+        colors[idx].append(color)
 
-        imgs.append(dict(img=img, true_shape=torch.from_numpy(np.int32([size * 3 // 4, size])), idx=idx, instance=str(idx)))
-        colors.append(color)
+    for image in imgs:
+        rooms.append({
+            'img': torch.stack([d['img'] for d in image], dim=0),
+            'true_shape': torch.stack([d['true_shape'] for d in image]),
+            'idx': [d['idx'] for d in image],
+            'instance': [d['instance'] for d in image],
+        })
 
-    return imgs, colors
+    return rooms, colors

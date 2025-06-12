@@ -52,7 +52,7 @@ class ShowRoom:
         with open(self.camera_path, 'w') as f:
             f.write(str(camera_poses))
 
-        self.pose = camera_poses.tolist()
+        self.pose = [pose.tolist() for pose in camera_poses]
 
     # Fast3r 모델을 활용한 3d point could 및 camera_pose 추정
     def _predict(self):
@@ -66,14 +66,14 @@ class ShowRoom:
                 # 전처리 된 순서에 맞춰 이미지 순서 바꾸기 (이미지 판별)
                 save_path = os.path.join(self.img_path, f'{i}.jpg')
                 save_image((image['img'][0]+1) / 2, save_path)
-
         else:
             room, color = self.images
             sample = len(room)
-            for i, image in enumerate(room):
-            # input data를 device 타입에 맞게 조정
-                room[i]['img'] = image['img'].to(self.device)
-                room[i]['true_shape'] = image['true_shape'].to(self.device)
+
+        for i, image in enumerate(room):
+        # input data를 device 타입에 맞게 조정
+            room[i]['img'] = image['img'].to(self.device)
+            room[i]['true_shape'] = image['true_shape'].to(self.device)
 
         # model에 대한 정보 출력
         if self.info:
@@ -165,7 +165,8 @@ class ShowRoom:
     # reconstruction을 하는 main 함수
     def reconstruction(self):
         self.point_cloud, self.color = self._predict()
-        if self.data_path and os.path.exists(self.data_path):
+
+        if self.images is None:
             np.savez(self.data_path, point_cloud=self.point_cloud, color=self.color)
             self.viz.add_point_cloud(f'ShowRoom')
         else:
@@ -181,7 +182,7 @@ class ShowRoom:
             start_time = time.time()
             vertices, color = self._spr(vertices, color, depth=depth)
 
-            if self.data_path and os.path.exists(self.data_path):
+            if self.images is None:
                 np.savez(self.data_path, point_cloud=vertices, color=color)
                 self.viz.add_point_cloud(f'spr_{i+1}')
             else:
