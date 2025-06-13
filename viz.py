@@ -25,7 +25,7 @@ class ViserMaker:
     # 서버 주소 할당
     def make_viser_server(self, token):
         try:
-            assert isinstance(token, str), 'Start in Local...'
+            assert isinstance(token, str)
 
             port = find_free_port()  # 빈 포트 추출
             conf.get_default().auth_token = token  # Ngrok 설정
@@ -35,6 +35,7 @@ class ViserMaker:
 
             print(f'*** {self.ngrok_url} ***')
         except:
+            print('Start in Local...')
             self.server = viser.ViserServer()  # Viser 서버 실행 (로컬)
 
 

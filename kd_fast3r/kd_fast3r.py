@@ -8,7 +8,7 @@ from fast3r.models.fast3r import Fast3R
 
 class ShowRoom:
     def __init__(self,
-                 model_path='Fast3R_ViT_Large_512',
+                 model_path='jedyang97/Fast3R_ViT_Large_512',
                  info=True,
                  viz=None
                  ):
