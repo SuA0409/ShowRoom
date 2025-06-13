@@ -4,11 +4,12 @@ import numpy as np
 from generate2d.discriminator.discriminator2d import dis_main
 from generate2d.generator.stable_diffusion import gen_main
 
-# ====== 설정 ======
-image_dir = "/content/ShowRoom/demo/data"
-pose_path = "/content/ShowRoom/demo/data/poses.txt"
 
-# ====== 이미지 불러오기 ======
+# Input 이미지와 포즈 폴더의 주소
+image_dir = "/content/ShowRoom/demo/data"            # Input Your Name of Image Folder
+pose_path = "/content/ShowRoom/demo/data/poses.txt"  # Input Your Name of Pose Folder
+
+# 이미지 불러오기
 if not os.path.exists(image_dir):
     raise FileNotFoundError(f"이미지 경로가 존재하지 않습니다: {image_dir}")
 
@@ -25,7 +26,7 @@ for idx, fname in enumerate(image_files):
     img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
     request_data[str(idx)] = img_rgb
 
-# ====== 포즈 파일 불러오기 ======
+# 포즈 파일 불러오기
 if not os.path.exists(pose_path):
     raise FileNotFoundError(f"포즈 파일 경로가 존재하지 않습니다: {pose_path}")
 
@@ -39,12 +40,12 @@ try:
 except Exception as e:
     raise ValueError(f"포즈 파일 파싱 실패: {e}")
 
-# ====== Discriminator 실행 ======
+# Discriminator 실행
 result = dis_main(request_data, pose)
 
 # 결과 출력
 for item in result:
     print(f"key: {item['key']}, image shape: {item['image'].shape if item['image'] is not None else 'None'}")
 
-# ====== Stable Diffusion Generator 실행 ======
+# Stable Diffusion Generator 실
 gen_main(result)
