@@ -14,10 +14,10 @@ def main():
     '''
     사용 예시:
     1. 특정 숙소 URL을 입력하여 실행:
-    python review/main_review.py --url [Airbnb 숙소 URL]
+    python demo/review_demo.py --url [Airbnb 숙소 URL]
 
     2. URL 인자를 생략하고 기본 URL로 실행:
-    python review/main_review.py
+    python demo/review_demo.py
     '''
     
     # 헤더 정보
