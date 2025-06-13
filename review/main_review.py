@@ -144,8 +144,8 @@ def getReviews(url, headers):
                         "name": r["reviewer"]["firstName"],  # 사용자 이름
                         "stay_id": num,  # 숙소 번호
                         "comment": comment_text,  # 리뷰 텍스트
-                        "rating": r.get("rating"),  # 평점
-                        "createdAt": r.get("createdAt")  # 작성일
+                        "rating": r["rating"],  # 평점
+                        "createdAt": r["createdAt"]  # 작성일
                     })
         except KeyError:
             break  # 데이터 접근 오류 시 루프 종료
@@ -288,12 +288,21 @@ def use_model(docs, device=torch.device('cuda' if torch.cuda.is_available() else
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description="Airbnb topics of reviews")
-    parser.add_argument("--url", type=str, help="type your stay URL", default="https://www.airbnb.co.kr/rooms/44005242?check_in=2025-06-13&check_out=2025-06-15&photo_id=1265571749&source_impression_id=p3_1749786693_P3ao1iX7quls1JfM&previous_page_section_name=1000")
+    # argparse를 사용해 명령줄에서 URL 인자를 받을 수 있도록 설정
+    parser = argparse.ArgumentParser(description="Airbnb 리뷰로부터 주제를 추출하는 데모입니다.")
+    parser.add_argument(
+        "--url",
+        type=str,
+        help="리뷰의 주제를 추출하고 싶은 Airbnb 숙소의 URL을 입력하세요.",
+        default="https://www.airbnb.co.kr/rooms/44005242?check_in=2025-06-13&check_out=2025-06-15&photo_id=1265571749&source_impression_id=p3_1749786693_P3ao1iX7quls1JfM&previous_page_section_name=1000"
+    )
 
     '''
-    Example usage:
-    python review/main_review.py --url type_your_airbnb_rooms_URL
+    사용 예시:
+    1. 특정 숙소 URL을 입력하여 실행:
+    python review/main_review.py --url [Airbnb 숙소 URL]
+
+    2. URL 인자를 생략하고 기본 URL로 실행:
     python review/main_review.py
     '''
     
