@@ -1,9 +1,7 @@
-import os
 import cv2
 import torch
 import numpy as np
 import kornia as K
-import argparse
 from PIL import Image
 from diffusers import StableDiffusionInpaintPipeline, EulerAncestralDiscreteScheduler
 from torch import autocast
@@ -24,6 +22,7 @@ class SimpleRotator:
     3. 이 과정에서 생긴 빈 영역(out-of-view)을 마스크로 생성합니다.
     4. Stable Diffusion Inpainting 모델을 사용하여 생성된 마스크 영역을 자연스럽게 채웁니다.
     """
+
     def __init__(self, device='cuda', max_depth_m=5.0, depth_model='MiDaS_small'):
         '''
         클래스 초기화 함수, 필요한 모델들을 로드하고 초기 설정을 수행
@@ -90,7 +89,7 @@ class SimpleRotator:
         # 이미지의 높이와 너비 추출
         H, W = img_rgb.shape[:2]
 
-       # MiDaS 모델의 전처리기를 적용하고 텐서를 지정된 디바이스로 이동
+        # MiDaS 모델의 전처리기를 적용하고 텐서를 지정된 디바이스로 이동
         inp = self.transform(img_rgb).to(self.device)
         with torch.no_grad():
             depth = self.midas(inp)
@@ -216,7 +215,7 @@ class SimpleRotator:
         return new_rgb, depth, mask
 
     def inpaint(self, init_image: Image.Image, mask_image: Image.Image,
-            prompt: str, steps: int = 50, guidance: float = 8.5) -> Image.Image:
+                prompt: str, steps: int = 50, guidance: float = 8.5) -> Image.Image:
         '''
         Stable Diffusion Inpainting 파이프라인을 사용하여 이미지의 마스크된 영역을 채웁니다.
         Args:
@@ -244,18 +243,13 @@ class SimpleRotator:
         success, encoded_image = cv2.imencode('.jpg', image_np)
         if not success:
             raise ValueError("JPEG 인코딩 실패")
-        
+
         img_file = BytesIO(encoded_image.tobytes())
         img_file.name = filename
-        return img_file 
+        return img_file
 
-def main(output_data, file):
-    key = output_data.get("key")
-    if key not in (0, 1):
-        print(f"지원되지 않는 key: {key} (0:left, 1:right 만 지원)")
-        return
 
-    # 하드코딩된 설정값 (argparse 제거)
+def gen_main(output_list):
     seed = 42
     angle_value = 30
     steps = 50
@@ -266,37 +260,53 @@ def main(output_data, file):
     np.random.seed(seed)
     rotator = SimpleRotator(device='cuda', max_depth_m=3.0)
 
-    angle = angle_value if key == 0 else -angle_value
-    img_np = output_data.get('image')
+    file = list()
+    for output_data in output_list:
+        key = output_data.get("key")
+        if key not in (0, 1):
+            print(f"지원되지 않는 key: {key} (0:left, 1:right 만 지원)")
+            return
 
-    # 회전 + 마스크 생성
-    new_rgb, depth, mask = rotator.rotate_frame(img_np, angle)
-    out_rgb = ((new_rgb[0].cpu().permute(1,2,0)+1)*127.5).clamp(0,255).byte().cpu().numpy()
+        angle = angle_value if key == 0 else -angle_value
+        img_np = output_data.get('image')
 
-    # 마스크 후처리
-    mask_np = (mask[0,0].cpu().numpy()*255).astype(np.uint8)
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5,5))
-    mask_np = cv2.morphologyEx(mask_np, cv2.MORPH_OPEN, kernel)
+        # 회전 + 마스크 생성
+        new_rgb, depth, mask = rotator.rotate_frame(img_np, angle)
+        out_rgb = ((new_rgb[0].cpu().permute(1, 2, 0) + 1) * 127.5).clamp(0, 255).byte().cpu().numpy()
 
-    # 인페인팅
-    init_img = Image.fromarray(out_rgb).convert("RGB").resize((512,512))
-    mask_img = Image.fromarray(mask_np).convert("L").resize((512,512))
-    result = rotator.inpaint(init_img, mask_img,
-                             prompt=prompt, steps=steps, guidance=guidance)
+        # 마스크 후처리
+        mask_np = (mask[0, 0].cpu().numpy() * 255).astype(np.uint8)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+        mask_np = cv2.morphologyEx(mask_np, cv2.MORPH_OPEN, kernel)
 
-    # np.ndarray로 변환 후 BytesIO 파일로 저장
-    result_np = np.array(result)
-    img_file = rotator.to_bytesio(result_np, filename=f"{key}.jpg")
+        # 인페인팅
+        init_img = Image.fromarray(out_rgb).convert("RGB").resize((512, 512))
+        mask_img = Image.fromarray(mask_np).convert("L").resize((512, 512))
+        result = rotator.inpaint(init_img, mask_img,
+                                 prompt=prompt, steps=steps, guidance=guidance)
 
-    # 리스트에 추가
-    file.append((f"images{key}", img_file))
-    print(f"이미지 images{key} 변환 및 파일 추가 완료")
+        # np.ndarray로 변환 후 BytesIO 파일로 저장
+        result_np = np.array(result)
+        img_file = rotator.to_bytesio(result_np, filename=f"{key}.jpg")
 
-if __name__ == '__main__':
-    for output_data in result:
-        if output_data["key"] in (0, 1):
-            main(output_data, file)  # ✅ 외부 리스트 전달
-        else:
-            print(f"⚠️ 건너뜀: key={output_data['key']} (0,1만 지원)")
+        # 리스트에 추가
+        file.append((f"images{key}", img_file))
+        print(f"이미지 images{key} 변환 및 파일 추가 완료")
+    return file
 
-    print("최종 파일 리스트:", [name for name, _ in file])
+
+def init_set():
+    torch.hub.load("intel-isl/MiDaS", "MiDaS_small", offline=False)
+
+    # transforms는 offline 옵션 없이!
+    torch.hub.load("intel-isl/MiDaS", "transforms")
+
+    # Stable Diffusion Inpainting 다운로드
+    pipe = StableDiffusionInpaintPipeline.from_pretrained(
+        "stabilityai/stable-diffusion-2-inpainting",
+        revision="fp16",
+        torch_dtype=torch.float16,
+        safety_checker=None,
+        local_files_only=False
+    )
+    print("다운로드 완료!")

@@ -5,11 +5,11 @@ import json
 from pyngrok import ngrok
 from flask_cors import CORS
 import time
+from io import BytesIO
 
 json_path = '/content/drive/MyDrive/Final_Server/ngrok_path.json'
 with open(json_path, 'r') as f:
     url = json.load(f)
-
 
 # 각 서버 URL 할당
 REVIEW_SERVER_URL = url.get("REVIEW_SERVER_URL") or ""
@@ -21,7 +21,6 @@ print(f"✅ REVIEW_SERVER_URL: {REVIEW_SERVER_URL}")
 print(f"✅ FAST3R_SERVER_URL: {FAST3R_SERVER_URL}")
 print(f"✅ TWOD_SERVER_URL: {TWOD_SERVER_URL}")
 
-
 ngrok.set_auth_token("2whjTqF1XYhqkhqaiHpSEMlQ7w2_83j72xkR3qJcfxhzq5B8f")
 print("💡 ngrok 연결 완료")
 
@@ -30,7 +29,7 @@ CORS(app)
 
 # 🔗 결과 JSON 저장 폴더
 RESULTS_FOLDER = '/content/drive/MyDrive/Final_Server/main_server/results'
-RECEIVED_FOLDER = '/content/drive/MyDrive/Final_Server/Input/Images' 
+RECEIVED_FOLDER = '/content/drive/MyDrive/Final_Server/Input/Images'
 os.makedirs(RESULTS_FOLDER, exist_ok=True)
 
 
@@ -85,6 +84,7 @@ def analyze_review():
         print(f"[❌] 리뷰 분석 서버 요청 실패: {e}")
         return jsonify({"status": "error", "message": f"리뷰 분석 서버 통신 실패! {e}"}), 500
 
+
 @app.route('/review/<room_id>')
 def show_review(room_id):
     print(f"[⚡️] /review/{room_id} 호출됨")
@@ -98,7 +98,8 @@ def show_review(room_id):
 
     return render_template("review_result.html", room_id=room_id, topics=result['topics'])
 
-#3d_server resp,respone
+
+# 3d_server resp,respone
 @app.route('/3d_upload', methods=['POST'])
 def upload_and_process():
     data = request.get_json()
@@ -114,37 +115,27 @@ def upload_and_process():
 
     print(f"[⚡️] 저장할 이미지 리스트: {images}")
 
-    # 기존 이미지 삭제
-    for filename in os.listdir(RECEIVED_FOLDER):
-        file_path = os.path.join(RECEIVED_FOLDER, filename)
-        try:
-            os.remove(file_path)
-            print(f"[✓] 기존 이미지 삭제됨: {file_path}")
-        except Exception as e:
-            print(f"[❌] 기존 이미지 삭제 실패: {file_path} - {e}")
-
-    # 이미지 다운로드
-    saved_files = []
-    for idx, url in enumerate(images):
+    ## 이미지 byte로 변환
+    files = []
+    for i, url in enumerate(images):
         try:
             response = requests.get(url)
-            filename = f"{idx}.jpg"
-            save_path = os.path.join(RECEIVED_FOLDER, filename)
-            with open(save_path, 'wb') as f:
-                f.write(response.content)
-            print(f"[✓] 저장됨: {save_path}")
-            saved_files.append(save_path)
-        except Exception as e:
-            print(f"[❌] 이미지 다운로드 실패 ({url}): {e}")
+            response.raise_for_status()
 
-    # 5초 대기 (저장 안정화)
-    print("5초 쉼")
-    time.sleep(5)
+            # 메모리 상의 파일 객체 생성
+            img_file = BytesIO(response.content)
+            img_file.name = f'{i}.jpg'
+
+            # 원하는 형식으로 추가: (key, file-object)
+            files.append((f'images{i}', img_file))
+
+        except Exception as e:
+            print(f"Failed to load image from {url}: {e}")
 
     # ✅ Fast3R 서버에 "폴더 전체 처리" 요청
     try:
         print("[⚡️] Fast3R에 요청 전송!")
-        fast3r_response = requests.post(FAST3R_SERVER_URL + "/3d_upload", timeout=600)
+        fast3r_response = requests.post(FAST3R_SERVER_URL + "/3d_upload", files=files, timeout=600)
         print(f"[⚡️] Fast3R 응답코드: {fast3r_response.status_code}")
 
         if fast3r_response.status_code == 200:
@@ -155,8 +146,7 @@ def upload_and_process():
         print(f"[❌] Fast3R 요청 실패: {e}")
         return jsonify({"status": "error", "message": f"Fast3R 요청 실패: {e}"}), 500
 
-    print("viser 전 5초 쉼")
-    time.sleep(5)
+    print("viser 시작")
 
     # ✅ Viser에 "시각화 요청" 전송
     try:
@@ -184,12 +174,12 @@ def upload_and_process():
     response.headers['Content-Type'] = 'application/json'
     return response
 
-#2d_server resp,respone
+# 2d_server resp,respone
 @app.route('/2d_upload', methods=['POST'])
 def request_2d_server():
     try:
+        response_2d = requests.post(FAST3R_SERVER_URL + "/2d_upload", files=files, json=fast3r_response, timeout=600)
         print("🔔 2D 서버로 요청 시작!")
-        response_2d = requests.post(TWOD_SERVER_URL + "/2d_upload", timeout=600)
 
         if response_2d.status_code == 200:
             result_2d = response_2d.json()
@@ -230,10 +220,9 @@ def request_2d_server():
         print("❌ 2D 서버 요청 실패:", e)
         return jsonify({"status": "error", "message": str(e)}), 500
 
-        
+
 # ✅ Flask 실행
 if __name__ == '__main__':
-       
     tunnel = ngrok.connect(5000)
     public_url = tunnel.public_url
     print(f"💡 Main 서버 ngrok 외부 URL: {public_url}")
