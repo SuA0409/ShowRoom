@@ -33,7 +33,12 @@ Loading Fast3R weight :
   1.1. 2D discriminator
   
   1.2. 2D generator
-  
+
+  ## Run to Review
+      python review/main_review.py —url 
+      type_your_airbnb_rooms_URL
+      python review/main_review.py
+      
 ## Project Structure
     ShowRoom/
     ├── model/               # 학습된 모델 및 구조
