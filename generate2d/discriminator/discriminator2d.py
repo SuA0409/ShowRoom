@@ -1,14 +1,9 @@
 import os
-import sys
-
-sys.path.append('/content/drive/MyDrive/Final_Server/2d_server/discriminator')
 import cv2
 import numpy as np
 import tensorflow as tf
 from dataclasses import dataclass
 from typing import Optional, Tuple, Union, List, Dict
-
-import base64
 
 # TensorFlow Keras ConvNeXtTiny (TF 2.11 이상)
 from tensorflow.keras.models import Model
@@ -138,11 +133,8 @@ class ShowRoomProcessor:
 
         # 포즈 데이터 처리 (리스트 형식 그대로 사용)
         processed_poses = []
-        print('a')
-        print(poses['pose'])
 
         for pose in poses['pose']:
-            print(pose, '1')
             pose_array = np.array(pose, dtype=np.float32)
             processed_poses.append(pose_array)
 
@@ -567,7 +559,7 @@ class ShowRoomProcessor:
         images, poses = self._load_data(request_data, pose)
         return self.process_images_with_pose(images, poses)
 
-def main(request_data, pose) -> List[Dict[str, Union[int, str]]]:
+def dis_main(request_data, pose):
     """
     ST-RoomNet 실행 및 결과 직렬화
     Args:
@@ -578,6 +570,3 @@ def main(request_data, pose) -> List[Dict[str, Union[int, str]]]:
     processor = ShowRoomProcessor()
     result = processor.process(request_data, pose)
     return result
-
-if __name__ == "__main__":
-    main()

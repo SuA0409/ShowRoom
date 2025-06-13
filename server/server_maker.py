@@ -3,9 +3,8 @@ from flask import Flask, jsonify, request, make_response
 from pyngrok import ngrok
 from flask_cors import CORS
 from viz import find_free_port
-import time
-from generate2d.discriminator.discriminator2d import main as di_main
-from generate2d.generator.stable_diffusion import init_set, main as sd_main
+from generate2d.discriminator.discriminator2d import dis_main
+from generate2d.generator.stable_diffusion import init_set, gen_main
 from kd_fast3r.utils.data_preprocess import server_images_load
 from io import BytesIO
 import requests
@@ -100,7 +99,6 @@ class ServerMaker:
 
                 return jsonify({"pose": self.showroom.pose})
             except Exception as e:
-                print(e, 'sdfosjdfosadmfkosdm')
                 return f"Error processing: {str(e)}", 500
 
     def set_viser(self, show_viz):
@@ -122,18 +120,18 @@ class ServerMaker:
                 print("    discriminator 실행 시작!")
                 pose_json = request.form.get("pose")
                 pose = json.loads(pose_json)
-                result = di_main(request.files, pose)
+                result = dis_main(request.files, pose)
 
                 print("    discriminator 실행 완료!")
 
                 print("    Stable Diffusion Inpaint .py 실행 시작!")
-                result = sd_main(result)
+                result = gen_main(result)
 
                 print("    Stable Diffusion Inpaint.py 실행 완료!")
 
                 encoded_images = []
                 for name, bytesio_obj in result:
-                    bytesio_obj.seek(0)  # 포인터를 처음으로 이동
+                    bytesio_obj.seek(0)
                     image_bytes = bytesio_obj.getvalue()
                     encoded_image = base64.b64encode(image_bytes).decode('utf-8')
                     encoded_images.append({
@@ -243,21 +241,20 @@ class ServerMaker:
                                             timeout=600)
                 # dict(list[dict[file]])
 
-                print(response_2d.json())
                 bytesio_obj = response_2d.json()['images'][0]['data']
                 image_bytes = base64.b64decode(bytesio_obj)
+                ## 체크
+                print(image_bytes)
                 bytesio_obj = BytesIO(image_bytes)
                 print(bytesio_obj)
                 name = response_2d.json()['images'][0]['name']
-                bytesio_obj.seek(0)  # 포인터를 처음으로 이동 (중요!)
-                print('aaa1a')
-                image_bytes = bytesio_obj.getvalue()  # 바이트 데이터 추출
+                # bytesio_obj.seek(0)
+
                 print(f"{name}: {len(image_bytes)} bytes")
                 new_files = copy.deepcopy(self.files)
 
                 print(new_files)
-                new_files.append(image_bytes)
-                print(new_files)
+                new_files.append((f'new_{name}', bytesio_obj))
 
                 if response_2d.status_code == 200:
                     result_2d = response_2d.json()
@@ -296,6 +293,5 @@ class ServerMaker:
                     return jsonify({"status": "error", "message": "2D 서버 오류: " + response_2d.text}), 500
 
             except Exception as e:
-                print("ㅇㅁㄹㅇㄴㄹㅇ나ㅓㄹㄴㅇ론ㅇ랴")
                 print("❌ 2D 서버 요청 실패:", e)
                 return jsonify({"status": "error", "message": str(e)}), 500

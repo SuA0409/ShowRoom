@@ -1,16 +1,13 @@
-import os
 import cv2
 import torch
 import numpy as np
 import kornia as K
-import argparse
 from PIL import Image
 from diffusers import StableDiffusionInpaintPipeline, EulerAncestralDiscreteScheduler
 from torch import autocast
 from io import BytesIO
 
 torch.backends.cudnn.benchmark = True
-
 
 # ST-RoomNet에서 판별 정보 받는 곳
 
@@ -252,8 +249,7 @@ class SimpleRotator:
         return img_file
 
 
-def main(output_list):
-    # 하드코딩된 설정값 (argparse 제거)
+def gen_main(output_list):
     seed = 42
     angle_value = 30
     steps = 50
@@ -275,7 +271,6 @@ def main(output_list):
         img_np = output_data.get('image')
 
         # 회전 + 마스크 생성
-        #### 여기
         new_rgb, depth, mask = rotator.rotate_frame(img_np, angle)
         out_rgb = ((new_rgb[0].cpu().permute(1, 2, 0) + 1) * 127.5).clamp(0, 255).byte().cpu().numpy()
 
