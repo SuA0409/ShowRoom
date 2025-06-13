@@ -5,8 +5,8 @@ from generate2d.discriminator.discriminator2d import dis_main
 from generate2d.generator.stable_diffusion import gen_main
 
 # ====== 설정 ======
-image_dir = "/content/drive/MyDrive/input/images"
-pose_path = "/content/drive/MyDrive/input/pose/poses.txt"
+image_dir = "/content/ShowRoom/demo/data"
+pose_path = "/content/ShowRoom/demo/data/poses.txt"
 
 # ====== 이미지 불러오기 ======
 if not os.path.exists(image_dir):
