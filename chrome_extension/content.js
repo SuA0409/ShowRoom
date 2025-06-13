@@ -3,6 +3,7 @@
   if (window.hasRunContentScript) return;
   window.hasRunContentScript = true;
 
+  // 선택된 이미지 URL 배열, enabled = 기능 활성화 여부
   let selectedImages = [];
   let enabled = false;
 
@@ -25,12 +26,14 @@
       sendResponse({ success: true });
       return true;
     }
-
+    
+    // 선택된 이미지 배열 반환
     if (msg.action === 'getImages') {
       sendResponse(selectedImages);
       return true;
     }
 
+    // 이미지 배열 서버로 전송
     if (msg.action === 'sendToServer') {
       sendImagesToServer(selectedImages);
       sendResponse({ sent: true });
@@ -63,6 +66,7 @@
     highlightSelectedImages();
   }
 
+  // 선택된 이미지는 빨간 테두리 표시, 나머지는 테두리 제거
   function highlightSelectedImages() {
     document.querySelectorAll('img').forEach((img) => {
       if (selectedImages.includes(img.src)) {
@@ -75,6 +79,7 @@
     });
   }
 
+  // 모든 이미지의 테두리(하이라이트) 제거
   function clearHighlights() {
     document.querySelectorAll('img').forEach((img) => {
       img.style.setProperty('outline', '', 'important');
