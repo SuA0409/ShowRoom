@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   // 서버 기본 URL 설정
-  const SERVER_BASE_URL = 'https://d677-34-169-56-80.ngrok-free.app';
+  const SERVER_BASE_URL = 'add_your_main_ngrok_server_address!!';
 
   // 공통: 버튼 클릭 효과음 엘리먼트
   const clickSound = document.getElementById('click-sound');
@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const closeBtn = document.getElementById('close-popup');
   const loadingContainer = document.getElementById
   ('loading-container');
-  
+
   // 닫기 버튼 클릭 시 팝업 닫기
   if (closeBtn) {
     closeBtn.addEventListener('click', () => window.close());
@@ -35,16 +35,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const backBtn = document.getElementById('back');
 
   // 팝업 로드 시 저장된 이미지 목록 복원 및 썸네일 렌더링
-  chrome.storage.local.get({ selectedImages: [] }, ({ selectedImages }) => {
-    if (selectedImages.length > 0) {
-      renderThumbnails(selectedImages);
-      convertBtn.disabled = selectedImages.length < 3;
-      if (selectedImages.length >= 3) {
-        create2DBtn.disabled = false;
-        create2DBtn.setAttribute('data-tooltip', '선택된 이미지 2D 재생성');
-      }
-    }
-  });
+  chrome.storage.local.get({ selectedImages: [] }, ({ selectedImages }) => {  // ★ ADDED
+    if (selectedImages.length > 0) {                                          // ★ ADDED
+      renderThumbnails(selectedImages);                                        // ★ ADDED
+      convertBtn.disabled = selectedImages.length < 3;                         // ★ ADDED
+      if (selectedImages.length >= 3) {                                        // ★ ADDED
+        create2DBtn.disabled = false;                                          // ★ ADDED
+        create2DBtn.setAttribute('data-tooltip', '선택된 이미지 2D 재생성');     // ★ ADDED
+      }                                                                   // ★ ADDED
+    }                                                                          // ★ ADDED
+  });                                                                          // ★ ADDED
 
   // 썸네일 렌더링 및 클릭 이벤트 처리 함수
   function renderThumbnails(images) {
@@ -64,12 +64,12 @@ document.addEventListener('DOMContentLoaded', () => {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
           chrome.tabs.sendMessage(tabs[0].id, { action: 'toggleImage', src }, (newImages) => {
             renderThumbnails(newImages);
-            chrome.storage.local.set({ selectedImages: newImages });
-            convertBtn.disabled = newImages.length < 3;
-            if (newImages.length >= 3) {
-              create2DBtn.disabled = false;
-              create2DBtn.setAttribute('data-tooltip', '선택된 이미지 2D 재생성');
-            }
+            chrome.storage.local.set({ selectedImages: newImages });        // ★ ADDED
+            convertBtn.disabled = newImages.length < 3;                     // ★ ADDED
+            if (newImages.length >= 3) {                                    // ★ ADDED
+              create2DBtn.disabled = false;                                 // ★ ADDED
+              create2DBtn.setAttribute('data-tooltip', '선택된 이미지 2D 재생성'); // ★ ADDED
+            }                                                              // ★ ADDED
           });
         });
       });
@@ -109,80 +109,89 @@ document.addEventListener('DOMContentLoaded', () => {
         setupConvertButton(tab.id);
 
         // 최초 이미지 로드 직후 저장
-        chrome.storage.local.set({ selectedImages: response });
+        chrome.storage.local.set({ selectedImages: response });        // ★ ADDED
       });
     });
   }
 
   // 3D 변환 요청 설정 및 처리 함수
   function setupConvertButton(tabId) {
-    convertBtn.replaceWith(convertBtn.cloneNode(true));
-    const newBtn = document.getElementById('convert');
+    const oldBtn = document.getElementById('convert');
+    const newBtn = oldBtn.cloneNode(true); // 버튼 복제
+    oldBtn.parentNode.replaceChild(newBtn, oldBtn); // 기존 버튼 교체
     newBtn.disabled = false;
-
-    newBtn.addEventListener('click', () => {
+  
+    let isRunning = false; // 중복 실행 방지용 플래그
+  
+    newBtn.addEventListener('click', async () => {
+      if (isRunning) return; // 중복 방지
+      isRunning = true;
+  
       clickSound.currentTime = 0;
       clickSound.play();
-
+  
       if (loadingContainer) loadingContainer.style.display = 'block';
-
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'getImages' }, async (images) => {
-          if (chrome.runtime.lastError) {
-            console.error('선택된 이미지 요청 실패:', chrome.runtime.lastError.message);
-            alert('선택된 이미지를 다시 가져올 수 없습니다.');
-            return;
-          }
-          if (!Array.isArray(images) || images.length < 3) {
-            alert('최소 3장의 이미지를 선택해야 합니다.');
-            return;
-          }
-
-          renderThumbnails(images);
-
-          try {
-            // 서버에 3D 변환 요청 전송
-            const res = await fetch(`${SERVER_BASE_URL}/3d_upload`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'ngrok-skip-browser-warning': 'true'
-              },
-              body: JSON.stringify({ images })
-            });
-            const data = await res.json();
-            
-            // 서버 응답 처리 및 UI 업데이트
-            if (data.status === 'success') {
-              showStatus('✅ Fast3R 처리 완료 응답 받음!', true);
-              console.log('✅ Fast3R 응답:', data);
-
-              //viser 창 띄우기
-              if (data.viser_response && data.viser_response.status) {
-                const match = data.viser_response.status.match(/"(https:\/\/[^\s"]+)"/);
-                if (match && match[1]) {
-                  window.open(match[1], '_blank');   // 새 창으로 자동 열기
-                }
-              }
-
-              // 2D 버튼 활성화
-              if (create2DBtn) {
-                create2DBtn.disabled = false;
-                create2DBtn.setAttribute('data-tooltip', '선택된 이미지 2D 재생성');
-              }
-            } else {
-              showStatus('❌ Fast3R 처리 중 오류가 발생했습니다.', false);
-            }
-          } catch (err) {
-            console.error('Fast3R 요청 중 오류:', err);
-            showStatus('❌ 서버 통신 오류가 발생했습니다.', false);
-          } finally {
-            if (loadingContainer) loadingContainer.style.display = 'none';
-          }
+  
+      try {
+        const tabs = await new Promise(resolve =>
+          chrome.tabs.query({ active: true, currentWindow: true }, resolve)
+        );
+  
+        const images = await new Promise((resolve, reject) => {
+          chrome.tabs.sendMessage(tabs[0].id, { action: 'getImages' }, (res) => {
+            if (chrome.runtime.lastError) return reject(chrome.runtime.lastError);
+            resolve(res);
+          });
         });
-      });
+  
+        if (!Array.isArray(images) || images.length < 3) {
+          alert('최소 3장의 이미지를 선택해야 합니다.');
+          return;
+        }
+  
+        renderThumbnails(images);
+  
+        const res = await fetch(`${SERVER_BASE_URL}/3d_upload`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true'
+          },
+          body: JSON.stringify({ images })
+        });
+  
+        const data = await res.json();
+  
+        if (data.status === 'success') {
+          showStatus('✅ Fast3R 처리 완료 응답 받음!', true);
+          console.log('✅ Fast3R 응답:', data);
+  
+          // viser 새 창 열기
+          if (data.viser_response && data.viser_response.status) {
+            const match = data.viser_response.status.match(/"(https:\/\/[^\s"]+)"/);
+            if (match && match[1]) {
+              window.open(match[1], '_blank');
+            }
+          }
+  
+          // 2D 버튼 활성화
+          if (create2DBtn) {
+            create2DBtn.disabled = false;
+            create2DBtn.setAttribute('data-tooltip', '선택된 이미지 2D 재생성');
+          }
+        } else {
+          showStatus('❌ Fast3R 처리 중 오류가 발생했습니다.', false);
+        }
+      } catch (err) {
+        console.error('Fast3R 요청 중 오류:', err);
+        showStatus('❌ 서버 통신 오류가 발생했습니다.', false);
+      } finally {
+        if (loadingContainer) loadingContainer.style.display = 'none';
+        isRunning = false;
+      }
     });
   }
+
 
   // 2D 생성 버튼 클릭 이벤트 처리
   if (create2DBtn) {
@@ -200,10 +209,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const res = await fetch(`${SERVER_BASE_URL}/2d_upload`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
             'ngrok-skip-browser-warning': 'true'
           },
-          body: JSON.stringify({})
         });
         const data = await res.json();
 
@@ -211,12 +218,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.status === 'success') {
           showStatus('✅ 2D 생성 완료!', true);
           console.log('✅ 2D 생성 응답:', data);
-            
+
           //viser 새 창 띄우기
           if (data.viser_result && data.viser_result.status) {
             const match = data.viser_result.status.match(/"(https:\/\/[^\s"]+)"/);
             if (match && match[1]) {
-              window.open(match[1], '_blank');   // 새 창으로 자동 열기
+              window.open(match[1], '_blank');   // 👉 새 창으로 자동 열기
             }
           }
 
