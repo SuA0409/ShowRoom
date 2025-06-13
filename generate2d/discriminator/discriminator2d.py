@@ -597,7 +597,7 @@ def dis_main(request_data, pose):
     return result
 
 
-if __name__ == "__main__":
+def dis_demo():
     # 이미지 및 포즈 파일 경로 설정 (여기를 수정하세요)
     image_dir = "/content/drive/MyDrive/input/images"  # 예: "./demo/images"
     pose_path = "/content/drive/MyDrive/input/pose/poses.txt" # 예: "./demo/poses.txt"
