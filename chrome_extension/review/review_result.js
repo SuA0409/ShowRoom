@@ -1,4 +1,4 @@
-// ===== 토픽 필터 로직 =====
+// 토픽 필터 로직
 document.querySelectorAll('.filter-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     // 모든 버튼에서 'active' 클래스 제거 후 클릭된 버튼만 활성화
@@ -16,7 +16,7 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
   });
 });
 
-// ===== “더 보기” 기능 =====
+// "더 보기" 기능
 function expandList(index) {
   const listItems = document.querySelectorAll(`#list-${index} li`);
   const btnExpand = document.getElementById(`btn-expand-${index}`);
@@ -40,7 +40,7 @@ function expandList(index) {
   }
 }
 
-// ===== “접기” 기능 =====
+// "접기" 기능
 function collapseList(index) {
   const listItems = document.querySelectorAll(`#list-${index} li`);
   const btnExpand = document.getElementById(`btn-expand-${index}`);
@@ -57,7 +57,7 @@ function collapseList(index) {
   btnCollapse.classList.add("hidden");
 }
 
-// ===== 페이지 로드 시 초기 상태 설정 =====
+// 페이지 로드 시 초기 상태 설정
 document.addEventListener("DOMContentLoaded", () => {
   // 각 리뷰 리스트에서 6번째 이후는 숨김
   document.querySelectorAll("ul[id^='list-']").forEach(list => {
