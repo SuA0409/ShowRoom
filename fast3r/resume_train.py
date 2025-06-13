@@ -11,7 +11,7 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 import torch
 
-# Import the train function from train.py
+# Import the train function from kd_trainer.py
 from train import train
 
 from fast3r.utils import (

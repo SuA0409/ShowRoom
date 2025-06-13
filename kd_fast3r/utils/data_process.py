@@ -14,7 +14,6 @@ def data_processer(
     '''
     for num in range(0, 38): # 총 38개의 데이터 모음을 생성
         room_path = os.path.join(rooms_path, f'data_scannet_r_{num}')
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # dataset을 None으로 미리 선언 <- colab에서의 저장 오류 해결
         dataset = [None] * 1000
@@ -28,6 +27,6 @@ def data_processer(
             
         torch.save(dataset, dataset_path+f'/data_torch-{num}.pt') # pt파일로 데이터 저장 후 load ; 병목 현상 최소화를 목적
 
-        del rooms_name, dataset, room_path, dataset_path, device # colab issue
+        del rooms_name, dataset, room_path, dataset_path # colab issue
         
         print(f'data_torch-{num}.pt 저장 완료')

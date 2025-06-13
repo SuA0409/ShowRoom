@@ -189,7 +189,7 @@ class ServerMaker:
             print(f"    저장할 이미지 리스트: {images}")
 
             ## 이미지 byte로 변환
-            self.files = []
+            self.files = list()
             for i, url in enumerate(images):
                 try:
                     response = requests.get(url)

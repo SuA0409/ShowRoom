@@ -40,7 +40,7 @@ def batch_images_load(rooms_path,
         preprocesser를 위한 thread를 사용하는 전용 함수
     Args:
         rooms_path (str): 방의 모음이 들어 있는 path
-        rooms_name (str): 각각 방의 모음의 이름
+        rooms_name (list): 각각 방의 모음의 이름
         batch_size (int): 학습 시 batch_size
         size (int): 이미지의 가장 변의 길이; 기댓값은 width
         sample (int): 각각의 방의 이미지의 선택 계수
