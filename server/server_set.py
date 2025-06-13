@@ -37,7 +37,6 @@ def set_3d_server(
 
     show_viz = ViserMaker(token_viser)
     showroom = ShowRoom(info=info, viz=show_viz)
-
     # 서버를 생성하는 코드
     server3d = ServerMaker(token=token_3d, url_type='FAST3R_SERVER_URL', json_path=json_path)
 
