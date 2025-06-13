@@ -295,3 +295,4 @@ class ServerMaker:
             except Exception as e:
                 print("❌ 2D 서버 요청 실패:", e)
                 return jsonify({"status": "error", "message": str(e)}), 500
+
