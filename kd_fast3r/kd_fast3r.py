@@ -8,7 +8,7 @@ from fast3r.models.fast3r import Fast3R
 
 class ShowRoom:
     def __init__(self,
-                 model_path,
+                 model_path='Fast3R_ViT_Large_512',
                  info=True,
                  viz=None
                  ):
@@ -23,6 +23,7 @@ class ShowRoom:
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         # fast3r pretrained모델을 불러오는 코드
         self.model = Fast3R.from_pretrained(model_path).to(self.device)
+        self.model.eval()
 
         self.info = info
         self.viz = viz

@@ -1,7 +1,6 @@
 from pyngrok import ngrok, conf
 import socket
 import viser
-import numpy as np
 
 def find_free_port():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -10,35 +9,34 @@ def find_free_port():
 
 class ViserMaker:
     def __init__(self,
-                 token,
+                 token=None,
                  point_size=0.001,
-                 data_path='/content/drive/MyDrive/Final_Server/Input/Pts/fast3r_output.npz'
                  ):
         ''' 3d point_cloud를 시각화 하는 viser 기반 클래스
         Args:
             token (str): ngrok에서 부여 받은 토큰
             point_size (float): viser에서 표현할 point당 크기
-            data_path (str): point cloud가 저장된 위치
         '''
-        self.ngrok_url, self.server = self.make_viser_server(token)
         self.point_size = point_size
 
+        self.make_viser_server(token)
         self._build_viser()
-
-        # .npz 파일의 경로, 본 데이터는 key로 'point_cloud'와 'color' 보유
-        self.data_path = data_path
 
     # 서버 주소 할당
     def make_viser_server(self, token):
-        assert isinstance(token, str), 'Token must be a string'
+        try:
+            assert isinstance(token, str), 'Start in Local...'
 
-        port = find_free_port()  # 빈 포트 추출
-        conf.get_default().auth_token = token  # Ngrok 설정
+            port = find_free_port()  # 빈 포트 추출
+            conf.get_default().auth_token = token  # Ngrok 설정
 
-        self.ngrok_url = ngrok.connect(port, "http")  # 새 Ngrok 터널 생성
-        self.server = viser.ViserServer(host="0.0.0.0", port=port)  # Viser 서버 실행 (단일 서버)
+            self.ngrok_url = ngrok.connect(port, "http")  # 새 Ngrok 터널 생성
+            self.server = viser.ViserServer(host="0.0.0.0", port=port)  # Viser 서버 실행 (단일 서버)
 
-        print(f'*** {self.ngrok_url} ***')
+            print(f'*** {self.ngrok_url} ***')
+        except:
+            self.server = viser.ViserServer()  # Viser 서버 실행 (로컬)
+
 
     # viser를 초기화 하는 함수
     def _build_viser(self):
