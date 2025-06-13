@@ -35,7 +35,7 @@ Loading Fast3R weight :
   1.2. 2D generator
 
   ## Run to Review
-      python review/main_review.py —url [Airbnb 숙소 URL]   # 리뷰의 주제를 추출하고 싶은 Airbnb 숙소의 URL을 문자열로 입력해주세요
+      python review/main_review.py —url [Airbnb 숙소 URL]   # 리뷰의 주제를 추출하고 싶은 Airbnb 숙소의 URL을 문자열로 입력해주세요.
       python review/main_review.py   # 기본 URL이 설정되어 있어 별도 인자를 주지 않아도 됩니다.
       
 ## Project Structure
