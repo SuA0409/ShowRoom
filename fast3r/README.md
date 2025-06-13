@@ -136,13 +136,13 @@ for view_idx, pred in enumerate(output_dict['preds']):
 Train model with chosen experiment configuration from [configs/experiment/](configs/experiment/)
 
 ```bash
-python fast3r/train.py experiment=super_long_training/super_long_training
+python fast3r/kd_trainer.py experiment=super_long_training/super_long_training
 ```
 
 You can override any parameter from command line following [Hydra override syntax](https://hydra.cc/docs/advanced/override_grammar/basic/):
 
 ```bash
-python fast3r/train.py experiment=super_long_training/super_long_training trainer.max_epochs=20 trainer.num_nodes=2
+python fast3r/kd_trainer.py experiment=super_long_training/super_long_training trainer.max_epochs=20 trainer.num_nodes=2
 ```
 
 To submit a multi-node training job with Slurm, use the following command:
