@@ -341,15 +341,15 @@ class ShowRoomProcessor:
                                                 z2: str,
                                                 ) -> Union[str, Tuple[str, str]]:
         """
-        두 정면 이미지 간의 시점 각도 및 위치를 기반으로 재생성 이미지 방향을 결정
+        두 정면 이미지 간의 시점 각도 및 위치를 기반으로 재생성 이미지 방향을 결정(정밀 판별)
 
         Args:
-            layout1 (np.ndarray): 첫 번째 이미지의 layout segmentation
-            layout2 (np.ndarray): 두 번째 이미지의 layout segmentation
+            layout1 (np.ndarray): 첫 번째 정면 이미지의 layout segmentation
+            layout2 (np.ndarray): 두 번째 정면 이미지의 layout segmentation
             angle (float): 두 이미지 간 시점 각도 (deg)
             side (str): 기준 이미지 기준 상대 방향 ('left' 또는 'right')
-            z1 (str): 첫 번째 이미지 이름
-            z2 (str): 두 번째 이미지 이름
+            z1 (str): 첫 번째 정면 이미지 이름
+            z2 (str): 두 번째 정면 이미지 이름
 
         Returns:
             Union[str, Tuple[str, str]]: 'None' 또는 (선택 이미지명, 방향) 튜플
