@@ -47,7 +47,7 @@ def set_3d_server(
     server3d.run()
 
 def set_main_server(
-        token='2yLwaKXv25qCrB3yT7T0d2sgzGI_69DUy3jgG5DspAmxEAVcS',
+        token='2yRnnTsH8Hqdv2IJjnSCPnVOMVp_2E9gZxNeEhf3TfYPwKYnV',
         json_path='/content/drive/MyDrive/Final_Server/ngrok_path.json',
 ):
     ''' 3d showroom을 운용하는 서버 생성
