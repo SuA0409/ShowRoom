@@ -2,6 +2,7 @@ import cv2
 import torch
 import numpy as np
 import kornia as K
+import matplotlib.pyplot as plt
 from PIL import Image
 from diffusers import StableDiffusionInpaintPipeline, EulerAncestralDiscreteScheduler
 from torch import autocast
@@ -228,7 +229,7 @@ class SimpleRotator:
                 mask_image=mask_image,
                 guidance_scale=guidance,
                 num_inference_steps=steps
-            ).room[0]
+            ).images[0]
         return result
 
     def to_bytesio(self, image_np: np.ndarray, filename: str = "result.jpg") -> BytesIO:
@@ -278,6 +279,17 @@ def init_set():
         local_files_only=False
     )
     print("다운로드 완료!")
+
+def show_image(img: Image.Image, title: str = None):
+    """
+    PIL Image를 Matplotlib으로 화면에 출력하는 헬퍼.
+    """
+    plt.figure(figsize=(6, 6))
+    plt.imshow(img)
+    plt.axis('off')
+    if title:
+        plt.title(title)
+    plt.show()
 
 def gen_main(output_list):
     """
@@ -336,6 +348,9 @@ def gen_main(output_list):
         # Stable Diffusion으로 빈 영역 인페인팅
         result = rotator.inpaint(init_img, mask_img,
                                  prompt=prompt, steps=steps, guidance=guidance)
+        
+        # 변환하기 전 시각화
+        show_image(result, title=f"images{key} inpainted")
 
         # Numpy 형태를 BytesIO로 변환
         result_np = np.array(result)
