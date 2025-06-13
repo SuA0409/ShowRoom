@@ -47,8 +47,10 @@ pyngrok
 # socket
 # cv2
 
-# --------- BERTopic --------- #
+# --------- review --------- #
 pandas
+requests
+beautifulsoup4
 kss
 transformers
 sentence-transformers
@@ -58,7 +60,6 @@ hdbscan
 bertopic
 umap-learn
 hdbscan
-bertopic
 
 # --------- ShowRoom --------- #
 flask_cors
