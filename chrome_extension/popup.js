@@ -48,13 +48,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 썸네일 렌더링 및 클릭 이벤트 처리 함수
   function renderThumbnails(images) {
+
+    // 썸네일 컨테이너 및 선택 개수 표시 요소 가져오기
     const container = document.getElementById('selected-thumbnails');
     const countEl = document.getElementById('selected-count');
+
+    // 컨테이너 없으면 함수 종료
     if (!container) return;
 
+    // 컨테이너 초기화 및 선택 이미지 개수 표시
     container.innerHTML = '';
     if (countEl) countEl.textContent = `선택된 이미지: ${images.length}장`;
 
+    // 썸네일 이미지 생성 및 할당
     images.forEach(src => {
       const img = document.createElement('img');
       img.src = src;
@@ -85,22 +91,25 @@ document.addEventListener('DOMContentLoaded', () => {
       clickSound.play();
     });
 
+    // 현재 활성 탭 정보 가져오기
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const tab = tabs[0];
 
-      // Airbnb 페이지 확인 및 이미지 가져오기
-      // Airbnb 페이지가 아니면 경고창 띄우기
+      // Airbnb 상세 페이지가 아니면 안내 메시지 후 종료
       if (!tab.url.includes('airbnb.co.kr') && !tab.url.includes('airbnb.com')) {
         alert('Airbnb 상세 페이지에서 실행해주세요.');
         return;
       }
 
+      // 컨텐츠 스크립트에 이미지 요청 후 오류 처리
       chrome.tabs.sendMessage(tab.id, { action: 'getImages' }, (response) => {
         if (chrome.runtime.lastError) {
           console.error('메시지 전송 실패:', chrome.runtime.lastError.message);
           alert('Airbnb 페이지에서 이미지를 찾을 수 없습니다.');
           return;
         }
+
+        // 응답값이 배열이 아니면 이미지 데이터 오류 처리
         if (!Array.isArray(response)) {
           alert('이미지 데이터를 가져오지 못했습니다.');
           return;
@@ -136,17 +145,20 @@ document.addEventListener('DOMContentLoaded', () => {
       if (loadingContainer) loadingContainer.style.display = 'block';
   
       try {
+        // 현재 활성 탭 정보 비동기 획득
         const tabs = await new Promise(resolve =>
           chrome.tabs.query({ active: true, currentWindow: true }, resolve)
         );
-  
+
+        // 컨텐츠 스크립트에 이미지 목록 요청 (비동기)
         const images = await new Promise((resolve, reject) => {
           chrome.tabs.sendMessage(tabs[0].id, { action: 'getImages' }, (res) => {
             if (chrome.runtime.lastError) return reject(chrome.runtime.lastError);
             resolve(res);
           });
         });
-  
+
+        // 이미지가 3장 미만이면 알림 후 종료
         if (!Array.isArray(images) || images.length < 3) {
           alert('최소 3장의 이미지를 선택해야 합니다.');
           return;
@@ -163,7 +175,8 @@ document.addEventListener('DOMContentLoaded', () => {
           },
           body: JSON.stringify({ images })
         });
-  
+
+        // 서버 응답(JSON) 파싱 및 성공 여부 처리
         const data = await res.json();
   
         if (data.status === 'success') {
@@ -195,7 +208,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
-
 
   // 2D 생성 버튼 클릭 이벤트 처리
   if (create2DBtn) {
