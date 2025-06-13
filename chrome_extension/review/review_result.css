@@ -20,8 +20,6 @@ a {
   color: inherit;
 }
 
-
-/* ===== 전체 레이아웃 컨테이너 ===== */
 /* 가운데 정렬, 가로 최대 너비 제한, 좌우 여백 */
 .container {
   max-width: 720px;
@@ -37,8 +35,6 @@ h1 {
   margin-bottom: 24px;
 }
 
-
-/* ===== 필터 버튼 그룹 (상단 고정) ===== */
 /* 스크롤해도 상단에 고정되며 버튼 간격 유지 */
 .filter-group {
   position: sticky;
@@ -78,8 +74,6 @@ h1 {
   border-color: #ff5a5f;
 }
 
-
-/* ===== 토픽 카드 디자인 ===== */
 /* 카드 기본 박스 디자인 및 마우스오버 효과 */
 .topic-card {
   background-color: #fff;
@@ -95,7 +89,6 @@ h1 {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
-/* ===== 카드 상단 헤더 ===== */
 /* 아이콘 + 토픽 이름 배치 */
 .topic-header {
   display: flex;
@@ -124,7 +117,7 @@ h1 {
   z-index: 1;
 }
 
-/* ===== 토픽별 카드 색상 강조 ===== */
+/* 토픽별 카드 색상 강조 */
 .topic-card[data-topic="청결도"] {
   border-left: 4px solid #A8E6CF;
 }
@@ -145,7 +138,6 @@ h1 {
   border-left: 4px solid #607D8B;
 }
 
-/* ===== 리뷰 리스트 ===== */
 /* 기본 리스트 스타일 제거 */
 .review-list {
   list-style: none;
@@ -178,7 +170,6 @@ h1 {
   border-radius: 0 0 8px 8px;
 }
 
-/* ===== “더 보기 / 접기” 버튼 ===== */
 /* 카드 하단 버튼 정렬 */
 .actions {
   display: flex;
@@ -215,13 +206,13 @@ h1 {
 }
 
 
-/* ===== 카드 간 간격용 구분 영역 ===== */
+/* 카드 간 간격용 구분 영역 */
 .divider {
   height: 16px;
   background-color: #fafafa;
 }
 
-/* ===== 반응형 대응 (모바일 전용) ===== */
+/* 반응형 대응 (모바일 전용) */
 @media (max-width: 600px) {
   .topic-header {
     padding: 12px 16px;
