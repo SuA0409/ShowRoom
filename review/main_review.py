@@ -17,6 +17,7 @@ import base64
 from urllib.parse import quote, urlencode
 import json
 import requests
+import argparse
 
 
 def comments(korean):
@@ -24,16 +25,16 @@ def comments(korean):
     한국어로 번역한것이 없을 때 or 한국어 댓글이 아닐때 None 반환 함수
 
     Args:
-        r (dict): 리뷰 데이터를 포함한 딕셔너리
+        korean (dict): 리뷰 데이터를 포함한 딕셔너리
 
     Returns:
         str or None: 한국어 리뷰 텍스트 또는 번역된 리뷰 텍스트 or 조건에 맞지 않으면 None
     """
-    if r["language"] == 'ko':  # 리뷰 언어가 한국어인지 확인
-        return r["comments"]  # 한국어 리뷰 텍스트 반환
+    if korean["language"] == 'ko':  # 리뷰 언어가 한국어인지 확인
+        return korean["comments"]  # 한국어 리뷰 텍스트 반환
     else:
         try:
-            return r["localizedReview"]["comments"]  # 번역된 리뷰 텍스트 반환
+            return korean["localizedReview"]["comments"]  # 번역된 리뷰 텍스트 반환
         except:
             return None  # 번역된 리뷰가 없으면 None 반환
 
@@ -50,7 +51,7 @@ def getReviewsJson(stay_id, limit, offset, headers):
     Returns:
         dict: 리뷰 데이터가 포함된 JSON 응답
     """
-    jurl = ""  # API 기본 URL
+    jurl = "https://www.airbnb.co.kr/api/v3/StaysPdpReviewsQuery/dec1c8061483e78373602047450322fd474e79ba9afa8d3dbbc27f504030f91d?"  # API 기본 URL
     variables = {  # API 요청 변수 설정
         "id": stay_id,  # 숙소 ID
         "pdpReviewsRequest": {
@@ -225,13 +226,13 @@ def use_model(docs, device=torch.device('cuda' if torch.cuda.is_available() else
     embedding_model = SentenceTransformer("jhgan/ko-sbert-nli", device=device)  # 한국어 Sentence-BERT 모델 로드
     seed_topics = [  # 주제별 시드 키워드 정의
         ["청결도", "깨끗함", "깨끗", "더럽", "드러움", "드럽", "개더럽", "개드러움", "개드럽", "개드러움", "위생", "청소", "더러움", "청결", "불결", "정리", "오염", "깔끔함", "먼지", "청소상태", "냄새", "악취", "향기", "쾌쾌함", "냄새남", "냄새나", "향", "지린내", "곰팡이냄새", "청국장냄새", "냄새문제", "상쾌함", "환기"],
+        ["소음", "조용함", "시끄러움", "시끄럼", "방음", "소음문제", "고요", "고요함", "소란", "방음효과", "조용", "잡음", "소음원", "방해"],
         ["위치", "교통", "가까움", "편리함", "접근성", "원거리", "교통편", "중앙", "외진", "이동", "전망", "근처"],
         ["가격", "비쌈", "저렴함", "가성비", "비용", "고가", "합리적", "경제적", "비싸", "저렴", "요금", "가치", "지불"],
         ["시설", "편리함", "새거", "새것", "새", "편함", "구비", "편의", "시설물", "장비", "부족", "완비", "기능", "설비", "낡음", "오래됨"],
         ["호스트", "서비스", "친절함", "응대", "도움", "불친절", "서비스품질", "관리", "지원", "배려", "체크인", "체크아웃", "입실", "퇴실", "환영", "지연", "빠름", "수속", "접수", "퇴소", "안내"],
-        ["소음", "조용함", "시끄러움", "시끄럼", "방음", "소음문제", "고요", "고요함", "소란", "방음효과", "조용", "잡음", "소음원", "방해"],
     ]
-    topic_names = ["청결도", "위치", "가격", "시설", "호스트", "소음"]  # 주제 이름 정의
+    topic_names = ["청결도", "소음", "위치", "가격", "시설", "호스트"]  # 주제 이름 정의
 
     umap_model = UMAP(n_components=2, random_state=42, metric='cosine', n_neighbors=30, min_dist=0.1)  # UMAP 설정
     hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=6, min_samples=3, cluster_selection_method='leaf')  # HDBSCAN 설정
@@ -284,21 +285,33 @@ def use_model(docs, device=torch.device('cuda' if torch.cuda.is_available() else
         if len(topics) > 5:  # 5개 초과 시 생략 표시
             print(f"  ... (총 {len(topics)}개 리뷰 중 5개만 표시)")
 
-# 헤더 정보
-headers = {
-    "Content-Type": "application/json",
-    "User-Agent": "",
-    "Accept": "*/*",
-    "Referer": "",
-    "Accept-Language": "",
-    "api-key": "",
-}
 
-# URL 지정
-url = ''  # 분석할 숙소 URL
-# 리뷰 크롤링
-data, num = getReviews(url, headers)  # 리뷰 데이터와 숙소 번호 가져오기
-# 리뷰 전처리
-docs = preprocessReviews(data, num)  # 전처리된 문장 리스트 생성
-# 모델 사용
-use_model(docs)  # BERTopic 모델로 주제 분석 수행
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser(description="Airbnb topics of reviews")
+    parser.add_argument("--url", type=str, help="type your stay URL", default="https://www.airbnb.co.kr/rooms/44005242?check_in=2025-06-13&check_out=2025-06-15&photo_id=1265571749&source_impression_id=p3_1749786693_P3ao1iX7quls1JfM&previous_page_section_name=1000")
+
+    '''
+    Example usage:
+    python review/main_review.py --url type_your_airbnb_rooms_URL
+    python review/main_review.py
+    '''
+    
+    # 헤더 정보
+    headers = {
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "*/*",
+        "Referer": "https://www.airbnb.co.kr/",
+        "Accept-Language": "ko-KR,ko;q=0.9",
+        "x-airbnb-api-key": "d306zoyjsyarp7ifhu67rjxn52tv0t20",
+    }
+
+    # 숙소 url
+    url = parser.parse_args().url
+    # 리뷰 크롤링
+    data, num = getReviews(url, headers)  # 리뷰 데이터와 숙소 번호 가져오기
+    # 리뷰 전처리
+    docs = preprocessReviews(data, num)  # 전처리된 문장 리스트 생성
+    # 모델 사용
+    use_model(docs)  # BERTopic 모델로 주제 분석 수행
