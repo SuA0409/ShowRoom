@@ -235,7 +235,7 @@ class SimpleRotator:
                 mask_image=mask_image,
                 guidance_scale=guidance,
                 num_inference_steps=steps
-            ).images[0]
+            ).room[0]
         return result
 
     def to_bytesio(self, image_np: np.ndarray, filename: str = "result.jpg") -> BytesIO:

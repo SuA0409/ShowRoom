@@ -4,33 +4,64 @@ from viz import ViserMaker
 
 def set_2d_server(
         token='2xwkthyPz15CsSbartjgnt9aQde_3RoEvuB7Mz7oHHzuDJFia',
-        url_type='TWOD_SERVER_URL',
         json_path='/content/drive/MyDrive/Final_Server/ngrok_path.json'
 ):
-    s2 = ServerMaker(token=token, url_type=url_type, json_path=json_path)
+    ''' 2d generate2d 를 운용하는 서버 생성
+    Args:
+        token (str): 2d 서버에 할당하는 ngrok 서버 토큰
+        json_path (str): url을 메인에게 전달하기 위해 저정하는 주소
+    '''
 
-    s2.set_2d()
+    # 서버를 생성하는 코드
+    server2d = ServerMaker(token=token, url_type='TWOD_SERVER_URL', json_path=json_path)
 
-    s2.run()
+    # 기본 설정과 라우터를 등록하는 코드
+    server2d.set_2d()
+
+    # 서버를 시작하는 코드
+    server2d.run()
 
 def set_3d_server(
         token_3d='2y7j0XIpN1f2A76HJseTWFBqgqI_7Ma2wrEyqoveyw2JMeP6G',
         token_viser='2xwLYd6T4TFcrLjwgJZpxbDgaOJ_7oCZnw8f4Bkx2sYX3zkGQ',
-        url_type='FAST3R_SERVER_URL',
         json_path='/content/drive/MyDrive/Final_Server/ngrok_path.json',
-        model_path='jedyang97/Fast3R_ViT_Large_512',
-        img_path='/content/drive/MyDrive/Final_Server/Input/Images',
-        camera_path='/content/drive/MyDrive/Final_Server/Input/Poses/poses.txt',
-        data_path='/content/drive/MyDrive/Final_Server/Input/Pts/fast3r_output.npz',
         info=True
 ):
-    viz = ViserMaker(token_viser)
+    ''' 3d showroom을 운용하는 서버 생성
+    Args:
+        token_3d (str): 3d 서버에 할당하는 ngrok 서버 토큰
+        token_viser (str): viser 서버에 할당하는 ngrok 서버 토큰
+        json_path (str): url을 메인에게 전달하기 위해 저정하는 주소
+        info (bool): fast3r에 정보 표시를 컨트롤하는 변수
+    '''
 
-    sr = ShowRoom(model_path=model_path, img_path=img_path, camera_path=camera_path, data_path=data_path, info=info, viz=viz)
+    show_viz = ViserMaker(token_viser)
+    showroom = ShowRoom(model_path='Fast3R_ViT_Large_512', info=info, viz=show_viz)
 
-    s3 = ServerMaker(token=token_3d, url_type=url_type, json_path=json_path)
+    # 서버를 생성하는 코드
+    server3d = ServerMaker(token=token_3d, url_type='FAST3R_SERVER_URL', json_path=json_path)
 
-    s3.set_3d(sr)
-    s3.set_viser(viz)
+    # 기본 설정과 라우터를 등록하는 코드
+    server3d.set_3d(showroom)
 
-    s3.run()
+    # 서버를 시작하는 코드
+    server3d.run()
+
+def set_main_server(
+        token='2yLwaKXv25qCrB3yT7T0d2sgzGI_69DUy3jgG5DspAmxEAVcS',
+        json_path='/content/drive/MyDrive/Final_Server/ngrok_path.json',
+):
+    ''' 3d showroom을 운용하는 서버 생성
+        Args:
+            token (str): 3d 서버에 할당하는 ngrok 서버 토큰
+            json_path (str): url을 메인에게 전달하기 위해 저정하는 주소
+        '''
+
+    # 서버를 생성하는 코드, url_type을 None으로 설정해 main이라는 것을 알림
+    server = ServerMaker(token=token, url_type=None, json_path=json_path)
+
+    # 기본 설정과 라우터를 등록하는 코드
+    server.set_main()
+
+    # 서버를 시작하는 코드
+    server.run()

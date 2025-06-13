@@ -29,26 +29,35 @@ class ServerMaker:
         with open(json_path, 'r') as f:
             url = json.load(f)
 
+        # main server에서 저장된 각각의 server 주소 load
         self.REVIEW_SERVER_URL = url.get("REVIEW_SERVER_URL") or ""
         self.FAST3R_SERVER_URL = url.get("FAST3R_SERVER_URL") or ""
         self.TWOD_SERVER_URL = url.get("TWOD_SERVER_URL") or ""
 
-        print(f"✅ REVIEW_SERVER_URL: {self.REVIEW_SERVER_URL}")
-        print(f"✅ FAST3R_SERVER_URL: {self.FAST3R_SERVER_URL}")
-        print(f"✅ TWOD_SERVER_URL: {self.TWOD_SERVER_URL}")
+        print(f"    1. REVIEW_SERVER_URL: {self.REVIEW_SERVER_URL}")
+        print(f"    2. FAST3R_SERVER_URL: {self.FAST3R_SERVER_URL}")
+        print(f"    3. TWOD_SERVER_URL: {self.TWOD_SERVER_URL}")
 
     def _url_saver(self,
                   public_url=None,
                   url_type=None,
                   json_path=None
                   ):
+        ''' url을 저장하는 코드
+        Args:
+            public_url (str): ngrok으로 생성된 주소
+            url_type (str): josn에 저장할 url 이름
+            json_path (str): url이 저장된 json 파일의 주소
+        '''
 
+        # 주소값이 없으면 실행 불가
         assert public_url is not None, 'URL is not exist'
 
         try:
             with open(json_path, 'r') as f:
                 url = json.load(f)
         except FileNotFoundError:
+            # json 파일이 없으면 dictionary를 다시 만듦
             url = dict()
 
         url[url_type] = public_url
@@ -80,57 +89,66 @@ class ServerMaker:
         self.port = port
 
     def run(self):
+        # 서버 실행
         self.app.run(host='0.0.0.0', port=self.port)
 
     def set_3d(self, showroom):
-        self.showroom = showroom
 
+        # 3d_upload에 관한 라우터
         @self.app.route('/3d_upload', methods=['POST'])
-        def echo():
+        def show3r_route():
             try:
                 print(' main에서 입력 받음 !')
-                try:
-                    self.showroom.images = server_images_load(request.files)
-                except:
-                    self.showroom.images = None
 
-                self.showroom.reconstruction()
-                self.showroom.building_spr()
+                # request로 입력받은 데이터를 showroom.room에 저장
+                showroom.room = server_images_load(request.files)
 
-                return jsonify({"pose": self.showroom.pose})
+                # fast3r 실행
+                showroom.reconstruction()
+                # spr 실행
+                showroom.building_spr()
+
+                # camera pose를 return
+                return jsonify({"pose": showroom.pose})
             except Exception as e:
                 return f"Error processing: {str(e)}", 500
 
-    def set_viser(self, show_viz):
-        self.show_viz = show_viz
-
+        # viser에 관한 라우터
         @self.app.route('/viser', methods=['POST'])
         def viser_route():
             try:
-                return jsonify({"status": str(self.show_viz.ngrok_url)})
+                # viser 주소를 return
+                return jsonify({"status": str(showroom.viz.ngrok_url)})
             except Exception as e:
                 return jsonify({"status": "fail", "error": str(e)})
 
     def set_2d(self):
+
+        # generator(stable diffusion)에 필요한 기본 setting
         init_set()
 
+        # 2d_upload에 관한 라우터
         @self.app.route('/2d_upload', methods=['POST'])
-        def handle_2d_request():
+        def show_gen_route():
             try:
-                print("    discriminator 실행 시작!")
+                ## dis 파트
+                print(" discriminator 실행 시작!")
+
+                # 입력받은 camere pose를 처리
                 pose_json = request.form.get("pose")
                 pose = json.loads(pose_json)
-                result = dis_main(request.files, pose)
+                dis_result = dis_main(request.files, pose)
 
-                print("    discriminator 실행 완료!")
+                print(" discriminator 실행 완료!\n")
 
-                print("    Stable Diffusion Inpaint .py 실행 시작!")
-                result = gen_main(result)
+                ## gen 파트
+                print(" Stable Diffusion Inpaint .py 실행 시작!")
+                gen_result = gen_main(dis_result)
 
-                print("    Stable Diffusion Inpaint.py 실행 완료!")
+                print(" Stable Diffusion Inpaint.py 실행 완료!")
 
                 encoded_images = []
-                for name, bytesio_obj in result:
+                for name, bytesio_obj in gen_result:
                     bytesio_obj.seek(0)
                     image_bytes = bytesio_obj.getvalue()
                     encoded_image = base64.b64encode(image_bytes).decode('utf-8')
@@ -150,12 +168,15 @@ class ServerMaker:
                 print(" 2D 생성 중 오류:", e)
                 return jsonify({"status": "error", "message": str(e)}), 500
 
-    def set_main_3d(self):
-    # 3d_server resp,respone
+    def set_main(self):
+
+        # 3d_server resp,respone
         @self.app.route('/3d_upload', methods=['POST'])
         def main_3d_process():
+
+            # chrome에서 전달 받은 이미지 url
             data = request.get_json()
-            print(f"[⚡️] /3d_upload 요청 데이터: {data}")
+            print(f" ShowRoom 요청 데이터: {data}")
 
             # 입력 검증
             if not data or 'images' not in data:
@@ -165,10 +186,10 @@ class ServerMaker:
             if len(images) < 1:
                 return jsonify({"status": "error", "message": "저장할 이미지가 없습니다."}), 400
 
-            print(f"[⚡️] 저장할 이미지 리스트: {images}")
+            print(f"    저장할 이미지 리스트: {images}")
 
             ## 이미지 byte로 변환
-            self.files = []
+            files = []
             for i, url in enumerate(images):
                 try:
                     response = requests.get(url)
@@ -178,47 +199,47 @@ class ServerMaker:
                     img_file = BytesIO(response.content)
                     img_file.name = f'{i}.jpg'
 
-                    # 원하는 형식으로 추가: (key, file-object)
-                    self.files.append((f'images{i}', img_file))
+                    # 이미지를 (name, Byte) 형식으로 저장
+                    files.append((f'images{i}', img_file))
 
                 except Exception as e:
                     print(f"Failed to load image from {url}: {e}")
 
-            print(self.files)
-            # ✅ Fast3R 서버에 "폴더 전체 처리" 요청
+            print(f"    저장한 이미지 리스트: {files}")
+
+            ## Fast3r에 3d 전환 요청
             try:
-                print("[⚡️] Fast3R에 요청 전송!")
-                self.fast3r_response = requests.post(self.FAST3R_SERVER_URL + "/3d_upload", files=copy.deepcopy(self.files), timeout=600)
-                print(f"[⚡️] Fast3R 응답코드: {self.fast3r_response.status_code}")
+                print(" Fast3R에 요청 전송 !")
+                self.fast3r_response = requests.post(self.FAST3R_SERVER_URL + "/3d_upload", files=copy.deepcopy(files), timeout=600)
 
                 if self.fast3r_response.status_code == 200:
                     fast3r_result = self.fast3r_response.json()
+                    print(f" Fast3R 응답 코드: {self.fast3r_response.status_code}\n")
                 else:
                     return jsonify({"status": "error", "message": f"Fast3R 오류: {self.fast3r_response.status_code}"}), 500
+
             except Exception as e:
-                print(f"[❌] Fast3R 요청 실패: {e}")
+                print(f" Fast3R 요청 실패: {e}\n")
                 return jsonify({"status": "error", "message": f"Fast3R 요청 실패: {e}"}), 500
 
-            print("viser 시작")
-
-            # ✅ Viser에 "시각화 요청" 전송
+            ## Viser에 시각화 요청
             try:
-                print("[⚡️] Viser에 요청 전송!")
+                print(" Viser에 요청 전송 !")
                 viser_response = requests.post(self.FAST3R_SERVER_URL + "/viser", timeout=600)
-                print(f"[⚡️] Viser 응답코드: {viser_response.status_code}")
 
                 if viser_response.status_code == 200:
                     viser_result = viser_response.json()
+                    print(f" Viser 응답 코드: {viser_response.status_code}\n")
                 else:
                     return jsonify({"status": "error", "message": f"Viser 오류: {viser_response.status_code}"}), 500
             except Exception as e:
-                print(f"[❌] Viser 요청 실패: {e}")
+                print(f" Viser 요청 실패: {e}\n")
                 return jsonify({"status": "error", "message": f"Viser 요청 실패: {e}"}), 500
 
-            # ✅ 최종 응답 통합
+            ## 최종 응답 통합
             response_data = {
                 "status": "success",
-                "message": "이미지 저장, Fast3R 처리 및 Viser 요청까지 완료!",
+                "message": "이미지 저장, Fast3R 처리 및 Viser 요청까지 완료 !",
                 "fast3r_response": fast3r_result,
                 "viser_response": viser_result
             }
@@ -227,70 +248,68 @@ class ServerMaker:
             response.headers['Content-Type'] = 'application/json'
             return response
 
-    # 2d_server resp,respone
-    def set_main_2d(self):
-
+        # 2d_server resp,respone
         @self.app.route('/2d_upload', methods=['POST'])
         def request_2d_server():
-            print("🔔 2D 서버로 요청 시작!")
+            # 2d server에 생성 요청
             try:
+                ## fast3r 결과로 얻은 camera pose를 전달
                 data = {"pose": json.dumps(self.fast3r_response.json())}
-
-                response_2d = requests.post(self.TWOD_SERVER_URL + "/2d_upload", files=copy.deepcopy(self.files),
-                                            data=data,
-                                            timeout=600)
-                # dict(list[dict[file]])
-
-                bytesio_obj = response_2d.json()['images'][0]['data']
-                image_bytes = base64.b64decode(bytesio_obj)
-                ## 체크
-                print(image_bytes)
-                bytesio_obj = BytesIO(image_bytes)
-                print(bytesio_obj)
-                name = response_2d.json()['images'][0]['name']
-                # bytesio_obj.seek(0)
-
-                print(f"{name}: {len(image_bytes)} bytes")
-                new_files = copy.deepcopy(self.files)
-
-                print(new_files)
-                new_files.append((f'new_{name}', bytesio_obj))
+                print(" 2D server에 요청 전송 !")
+                response_2d = requests.post(self.TWOD_SERVER_URL + "/2d_upload",
+                                            files=copy.deepcopy(self.files), data=data, timeout=600)
 
                 if response_2d.status_code == 200:
                     result_2d = response_2d.json()
-                    print("✅ 2D 서버 처리 완료:", result_2d)
-
-                    # ⭐️ 이어서 FAST3R 서버에 요청
-                    print("🔔 FAST3R 서버로 요청 시작!")
-                    response_3d = requests.post(self.FAST3R_SERVER_URL + "/3d_upload", files=copy.deepcopy(new_files),
-                                                timeout=600)
-
-                    if response_3d.status_code == 200:
-                        result_3d = response_3d.json()
-                        print("✅ FAST3R 처리 완료:", result_3d)
-
-                        # ⭐️ ⭐️ 이어서 VISER 요청 추가!
-                        print("🔔 VISER에 요청 시작!")
-                        response_viser = requests.post(self.FAST3R_SERVER_URL + "/viser", timeout=600)
-
-                        if response_viser.status_code == 200:
-                            result_viser = response_viser.json()
-                            print("✅ VISER 처리 완료:", result_viser)
-
-                            return jsonify({
-                                "status": "success",
-                                "message": "2D, 3D, Viser까지 모두 완료!",
-                                "2d_result": result_2d,
-                                "3d_result": result_3d,
-                                "viser_result": result_viser
-                            })
-                        else:
-                            return jsonify({"status": "error", "message": f"Viser 오류: {response_viser.text}"}), 500
-
-                    else:
-                        return jsonify({"status": "error", "message": "3D 서버 오류: " + response_3d.text}), 500
+                    print(f" 2D server 응답 코드: {response_2d.status_code}\n")
                 else:
                     return jsonify({"status": "error", "message": "2D 서버 오류: " + response_2d.text}), 500
+
+                print(" Fast3R에 요청 준비 !")
+
+                ## 2d 결과로 얻은 새로운 이미지를 byte로 압축 하여 main에 전달
+                bytesio_obj = response_2d.json()['images'][0]['data']
+                image_bytes = base64.b64decode(bytesio_obj)
+                bytesio_obj = BytesIO(image_bytes)
+                name = response_2d.json()['images'][0]['name']
+
+                print(f"    생성된 이미지 이름: {name}")
+                print(f"    생성된 이미지 크기: {len(image_bytes)} bytes")
+
+                new_files = copy.deepcopy(self.files)
+                new_files.append((f'new_{name}', bytesio_obj))
+                print(f"    새롭게 저장한 이미지 리스트: {new_files}\n")
+
+                ## fast3r에 두 번째 요청
+                print(" Fast3R에 두 번째 요청 전송 !")
+                response_3d = requests.post(self.FAST3R_SERVER_URL + "/3d_upload",
+                                            files=copy.deepcopy(new_files), timeout=600)
+
+                if response_3d.status_code == 200:
+                    result_3d = response_3d.json()
+                    print(f" Fast3R 응답 코드: {self.fast3r_response.status_code}\n")
+                else:
+                    return jsonify({"status": "error", "message": "3D 서버 오류: " + response_3d.text}), 500
+
+
+                ## Viser에 두 번째 요청
+                print(" Viser에 두 번째 요청 전송 !")
+                response_viser = requests.post(self.FAST3R_SERVER_URL + "/viser", timeout=600)
+
+                if response_viser.status_code == 200:
+                    result_viser = response_viser.json()
+                    print(f" Viser 응답 코드: {response_viser.status_code}\n")
+
+                    print(" *** 전체 프로세스 종료 ***")
+                    return jsonify({
+                        "status": "success",
+                        "message": "2D, 3D, Viser까지 모두 완료!",
+                        "2d_result": result_2d,
+                        "3d_result": result_3d,
+                        "viser_result": result_viser
+                    })
+                else:
+                    return jsonify({"status": "error", "message": f"Viser 오류: {response_viser.text}"}), 500
 
             except Exception as e:
                 print("❌ 2D 서버 요청 실패:", e)

@@ -185,8 +185,6 @@ class ShowRoomProcessor:
 
         return aligned_poses
 
-
-
     def is_front_view(self,
                       layout_mask: np.ndarray,
                       class_id: Optional[int] = None,
