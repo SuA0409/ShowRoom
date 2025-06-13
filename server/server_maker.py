@@ -189,7 +189,7 @@ class ServerMaker:
             print(f"    저장할 이미지 리스트: {images}")
 
             ## 이미지 byte로 변환
-            files = []
+            self.files = []
             for i, url in enumerate(images):
                 try:
                     response = requests.get(url)
@@ -200,17 +200,17 @@ class ServerMaker:
                     img_file.name = f'{i}.jpg'
 
                     # 이미지를 (name, Byte) 형식으로 저장
-                    files.append((f'images{i}', img_file))
+                    self.files.append((f'images{i}', img_file))
 
                 except Exception as e:
                     print(f"Failed to load image from {url}: {e}")
 
-            print(f"    저장한 이미지 리스트: {files}")
+            print(f"    저장한 이미지 리스트: {self.files}")
 
             ## Fast3r에 3d 전환 요청
             try:
                 print(" Fast3R에 요청 전송 !")
-                self.fast3r_response = requests.post(self.FAST3R_SERVER_URL + "/3d_upload", files=copy.deepcopy(files), timeout=600)
+                self.fast3r_response = requests.post(self.FAST3R_SERVER_URL + "/3d_upload", files=copy.deepcopy(self.files), timeout=600)
 
                 if self.fast3r_response.status_code == 200:
                     fast3r_result = self.fast3r_response.json()
