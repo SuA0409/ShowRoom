@@ -592,6 +592,11 @@ def dis_main(request_data, pose):
     Returns:
         List[Dict[str, Union[int, np.ndarray]]]: [{key: int, image: np.ndarray | None}, ...] 형식의 결과 리스트.
     """
+    start_time = time.time()
+    
     processor = ShowRoomProcessor()
     result = processor.process(request_data, pose)
+
+    elapsed = time.time() - start_time  # 경과 시간 계산
+    print(f"\n discriminator 처리 시간: {elapsed:.2f}초")
     return result
