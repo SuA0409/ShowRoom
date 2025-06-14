@@ -43,7 +43,7 @@ If you want to run the demo with your own image, put your image and pose in the 
       python demo/review_demo.py   # 기본 URL이 설정되어 있어 별도 인자를 주지 않아도 됩니다.
 
 ## Run to ShowRoom
-      python show_room_demo.py # test 이미지를 통해 3d reconstuction과 spr 그리고 viser를 통해 시각화까지 합니다.
+      python demo/show_room_demo.py # test 이미지를 통해 3d reconstuction과 spr 그리고 viser를 통해 시각화까지 합니다.
       
 ## Project Structure
     ShowRoom/
