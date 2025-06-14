@@ -42,7 +42,6 @@ class SimpleRotator:
             map_location=self.device,
             force_reload=False,
             trust_repo=True,
-            offline=True  # 로컬 캐시에 모델이 없으면 에러 발생
         ).to(self.device).eval()
         try:
             self.midas = torch.compile(self.midas)
@@ -62,7 +61,6 @@ class SimpleRotator:
             revision="fp16",
             torch_dtype=torch.float16,
             safety_checker=None,
-            local_files_only=True  # 로컬 캐시에 모델이 없으면 에러 발생
         ).to(self.device)
 
         # 모델 최적화 설정
