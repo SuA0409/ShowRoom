@@ -9,7 +9,6 @@ import random
 from kd_fast3r.utils.data_preprocess import batch_images_load
 from fast3r.models.fast3r import Fast3R
 from fast3r.models.multiview_dust3r_module import MultiViewDUSt3RLitModule
-from fast3r.dust3r.utils.image import load_images
 from kd_fast3r.kd_loss import RKDLoss
 
 from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
@@ -253,7 +252,7 @@ class Fast3rTrainer:
         test_time = time.time()
         with torch.no_grad():
             for size in [256, 512]:
-                test_data = batch_images_load(rooms_path=self.path['test_image_path'], batch_size=1, size=512, sample=3)
+                test_data, _ = batch_images_load(rooms_path=self.path['test_image_path'], batch_size=1, size=512, sample=3)
                 test_pred = self.student_model(test_data)
                 test_output[str(size)] = test_pred
 

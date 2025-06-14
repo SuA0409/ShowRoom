@@ -212,7 +212,7 @@ class ServerMaker:
                 result = {"stay_id": num, "topics": topic_sentences}
 
                 # 결과를 JSON 파일로 저장 (선택적)
-                save_path = os.path.join(RESULT_FOLDER, f"{room_id}.json")
+                save_path = os.path.join(RESULT_FOLDER, f"review.json")
                 with open(save_path, "w", encoding='utf-8') as f:
                     json.dump(result, f, ensure_ascii=False)
 
@@ -245,7 +245,7 @@ class ServerMaker:
                 headers = {'Content-Type': 'application/json'}
                 print(" 리뷰 분석 서버에 요청 전송 !")
                 review_response = requests.post(self.REVIEW_SERVER_URL + "/analyze_review",
-                                                json={"url": url}, headers=headers, timeout=120)
+                                                json={"url": url}, headers=headers, timeout=300)
 
                 print(f" 리뷰 분석 서버 응답 코드: {review_response.status_code}\n")
 
