@@ -30,7 +30,12 @@ Loading Fast3R weight :
   1.3. Viser
 
   ### Run to 2D Generation (Discriminator -> Generator)
-      python demo/generator2d_demo.py    # 
+      python demo/generator2d_demo.py     # 재생성 된 이미지는 output 폴더에 저장
+      
+You need to put the weight file into the generator_2d folder.
+You can download the weight file from this link:
+https://drive.google.com/file/d/1j2eQdEMWsHPpULlGBkZxVO6QFeOM0E1E/view?usp=sharing
+If you want to run the demo with your own image, put your image and pose in the demo/data directory.
 
   ## Run to Review
       python demo/review_demo.py —url [Airbnb 숙소 URL]   # 리뷰의 주제를 추출하고 싶은 Airbnb 숙소의 URL을 문자열로 입력해주세요.
