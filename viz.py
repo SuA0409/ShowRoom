@@ -57,12 +57,14 @@ class ViserMaker:
     def add_point_cloud(self,
                         name='default',
                         point_cloud=None,
-                        color=None):
+                        color=None,
+                        init_viz=True):
         '''point_cloud를 viser에 추가하는 함수
         Args:
             name (str): viser에서 구분할 point cloud의 이름
             point_cloud (np.ndarray): 화면에 표시할 point cloud
             color (np.ndarray): point cloud와 매칭 되는 색상
+            init_viz (bool): viser에 넣은 point could 초기 on/off 설정
         '''
         self.server.add_point_cloud(
             name=name,

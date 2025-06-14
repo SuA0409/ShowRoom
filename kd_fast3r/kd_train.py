@@ -65,4 +65,4 @@ for e in range(start_epoch, epochs + 1):
     showroom.scheduler.step()
     start_room_idx = 0
 
-print('Finished training s!')
+print('Finished training!')
