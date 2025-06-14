@@ -107,6 +107,20 @@ def clean_text(text):
     text = re.sub(r'\s+', ' ', text).strip()  # 연속 공백 제거 및 양쪽 공백 제거
     return text.strip()  # 최종 전처리된 텍스트 반환
 
+def get_review_conf():
+    '''
+    리뷰 분석에서 필요한 configure를 불러오는 함수
+
+    Return:
+        review_conf (dict)
+            headers (dict): API 요청에 필요한 헤더 정보
+            seed_topics (list): 시드 토픽 리스트
+    '''
+    with open("configs/review_conf.json", "r", encoding="utf-8") as f:
+        review_conf = json.load(f)
+
+    return review_conf
+
 def get_reviews(url, headers):
     """
     리뷰에 해당하는 json 호출 함수
@@ -213,6 +227,7 @@ def use_model(docs, seed_topics, device=torch.device('cuda' if torch.cuda.is_ava
 
     Args:
         docs (list): 전처리된 리뷰 문장 리스트
+        seed_topics (list): 시드 토픽 리스트
         device (torch.device): 모델 실행 장치 (기본: GPU 또는 CPU)
 
     Returns:
