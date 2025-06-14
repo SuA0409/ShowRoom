@@ -202,7 +202,7 @@ class ServerMaker:
                 room_id = room_id_match.group(1)
 
                 # 리뷰 분석 실행
-                with open("config/review_conf.json", "r", encoding="utf-8") as f:
+                with open("configs/review_conf.json", "r", encoding="utf-8") as f:
                     review_conf = json.load(f)
 
                 data, num = get_reviews(url, review_conf['headers'])
