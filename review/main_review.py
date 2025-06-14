@@ -269,4 +269,14 @@ def use_model(docs, seed_topics, device=torch.device('cuda' if torch.cuda.is_ava
         if label != "기타":  # 기타 제외
             topic_sentences[label].append(doc)  # 주제별 문장 추가
 
+    for topic_name in topic_names:  # 각 주제 출력More actions
+        topics = topic_sentences.get(topic_name, [])  # 주제에 해당하는 문장 리스트
+        if not topics:  # 문장이 없으면 스킵
+            continue
+        print(f"\n토픽: {topic_name}(리뷰 갯수: {len(topics)})")  # 주제 이름과 리뷰 수 출력
+        for i, topic in enumerate(topics[:5]):  # 최대 5개 문장 출력
+            print(f"  {i + 1}. {topic}")  # 문장 번호와 텍스트 출력
+        if len(topics) > 5:  # 5개 초과 시 생략 표시
+            print(f"  ... (총 {len(topics)}개 리뷰 중 5개만 표시)")
+
     return topic_sentences
