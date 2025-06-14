@@ -6,11 +6,10 @@ import yaml
 import copy
 import random
 
-from fast3r.dust3r.inference_multiview import inference
+from kd_fast3r.utils.data_preprocess import batch_images_load
 from fast3r.models.fast3r import Fast3R
 from fast3r.models.multiview_dust3r_module import MultiViewDUSt3RLitModule
 from fast3r.dust3r.utils.image import load_images
-
 from kd_fast3r.kd_loss import RKDLoss
 
 from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
@@ -254,21 +253,22 @@ class Fast3rTrainer:
         test_time = time.time()
         with torch.no_grad():
             for size in [256, 512]:
-                test_data = load_images(self.path['test_image_path'], size=size,
-                                        verbose=False)
-                test_pred = inference(test_data, self.student_model, self.device, dtype=torch.float32, verbose=False,
-                                      profiling=False)
+                test_data = batch_images_load(rooms_path=self.path['test_image_path'], batch_size=1, size=512, sample=3)
+                test_pred = self.student_model(test_data)
                 test_output[str(size)] = test_pred
 
-                ## camera pose
-                poses_c2w_batch, _ = MultiViewDUSt3RLitModule.estimate_camera_poses(
-                    test_pred['preds'],
-                    niter_PnP=100,
-                    focal_length_estimation_method='first_view_from_global_head'
-                )
+                try:
+                    ## camera pose
+                    poses_c2w_batch, _ = MultiViewDUSt3RLitModule.estimate_camera_poses(
+                        test_pred,
+                        niter_PnP=100,
+                        focal_length_estimation_method='first_view_from_global_head'
+                    )
 
-                with open(f'{self.student_model_path}/pred/{size}.txt', 'a') as f:
-                    f.write(f'{e:02d} : {poses_c2w_batch[0]} \n\n')
+                    with open(f'{self.student_model_path}/pred/{size}.txt', 'a') as f:
+                        f.write(f'{e:02d} : {poses_c2w_batch[0]} \n\n')
+                except Exception as e:
+                    print("Failed to save camera pose")
 
         torch.save(test_output, f'{self.student_model_path}/pred/{e:02d}.pth')
 
