@@ -2,7 +2,6 @@ import torch
 import os
 from kd_fast3r.utils.data_preprocess import batch_images_load
 
-
 def data_processer(
     rooms_path: str='/content/drive/MyDrive/Scannet++/data_scannet_fin', 
     dataset_path: str='/content/drive/MyDrive/Scannet++/preprocessv2'

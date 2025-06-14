@@ -4,7 +4,6 @@
 !apt-get install -y chromium-chromedriver
 !cp /usr/lib/chromium-browser/chromedriver /usr/bin
 
-
 ## 수집 위치 및 저장 위치
 START, END = 20, 30  # 본인 파트에 맞게 수정 !!!!
 save_base_path = '/content/drive/MyDrive/Dataset/c2_2_20-29'  # 이미지 저장 위치
@@ -12,7 +11,6 @@ save_base_path = '/content/drive/MyDrive/Dataset/c2_2_20-29'  # 이미지 저장
 # ※ 건들지 마시오.
 SLEEP = 2
 ROOM_LIST = ['주방', '거실', '침실']
-
 
 # Import
 import os, re, json

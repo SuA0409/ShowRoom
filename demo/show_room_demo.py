@@ -17,9 +17,8 @@ model.room = batch_images_load(rooms_path=folder_path, batch_size=1, size=512, s
 
 # --3. 모델 추론
  # fast3r, spr 그리고 viser의 결합
-<<<<<<< HEAD:show_room_demo.py
 model.reconstruction()
 model.building_spr()
-=======
+
 model.reconstruction().building_spr()
->>>>>>> 5c38fedd10e3ec84c7dde577a92736b572883660:demo/show_room_demo.py
+

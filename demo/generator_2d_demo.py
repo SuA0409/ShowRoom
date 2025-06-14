@@ -4,7 +4,6 @@ import numpy as np
 from generate2d.discriminator.discriminator2d import dis_main
 from generate2d.generator.stable_diffusion import gen_main
 
-
 # Input 이미지와 포즈 폴더의 주소
 image_dir = "/content/ShowRoom/demo/data"            # Input Your Name of Image Folder
 pose_path = "/content/ShowRoom/demo/data/poses.txt"  # Input Your Name of Pose Folder
