@@ -34,7 +34,7 @@ Loading Fast3R weight :
       
 You need to put the weight file into the generator_2d folder.
 You can download the weight file from this link:
-https://drive.google.com/file/d/1j2eQdEMWsHPpULlGBkZxVO6QFeOM0E1E/view?usp=sharing
+https://drive.google.com/file/d/1j2eQdEMWsHPpULlGBkZxVO6QFeOM0E1E/view?usp=sharing <br>
 If you want to run the demo with your own image, put your image and pose in the demo/data directory.
 
   ## Run to Review
