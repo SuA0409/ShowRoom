@@ -19,8 +19,8 @@ class ProcessorConfig:
     """ShowRoomProcessor 설정을 위한 데이터 클래스"""
 
     # 가중치 파일 경로
-    weight_path: str = '/content/drive/MyDrive/Final_Server/2d_server/ST_RoomNet/weights/Weight_ST_RoomNet_ConvNext.h5'
-    ref_img_path: str = '/content/drive/MyDrive/Final_Server/2d_server/ST_RoomNet/ref_img2.png'
+    weight_path: str = '/content/drive/MyDrive/weights/Weight_ST_RoomNet_ConvNext.h5'
+    ref_img_path: str = '/content/drive/MyDrive/ref_img2.png'
 
     # 모델 설정
     image_size: Tuple[int, int] = (400, 400)
@@ -597,7 +597,8 @@ def dis_main(request_data, pose):
     
     processor = ShowRoomProcessor()
     result = processor.process(request_data, pose)
-
+    print (result)
+    
     elapsed = time.time() - start_time  # 경과 시간 계산
     print(f"\n discriminator 처리 시간: {elapsed:.2f}초")
     return result
