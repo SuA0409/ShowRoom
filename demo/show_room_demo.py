@@ -1,5 +1,5 @@
 from kd_fast3r.kd_fast3r import ShowRoom
-from viz import ViserMaker
+from viz.viz import ViserMaker
 from kd_fast3r.utils.data_preprocess import batch_images_load
 
 # --1. 모델 선언

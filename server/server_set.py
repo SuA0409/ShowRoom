@@ -1,6 +1,6 @@
 from server.server_maker import ServerMaker
 from kd_fast3r.kd_fast3r import ShowRoom
-from viz import ViserMaker
+from viz.viz import ViserMaker
 
 def set_2d_server(
         token='2xwkthyPz15CsSbartjgnt9aQde_3RoEvuB7Mz7oHHzuDJFia',
