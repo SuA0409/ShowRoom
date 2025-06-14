@@ -173,6 +173,33 @@ If you use this project or build upon it, please cite:
       publisher={ACM},
       doi={10.1145/2487228.2487237}
     }
+
+    @misc{rombach2021ldm,
+      title     = {High-Resolution Image Synthesis with Latent Diffusion Models},
+      author    = {Rombach, Robin and Blattmann, Andreas and Lorenz, Dominik and Esser, Patrick and Ommer, Björn},
+      year      = {2021},
+      month     = {December},
+      eprint    = {2112.10752},
+      archivePrefix = {arXiv},
+      url       = {https://arxiv.org/abs/2112.10752}
+    }
+
+    @inproceedings{ibrahem2023stroomnet,
+      title   = {ST-RoomNet: Learning Room Layout Estimation From Single Image Through Unsupervised Domain Adaptation},
+      author  = {Ibrahem, Mohammed and Yuan, Ye and Shen, Yilun and Hoai, Minh},
+      booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition Workshops (CVPRW)},
+      year    = {2023},
+      url     = {https://openaccess.thecvf.com/content/CVPR2023W/VOCVALC/html/Ibrahem_ST-RoomNet_Learning_Room_Layout_Estimation_From_Single_Image_Through_Unsupervised_CVPRW_2023_paper.html}
+    }
+
+    @misc{park2019relational,
+      title   = {Relational Knowledge Distillation},
+      author  = {Park, Wonpyo and Kim, Dongju and Lu, Yan and Cho, Minsu},
+      year    = {2019},
+      archivePrefix = {arXiv},
+      eprint  = {1904.05068},
+      url     = {https://arxiv.org/abs/1904.05068}
+    }
     
     @article{gou2021knowledge,
       title={Knowledge Distillation: A Survey},
@@ -185,15 +212,6 @@ If you use this project or build upon it, please cite:
       publisher={Springer},
       doi={10.1007/s11263-021-01453-z}
     }
-    
-    @article{park2019relational,
-      title={Relational Knowledge Distillation},
-      author={Park, Wonpyo and Kim, Dongju and Lu, Yan and Cho, Minsu},
-      journal={arXiv preprint arXiv:1904.05068},
-      year={2019},
-      doi={10.48550/arXiv.1904.05068}
-    }
-
 
 ## License
 This project is licensed under the [MIT License](./LICENSE)/
