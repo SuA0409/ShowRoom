@@ -26,6 +26,7 @@ class ServerMaker:
         self._create_ngrok_flask_app()
 
     def _url_loader(self,
+                    public_url="",
                     json_path='/content/drive/MyDrive/Final_Server/ngrok_path.json'
                     ):
         with open(json_path, 'r') as f:
@@ -35,6 +36,7 @@ class ServerMaker:
         self.REVIEW_SERVER_URL = url.get("REVIEW_SERVER_URL") or ""
         self.FAST3R_SERVER_URL = url.get("FAST3R_SERVER_URL") or ""
         self.TWOD_SERVER_URL = url.get("TWOD_SERVER_URL") or ""
+        self.MAIN_SERVER_URL = public_url
 
         print(f"    1. REVIEW_SERVER_URL: {self.REVIEW_SERVER_URL}")
         print(f"    2. FAST3R_SERVER_URL: {self.FAST3R_SERVER_URL}")
@@ -85,7 +87,7 @@ class ServerMaker:
         if self.url_type is not None:
             self._url_saver(public_url=public_url, url_type=self.url_type, json_path=self.json_path)
         else:
-            self._url_loader(json_path=self.json_path)
+            self._url_loader(public_url=public_url, json_path=self.json_path)
 
         self.app = app
         self.port = port
@@ -203,7 +205,7 @@ class ServerMaker:
                             json.dump(result['result'], f, ensure_ascii=False, indent=2)
                         print(f" 결과 JSON 저장 완료: {json_path}")
 
-                        view_url = f"{self.public_url}/review/{room_id}"
+                        view_url = f"{self.MAIN_SERVER_URL}/review/{room_id}"
 
                         elapsed_time = time.time() - start_time
                         print(f" 리뷰 분석 처리 시간: {elapsed_time:.2f}초")
@@ -376,6 +378,6 @@ class ServerMaker:
                     return jsonify({"status": "error", "message": f"Viser 오류: {response_viser.text}"}), 500
 
             except Exception as e:
-                print("❌ 2D 서버 요청 실패:", e)
+                print(" 2D 서버 요청 실패:", e)
                 return jsonify({"status": "error", "message": str(e)}), 500
 

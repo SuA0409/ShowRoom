@@ -70,5 +70,6 @@ class ViserMaker:
             name=name,
             points=point_cloud,
             colors=color,
-            point_size=self.point_size
+            point_size=self.point_size,
+            visible=init_viz
         )

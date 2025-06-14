@@ -164,6 +164,6 @@ class ShowRoom:
             start_time = time.time()
             vertices, color = self._spr(vertices, color, depth=depth)
 
-            self.viz.add_point_cloud(f'생성된 spr_{i+1}', vertices, color)
+            self.viz.add_point_cloud(f'생성된 spr_{i+1}', vertices, color, False)
 
             print(f'SPR {i+1}회 적용 완료! ({time.time() - start_time:.2f})')
