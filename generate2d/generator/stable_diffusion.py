@@ -1,4 +1,6 @@
 import cv2
+import os
+import time
 import torch
 import numpy as np
 import kornia as K
@@ -17,6 +19,9 @@ class SimpleRotator:
     3. 빈 영역 마스크 생성
     4. Stable Diffusion Inpainting으로 빈 영역 채우기
     """
+    output = "/content/ShowRoom/demo/data" # Input Your Name of Image Folder
+
+    
     def __init__(self, device='cuda', max_depth_m=5.0, depth_model='MiDaS_small'):
         '''
         클래스 초기화 함수, 필요한 모델들을 로드하고 초기 설정을 수행
@@ -280,16 +285,14 @@ def init_set():
     )
     print("다운로드 완료!")
 
-def show_image(img: Image.Image, title: str = None):
+def show_image(img: Image.Image, title: str = "image", save_dir: str = "output"):
     """
-    PIL Image를 Matplotlib으로 화면에 출력하는 헬퍼.
+    PIL 이미지를 시각화하는 대신 파일로 저장 (headless 환경 대응)
     """
-    plt.figure(figsize=(6, 6))
-    plt.imshow(img)
-    plt.axis('off')
-    if title:
-        plt.title(title)
-    plt.show()
+    os.makedirs(save_dir, exist_ok=True)
+    save_path = os.path.join(save_dir, f"{title}.jpg")
+    img.save(save_path)
+    print(f" 저장 완료: {save_path}")
 
 def gen_main(output_list):
     """
@@ -306,6 +309,7 @@ def gen_main(output_list):
             각 튜플의 첫 요소는 파일 이름 접두사(f"images{key}")이며,
             두 번째 요소는 JPEG 인코딩된 BytesIO 객체입니다.
     """
+    start_time = time.time()
 
     # 파라미터 값 수정
     seed = 42
@@ -322,15 +326,24 @@ def gen_main(output_list):
 
     # 결과 저장
     file = list()
+    # output_list가 None이거나 비어 있으면 바로 반환
+    if not output_list:
+        print(" output_list가 비어 있습니다. 처리할 이미지가 없습니다.")
+        return None
+
     for output_data in output_list:
         key = output_data.get("key")
         if key not in (0, 1):
             print(f"지원되지 않는 key: {key} (0:left, 1:right 만 지원)")
-            return
+            continue  # 잘못된 키는 무시하고 다음 이미지로
 
         # 키에 따라 회전 각도 결정
         angle = angle_value if key == 0 else -angle_value
         img_np = output_data.get('image')
+
+        if img_np is None:
+            print(f" 이미지 데이터가 없습니다 (key={key})")
+            continue
 
         # 이미지 회전 및 빈 영역 마스크 생성
         new_rgb, depth, mask = rotator.rotate_frame(img_np, angle)
@@ -344,12 +357,12 @@ def gen_main(output_list):
         # PIL 이미지로 변환 후 리사이즈
         init_img = Image.fromarray(out_rgb).convert("RGB").resize((512, 384))
         mask_img = Image.fromarray(mask_np).convert("L").resize((512, 384))
-        
+
         # Stable Diffusion으로 빈 영역 인페인팅
         result = rotator.inpaint(init_img, mask_img,
-                                 prompt=prompt, steps=steps, guidance=guidance)
-        
-        # 변환하기 전 시각화
+                                prompt=prompt, steps=steps, guidance=guidance)
+
+        # 시각화 → 저장 방식 변경 or 제거 필요 (headless 환경 대응 시)
         show_image(result, title=f"images{key} inpainted")
 
         # Numpy 형태를 BytesIO로 변환
@@ -358,6 +371,9 @@ def gen_main(output_list):
 
         # 결과 리스트에 추가 및 완료 메시지 출력
         file.append((f"images{key}", img_file))
-        print(f"이미지 images{key} 변환 및 파일 추가 완료")
+        print(f" 이미지 images{key} 변환 및 파일 추가 완료")
 
-    return file
+        elapsed = time.time() - start_time  # 경과 시간 계산
+        print(f"\n discriminator 처리 시간: {elapsed:.2f}초")      
+
+        return file
