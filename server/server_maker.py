@@ -149,6 +149,9 @@ class ServerMaker:
 
                 print(" discriminator 실행 완료!\n")
 
+                if dis_result is None:
+                    return jsonify({"status": "error", "message": '생성할 이미지 없음'}), 500
+
                 ## gen 파트
                 print(" Stable Diffusion Inpaint .py 실행 시작!")
                 gen_result = gen_main(dis_result)

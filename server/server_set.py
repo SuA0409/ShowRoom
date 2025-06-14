@@ -69,7 +69,7 @@ def set_main_server(
         '''
 
     # 서버를 생성하는 코드, url_type을 None으로 설정해 main이라는 것을 알림
-    server = ServerMaker(token=token, url_type=None, json_path=json_path)
+    server = ServerMaker(token=token, url_type="MAIN_SERVER_URL", json_path=json_path)
 
     # 기본 설정과 라우터를 등록하는 코드
     server.set_main()
