@@ -2,16 +2,19 @@ import json
 from flask import Flask, jsonify, request, make_response, render_template
 from pyngrok import ngrok
 from flask_cors import CORS
-from viz import find_free_port
-from generate2d.discriminator.discriminator2d import dis_main
-from generate2d.generator.stable_diffusion import init_set, gen_main
-from kd_fast3r.utils.data_preprocess import server_images_load
 from io import BytesIO
 import requests
 import copy
 import base64
 import time
 import os
+import re
+
+from viz import find_free_port
+from generate2d.discriminator.discriminator2d import dis_main
+from generate2d.generator.stable_diffusion import init_set, gen_main
+from kd_fast3r.utils.data_preprocess import server_images_load
+from review.main_review import get_reviews, preprocess_reviews, use_model
 
 class ServerMaker:
     def __init__(self,
@@ -84,10 +87,10 @@ class ServerMaker:
         public_url = ngrok.connect(port).public_url
         print(f" {self.url_type} ngrok URL: {public_url}")
 
-        if self.url_type is not None:
-            self._url_saver(public_url=public_url, url_type=self.url_type, json_path=self.json_path)
-        else:
+        if self.url_type == "MAIN_SERVER_URL":
             self._url_loader(public_url=public_url, json_path=self.json_path)
+        else:
+            self._url_saver(public_url=public_url, url_type=self.url_type, json_path=self.json_path)
 
         self.app = app
         self.port = port
@@ -134,6 +137,7 @@ class ServerMaker:
         # 2d_upload에 관한 라우터
         @self.app.route('/2d_upload', methods=['POST'])
         def show_gen_route():
+            print(' main에서 입력 받음 !')
             try:
                 ## dis 파트
                 print(" discriminator 실행 시작!")
@@ -172,13 +176,60 @@ class ServerMaker:
                 print(" 2D 생성 중 오류:", e)
                 return jsonify({"status": "error", "message": str(e)}), 500
 
+    def set_review(self):
+        RESULT_FOLDER = 'server/results'
+        os.makedirs(RESULT_FOLDER, exist_ok=True)
+
+        # 리뷰 분석만 수행하는 엔드포인트
+        @self.app.route('/analyze_review', methods=['POST'])
+        def analyze_review():
+            print(' main에서 입력 받음 !')
+
+            try:
+                data = request.get_json()
+                url = data.get('url')
+                print(" 리뷰 분석 요청 받은 URL:", url)
+
+                if url is None:
+                    return jsonify({"status": "error", "message": "숙소 URL이 없습니다."}), 400
+
+                # 숙소 ID 추출 (파일명으로도 사용)
+                room_id_match = re.search(r'/rooms/(\d+)', url)
+                if not room_id_match:
+                    return jsonify({"status": "error", "message": "유효한 숙소 URL이 아닙니다."}), 400
+                room_id = room_id_match.group(1)
+
+                # 리뷰 분석 실행
+                with open("config/review_conf.json", "r", encoding="utf-8") as f:
+                    review_conf = json.load(f)
+
+                data, num = get_reviews(url, review_conf['headers'])
+                docs = preprocess_reviews(data, num)
+                topic_sentences = use_model(docs, review_conf['seed_topics'])
+
+                result = {"stay_id": num, "topics": topic_sentences}
+
+                # 결과를 JSON 파일로 저장 (선택적)
+                save_path = os.path.join(RESULT_FOLDER, f"{room_id}.json")
+                with open(save_path, "w", encoding='utf-8') as f:
+                    json.dump(result, f, ensure_ascii=False)
+
+                # 최종 결과 JSON으로 반환
+                return jsonify({
+                    "status": "success",
+                    "room_id": room_id,
+                    "result": result
+                })
+
+            except Exception as e:
+                print(f" 리뷰 분석 실패: {e}")
+                return jsonify({"status": "error", "message": str(e)}), 500
+
     def set_main(self):
-        RESULTS_FOLDER = '/content/drive/MyDrive/Final_Server/main_server/results'
+        RESULTS_FOLDER = 'server/results'
 
         @self.app.route('/analyze_review', methods=['POST'])
         def analyze_review():
-            start_time = time.time()
-
             data = request.get_json()
             print(f" analyze_review 요청 데이터: {data}")
 
@@ -190,34 +241,33 @@ class ServerMaker:
 
             try:
                 headers = {'Content-Type': 'application/json'}
-                print(" 리뷰 분석 서버에 POST 요청 시작")
+                print(" 리뷰 분석 서버에 요청 전송 !")
                 review_response = requests.post(self.REVIEW_SERVER_URL + "/analyze_review",
                                                 json={"url": url}, headers=headers, timeout=120)
-                print(f" 리뷰 분석 서버 응답 코드: {review_response.status_code}")
+
+                print(f" 리뷰 분석 서버 응답 코드: {review_response.status_code}\n")
 
                 if review_response.status_code == 200:
                     result = review_response.json()
-                    if result.get("status") == "success":
-                        room_id = result.get('room_id', 'unknown')
-
-                        json_path = os.path.join(RESULTS_FOLDER, f"{room_id}.json")
-                        with open(json_path, 'w', encoding='utf-8') as f:
-                            json.dump(result['result'], f, ensure_ascii=False, indent=2)
-                        print(f" 결과 JSON 저장 완료: {json_path}")
-
-                        view_url = f"{self.MAIN_SERVER_URL}/review/{room_id}"
-
-                        elapsed_time = time.time() - start_time
-                        print(f" 리뷰 분석 처리 시간: {elapsed_time:.2f}초")
-
-                        return jsonify({"status": "success", "view_url": view_url})
-                    else:
-                        error_msg = result.get("message", "Unknown error")
-                        print(f" 리뷰 분석 실패: {error_msg}")
-                        return jsonify({"status": "error", "message": "리뷰 분석 실패: " + error_msg}), 500
                 else:
                     print(f" 리뷰 분석 서버 응답 오류: {review_response.status_code}")
                     return jsonify({"status": "error", "message": f"리뷰 분석 서버 오류: {review_response.status_code}"}), 500
+
+                if result.get("status") == "success":
+                    room_id = result.get('room_id', 'unknown')
+
+                    json_path = os.path.join(RESULTS_FOLDER, f"{room_id}.json")
+                    with open(json_path, 'w', encoding='utf-8') as f:
+                        json.dump(result['result'], f, ensure_ascii=False, indent=2)
+                    print(f"    결과 JSON 저장 완료: {json_path}")
+
+                    view_url = f"{self.MAIN_SERVER_URL}/review/{room_id}"
+
+                    return jsonify({"status": "success", "view_url": view_url})
+                else:
+                    error_msg = result.get("message", "Unknown error")
+                    print(f" 리뷰 분석 실패: {error_msg}")
+                    return jsonify({"status": "error", "message": "리뷰 분석 실패: " + error_msg}), 500
 
             except Exception as e:
                 print(f" 리뷰 분석 서버 요청 실패: {e}")
@@ -225,7 +275,7 @@ class ServerMaker:
 
         @self.app.route('/review/<room_id>')
         def show_review(room_id):
-            print(f" /review/{room_id} 호출됨")
+            print(f" {room_id} 호출됨")
             json_path = os.path.join(RESULTS_FOLDER, f"{room_id}.json")
             if not os.path.exists(json_path):
                 print(f" 결과 JSON 파일이 없음: {json_path}")
@@ -242,7 +292,7 @@ class ServerMaker:
 
             # chrome에서 전달 받은 이미지 url
             data = request.get_json()
-            print(f" ShowRoom 요청 데이터: {data}")
+            print(f" Fast3r 요청 데이터: {data}")
 
             # 입력 검증
             if not data or 'images' not in data:

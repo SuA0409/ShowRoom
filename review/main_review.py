@@ -17,7 +17,6 @@ import base64
 from urllib.parse import quote, urlencode
 import json
 import requests
-import argparse
 
 
 def comments(korean):
@@ -108,7 +107,7 @@ def clean_text(text):
     text = re.sub(r'\s+', ' ', text).strip()  # 연속 공백 제거 및 양쪽 공백 제거
     return text.strip()  # 최종 전처리된 텍스트 반환
 
-def getReviews(url, headers):
+def get_reviews(url, headers):
     """
     리뷰에 해당하는 json 호출 함수
 
@@ -119,11 +118,7 @@ def getReviews(url, headers):
     Returns:
         tuple: (리뷰 데이터 리스트, 숙소 번호)
     """
-    resp = request('get', url)  # URL에서 HTML 데이터 가져오기
-    dom = BeautifulSoup(resp.text, 'html.parser')  # HTML 파싱
-
     p1, p2 = re.split(r'[?]', url)  # URL에서 쿼리 문자열 분리
-    review = p1 + '/reviews?' + p2  # 리뷰 페이지 URL 생성
     url, num = re.split(r'/rooms/', p1)  # 숙소 번호 추출
     num = num.split('/reviews')[0]  # 순수 숙소 번호
     encoding = 'StayListing:' + num  # 숙소 ID 인코딩
@@ -157,7 +152,7 @@ def getReviews(url, headers):
 
     return data, num  # 리뷰 데이터와 숙소 번호 반환
 
-def preprocessReviews(data, num):
+def preprocess_reviews(data, num):
     """
     리뷰 문장분리 및 불용어 처리하는 함수
 
@@ -212,7 +207,7 @@ def preprocessReviews(data, num):
     
     return docs  # 전처리된 문장 리스트 반환
 
-def use_model(docs, device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')):
+def use_model(docs, seed_topics, device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')):
     """
     BERTopic 모델을 사용하여 리뷰 데이터를 주제별로 분석하는 함수
 
@@ -224,14 +219,6 @@ def use_model(docs, device=torch.device('cuda' if torch.cuda.is_available() else
         None: 주제별 리뷰를 콘솔에 출력
     """
     embedding_model = SentenceTransformer("jhgan/ko-sbert-nli", device=device)  # 한국어 Sentence-BERT 모델 로드
-    seed_topics = [  # 주제별 시드 키워드 정의
-        ["청결도", "깨끗함", "깨끗", "더럽", "드러움", "드럽", "개더럽", "개드러움", "개드럽", "개드러움", "위생", "청소", "더러움", "청결", "불결", "정리", "오염", "깔끔함", "먼지", "청소상태", "냄새", "악취", "향기", "쾌쾌함", "냄새남", "냄새나", "향", "지린내", "곰팡이냄새", "청국장냄새", "냄새문제", "상쾌함", "환기"],
-        ["소음", "조용함", "시끄러움", "시끄럼", "방음", "소음문제", "고요", "고요함", "소란", "방음효과", "조용", "잡음", "소음원", "방해"],
-        ["위치", "교통", "가까움", "편리함", "접근성", "원거리", "교통편", "중앙", "외진", "이동", "전망", "근처"],
-        ["가격", "비쌈", "저렴함", "가성비", "비용", "고가", "합리적", "경제적", "비싸", "저렴", "요금", "가치", "지불"],
-        ["시설", "편리함", "새거", "새것", "새", "편함", "구비", "편의", "시설물", "장비", "부족", "완비", "기능", "설비", "낡음", "오래됨"],
-        ["호스트", "서비스", "친절함", "응대", "도움", "불친절", "서비스품질", "관리", "지원", "배려", "체크인", "체크아웃", "입실", "퇴실", "환영", "지연", "빠름", "수속", "접수", "퇴소", "안내"],
-    ]
     topic_names = ["청결도", "소음", "위치", "가격", "시설", "호스트"]  # 주제 이름 정의
 
     umap_model = UMAP(n_components=2, random_state=42, metric='cosine', n_neighbors=30, min_dist=0.1)  # UMAP 설정
@@ -261,26 +248,10 @@ def use_model(docs, device=torch.device('cuda' if torch.cuda.is_available() else
         best_idx = sim_row.argmax()  # 가장 유사한 시드 토픽 인덱스
         mapped_topics[topic_ids[i]] = topic_names[best_idx]  # 토픽 이름 매핑
 
-    selected_labels = topic_names  # 선택된 주제 레이블
-    selected_topic_nums = [k for k, v in mapped_topics.items() if v in selected_labels]  # 선택된 토픽 번호
-    filtered_indices = [i for i, t in enumerate(topics) if t in selected_topic_nums]  # 필터링된 인덱스
-    filtered_docs = [docs[i] for i in filtered_indices]  # 필터링된 문서
-
-    filtered_embeddings = embedding_model.encode(filtered_docs)  # 필터링된 문서 임베딩
-    filtered_reduced = umap_model.fit_transform(filtered_embeddings)  # UMAP으로 차원 축소
-
     topic_sentences = defaultdict(list)  # 주제별 문장 저장
     for doc, topic_id in zip(docs, topics):  # 각 문서와 토픽 ID 처리
         label = mapped_topics.get(topic_id, "기타")  # 토픽 레이블 가져오기
         if label != "기타":  # 기타 제외
             topic_sentences[label].append(doc)  # 주제별 문장 추가
 
-    for topic_name in topic_names:  # 각 주제 출력
-        topics = topic_sentences.get(topic_name, [])  # 주제에 해당하는 문장 리스트
-        if not topics:  # 문장이 없으면 스킵
-            continue
-        print(f"\n토픽: {topic_name}(리뷰 갯수: {len(topics)})")  # 주제 이름과 리뷰 수 출력
-        for i, topic in enumerate(topics[:5]):  # 최대 5개 문장 출력
-            print(f"  {i+1}. {topic}")  # 문장 번호와 텍스트 출력
-        if len(topics) > 5:  # 5개 초과 시 생략 표시
-            print(f"  ... (총 {len(topics)}개 리뷰 중 5개만 표시)")
+    return topic_sentences

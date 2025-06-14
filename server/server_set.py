@@ -46,6 +46,18 @@ def set_3d_server(
     # 서버를 시작하는 코드
     server3d.run()
 
+def set_review(
+        token = '2yGSKnM6Tviku0bqCV7bRN5y7gn_rLmTrz5SsPvRgd62yS5b',
+        json_path = '/content/drive/MyDrive/Final_Server/ngrok_path.json'
+):
+    server_review = ServerMaker(token=token, url_type='REVIEW_SERVER_URL', json_path=json_path)
+
+    # 기본 설정과 라우터를 등록하는 코드
+    server_review.set_review()
+
+    # 서버를 시작하는 코드
+    server_review.run()
+
 def set_main_server(
         token='2yRnnTsH8Hqdv2IJjnSCPnVOMVp_2E9gZxNeEhf3TfYPwKYnV',
         json_path='/content/drive/MyDrive/Final_Server/ngrok_path.json',
