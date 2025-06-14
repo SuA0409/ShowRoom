@@ -1,4 +1,4 @@
-from review.main_review import getReviews, preprocessReviews, use_model
+from review.main_review import get_reviews, preprocess_reviews, use_model
 import argparse
 
 def main():
@@ -33,9 +33,9 @@ def main():
     # 숙소 url
     url = parser.parse_args().url
     # 리뷰 크롤링
-    data, num = getReviews(url, headers)  # 리뷰 데이터와 숙소 번호 가져오기
+    data, num = get_reviews(url, headers)  # 리뷰 데이터와 숙소 번호 가져오기
     # 리뷰 전처리
-    docs = preprocessReviews(data, num)  # 전처리된 문장 리스트 생성
+    docs = preprocess_reviews(data, num)  # 전처리된 문장 리스트 생성
     # 모델 사용
     use_model(docs)  # BERTopic 모델로 주제 분석 수행
 
