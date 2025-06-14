@@ -30,9 +30,7 @@ Loading Fast3R weight :
   1.3. Viser
 
   ### Run to 2D Generation (Discriminator -> Generator)
-  1.1. 2D discriminator
-  
-  1.2. 2D generator
+      python demo/generator2d_demo.py    # 
 
   ## Run to Review
       python demo/review_demo.py —url [Airbnb 숙소 URL]   # 리뷰의 주제를 추출하고 싶은 Airbnb 숙소의 URL을 문자열로 입력해주세요.
