@@ -20,7 +20,7 @@ class ProcessorConfig:
 
     # 가중치 파일 경로
     weight_path: str = '/content/drive/MyDrive/weights/Weight_ST_RoomNet_ConvNext.h5'
-    ref_img_path: str = '/content/drive/MyDrive/ref_img2.png'
+    ref_img_path: str = '/content/demo/data/ref_img2.png'
 
     # 모델 설정
     image_size: Tuple[int, int] = (400, 400)
@@ -453,7 +453,7 @@ class ShowRoomProcessor:
         # 정면 이미지 개수에 따른 재생성 판단
         # 1) 정면 이미지 3개 - 정보가 많아 재성성 불필요
         if len(front_views) >= 3:
-            print("   → 정면 이미지가 3개 이상 → 재생성 불필요")
+            print("    정면 이미지가 3개 이상 → 재생성 불필요")
             return [{"key": 2, "image": None}]
 
         # 2) 정면 이미지 2개 - 정보가 부족한 부분 판단 후 재생성
@@ -472,17 +472,17 @@ class ShowRoomProcessor:
                 related_angles.append((nf, angle1, angle2))
 
             for nf_name, angle1, angle2 in related_angles:
-                print(f"   → {nf_name}와의 각도 차이: {z1}: {angle1:.1f}°, {z2}: {angle2:.1f}°")
+                print(f"    {nf_name}와의 각도 차이: {z1}: {angle1:.1f}°, {z2}: {angle2:.1f}°")
 
             # 두 정면 이미지 정보와 비정면 이미지의 정보가 겹치지 않는지 판별
             for nf_name, angle1, angle2 in related_angles:
 
                 # 두 정면 이미지와 비정면 이미지 정보가 겹치지 않음
                 if (angle1 <= 55 and angle2 <= 55) or (angle1 >= 90 and angle2 >= 90):
-                    print("   → 두 정면 이미지 모두와 시점 차이가 크거나 매우 작음 → 정밀 판별 수행")
+                    print("    두 정면 이미지 모두와 시점 차이가 크거나 매우 작음 → 정밀 판별 수행")
                     angle = self.compute_relative_angle(pose1, pose2)
                     side = self.determine_relative_side(pose1, pose2)
-                    print(f"   → 두 정면 이미지 간 각도: {angle:.2f}°, 방향: {side}")
+                    print(f"    두 정면 이미지 간 각도: {angle:.2f}°, 방향: {side}")
                     result = self.decide_regeneration_from_angle_and_side(
                         layout1=layout_map[z1],
                         layout2=layout_map[z2],
@@ -499,17 +499,17 @@ class ShowRoomProcessor:
 
                 # 정면 이미지 중 하나의 정면 이미지만 정보가 겹침(겹치지 않는 정면 쪽 생성)
                 elif angle1 <= 55 < angle2:
-                    print(f"   → 이미지 {z2}와의 각도가 커서 상대적 방향으로 판단")
+                    print(f"    이미지 {z2}와의 각도가 커서 상대적 방향으로 판단")
                     side = self.determine_relative_side(pose2, poses[nf_name])
                     key = 0 if side == 'left' else 1
                     return [{"key": key, "image": images[z2]}]
                 elif angle2 <= 55 < angle1:
-                    print(f"   → 이미지 {z1}와의 각도가 커서 상대적 방향으로 판단")
+                    print(f"    이미지 {z1}와의 각도가 커서 상대적 방향으로 판단")
                     side = self.determine_relative_side(pose1, poses[nf_name])
                     key = 0 if side == 'left' else 1
                     return [{"key": key, "image": images[z1]}]
 
-            print("   → 유효한 비교 대상 없음 → 기본 판별 수행")
+            print("    유효한 비교 대상 없음 → 기본 판별 수행")
             angle = self.compute_relative_angle(pose1, pose2)
             side = self.determine_relative_side(pose1, pose2)
             result = self.decide_regeneration_from_angle_and_side(
@@ -529,11 +529,11 @@ class ShowRoomProcessor:
         # 3) 정면 이미지 1개 - 부족한 정보 판단 후 재생성
         elif len(front_views) == 1:
             z_front = front_views[0]
-            print(f"   → 정면 이미지가 1개: 이미지 {z_front}")
+            print(f"    정면 이미지가 1개: 이미지 {z_front}")
 
             non_fronts = [i for i in range(3) if i != z_front]
             if len(non_fronts) != 2:
-                print("   → 정면이 1개지만 비교할 이미지가 부족 → 재생성 불가")
+                print("    정면이 1개지만 비교할 이미지가 부족 → 재생성 불가")
                 return [{"key": 2, "image": None}]
 
             # 정면 이미지 1개와 비정면 이미지 2개의 위치 및 방향 비교
@@ -548,7 +548,7 @@ class ShowRoomProcessor:
             z_dir2 = z_dir2 / np.linalg.norm(z_dir2)
 
             dot_product = np.dot(z_dir1, z_dir2)
-            print(f"   → 두 비정면 이미지 간 Z축 방향 유사도 (cosθ): {dot_product:.3f}")
+            print(f"    두 비정면 이미지 간 Z축 방향 유사도 (cosθ): {dot_product:.3f}")
 
             # 정면 이미지에 대해 비정면 이미지 2개가 같은 방향 - 반대 방향 재생성
             if dot_product > 0.8:
@@ -597,7 +597,6 @@ def dis_main(request_data, pose):
     
     processor = ShowRoomProcessor()
     result = processor.process(request_data, pose)
-    print (result)
     
     elapsed = time.time() - start_time  # 경과 시간 계산
     print(f"\n discriminator 처리 시간: {elapsed:.2f}초")

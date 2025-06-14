@@ -42,7 +42,6 @@ class SimpleRotator:
             map_location=self.device,
             force_reload=False,
             trust_repo=True,
-            offline=True  # 로컬 캐시에 모델이 없으면 에러 발생
         ).to(self.device).eval()
         try:
             self.midas = torch.compile(self.midas)
@@ -62,7 +61,6 @@ class SimpleRotator:
             revision="fp16",
             torch_dtype=torch.float16,
             safety_checker=None,
-            local_files_only=True  # 로컬 캐시에 모델이 없으면 에러 발생
         ).to(self.device)
 
         # 모델 최적화 설정
@@ -292,7 +290,7 @@ def show_image(img: Image.Image, title: str = "image", save_dir: str = "output")
     os.makedirs(save_dir, exist_ok=True)
     save_path = os.path.join(save_dir, f"{title}.jpg")
     img.save(save_path)
-    print(f" 저장 완료: {save_path}")
+    print(f"    저장 완료: {save_path}")
 
 def gen_main(output_list):
     """
@@ -370,9 +368,9 @@ def gen_main(output_list):
 
         # 결과 리스트에 추가 및 완료 메시지 출력
         file.append((f"images{key}", img_file))
-        print(f" 이미지 images{key} 변환 및 파일 추가 완료")
+        print(f"    이미지 images{key} 변환 및 파일 추가 완료")
 
         elapsed = time.time() - start_time  # 경과 시간 계산
-        print(f"\n discriminator 처리 시간: {elapsed:.2f}초")      
+        print(f"    discriminator 처리 시간: {elapsed:.2f}초")      
 
         return file
