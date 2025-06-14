@@ -6,7 +6,6 @@ from io import BytesIO
 import requests
 import copy
 import base64
-import time
 import os
 import re
 
