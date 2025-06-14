@@ -328,8 +328,7 @@ def gen_main(output_list):
     file = list()
     # output_list가 None이거나 비어 있으면 바로 반환
     if not output_list:
-        print(" output_list가 비어 있습니다. 처리할 이미지가 없습니다.")
-        return None
+        raise ValueError("생성하기 적합하기 어려운 방임! 인져어어엉? by 수한") #해당 부분 수정 중 0614_1313
 
     for output_data in output_list:
         key = output_data.get("key")
