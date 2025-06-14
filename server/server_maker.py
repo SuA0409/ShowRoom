@@ -6,7 +6,6 @@ from io import BytesIO
 import requests
 import copy
 import base64
-import time
 import os
 import re
 
@@ -148,6 +147,9 @@ class ServerMaker:
                 dis_result = dis_main(request.files, pose)
 
                 print(" discriminator 실행 완료!\n")
+
+                if dis_result is None:
+                    return jsonify({"status": "error", "message": '생성할 이미지 없음'}), 500
 
                 ## gen 파트
                 print(" Stable Diffusion Inpaint .py 실행 시작!")
