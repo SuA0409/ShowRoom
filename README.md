@@ -18,32 +18,28 @@ Based on n user-selected images of a room, this system generates realistic 3D sp
 
 ## Usage
 Demo dataset : demo/data
-  
-Loading Fast3R weight : 
-  
+
 ※ The demo below only supports model execution and is not running on a server-based demo.
   ### Run to 3D Reconstruction (Fast3R-SPR-Viser)
-  1.1. Fast3R
-  
-  1.2. SPR
-  
-  1.3. Viser
+      python demo/show_room_demo.py
 
   ### Run to 2D Generation (Discriminator -> Generator)
   Download the weight file from this link: https://drive.google.com/file/d/1j2eQdEMWsHPpULlGBkZxVO6QFeOM0E1E/view?usp=sharing
   
   Put the weight file into the generator_2d folder.
   
-      python demo/generator2d_demo.py     # 재생성 된 이미지는 output 폴더에 저장
+      python demo/generator2d_demo.py
 
 If you want to run the demo with your own image, put your image and pose in the demo/data directory.
 
-  ## Run to Review
-      python demo/review_demo.py —url [Airbnb 숙소 URL]   # 리뷰의 주제를 추출하고 싶은 Airbnb 숙소의 URL을 문자열로 입력해주세요.
-      python demo/review_demo.py   # 기본 URL이 설정되어 있어 별도 인자를 주지 않아도 됩니다.
+The generated images are saved in the output folder.
 
-## Run to ShowRoom
-      python demo/show_room_demo.py # test 이미지를 통해 3d reconstuction과 spr 그리고 viser를 통해 시각화까지 합니다.
+  ## Run to Review
+      python demo/review_demo.py —url [Airbnb 숙소 URL]   # Enter the URL of the Airbnb listing as a string to extract the review topics.
+      python demo/review_demo.py
+
+
+      
       
 ## Project Structure
     ShowRoom/
@@ -58,19 +54,15 @@ If you want to run the demo with your own image, put your image and pose in the 
 
 This project was trained using the **ScanNet++ dataset**.
 
-본 프로젝트는 ScanNet++ dataset을 활용하여 모델을 학습하였습니다.
-
 **1.2. Preprocessing Steps**
 
 For each scene, **5 images** were selected and the following preprocessing steps were applied:
 
-각 방(scene)에서 5장의 이미지를 선택합니다. 선택한 이미지들은 다음과 같은 전처리를 거칩니다:
+1. Resizing(크기 조절): 196 × 256
 
-    1. Resizing(크기 조절): 196 × 256
+2. Normalization(정규화): Min-Max Normalization
 
-    2. Normalization(정규화): Min-Max Normalization
-
-    3. Input Conversion : Transform?? to match the input format of the Fast3R model (Fast3R 모델에 맞는 입력 형태로 변환)
+3. Input Conversion : Transform?? to match the input format of the Fast3R model (Fast3R 모델에 맞는 입력 형태로 변환)
 
 **Fast3R Input Format**
 
@@ -85,7 +77,7 @@ Each view_i contained the folling keys:
 각 view_i는 다음과 같은 key-value 구조를 가집니다:
 
     image   : Tensor [B, 3, 192, 256]   # noramlized RGB image 정규화된 RGB 이미지
-    true_shape : Tensor [B, 2]   # original image dimensions 원본 이미지 크기 정보      
+    true_shape : Tensor [B, 2]   # original image dimensions 원본 이미지 크기 정보     
     index   : list [B]   # image indices 각 이미지의 인덱스       
     instance  : list [B]   # scene instance IDs 방 인스턴스 ID        
 
@@ -99,16 +91,19 @@ Each sample = 1 scene = 5 images
 
 각 샘플: 1개의 방(scene) = 5장의 이미지
 
-    1. Batch size: 4
+1. Batch size: 4
 
-    2. Image size (이미지 크기): [192 × 256 × 3]
+2. Image size (이미지 크기): [192 × 256 × 3]
 
-    3. Overall input shape 전체 입력 Shape: [S, B, C, H, W]
+3. Overall input shape 전체 입력 Shape: [S, B, C, H, W]
     
-      S: Number of views per scene 한 방에서의 이미지 수 (5), 
-      B: Number of scenes per batch 배치 내 방의 개수(4), 
-      C: Number of channels 채널 수(3), 
-      H, W: Height and width 이미지 높이와 너비 (192, 256)
+   S: Number of views per scene 한 방에서의 이미지 수 (5),
+   
+   B: Number of scenes per batch 배치 내 방의 개수(4),
+   
+   C: Number of channels 채널 수(3),
+   
+   H, W: Height and width 이미지 높이와 너비 (192, 256)
 
 **1.3. Knowledge Distillation of Fast3R**
 
@@ -116,23 +111,17 @@ Each sample = 1 scene = 5 images
 
 In the student model, the number of hidden layers in the head was reduced by 50% to decrease parameter size and achieve model compression.
 
-Student 모델에서는 Head의 hidden layer 수를 절반으로 줄여 파라미터 수를 줄이고 경량화를 달성했습니다.
-
 **- Distillation Loss:**
 
 To effectively transfer knowledge from the teacher model, we used a weighted sum of the following three loss functions:
 
-다음 세 가지 손실 함수를 사용하여 Teacher 모델로부터 효과적으로 지식을 전이하였습니다:
+1. RKD Distance Loss : Preserving relatvie distance structure between samples 샘플 간 상대 거리 구조 유지
 
-    1. RKD Distance Loss : Preserving relatvie distance structure between samples 샘플 간 상대 거리 구조 유지
+2. RKD Angle Loss – Maintains angular relationships betweeen samples 샘플 간 각도(구조적 관계) 보존
 
-    2. RKD Angle Loss – Maintains angular relationships betweeen samples 샘플 간 각도(구조적 관계) 보존
-
-    3. Cosine Similarity Loss – Encourages directional similarity between feature vectors (Feature 간 방향 유사도 고려)
+3. Cosine Similarity Loss – Encourages directional similarity between feature vectors (Feature 간 방향 유사도 고려)
 
 The final loss was computed as a simple weighted sum of the three. 
-
-세 손실 함수의 **단순 가중합(weighted sum)**을 최종 loss로 사용하였습니다.
 
 **1.4. Train**
 
