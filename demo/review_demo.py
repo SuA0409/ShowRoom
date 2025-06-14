@@ -29,7 +29,7 @@ def main():
     # 리뷰 전처리
     docs = preprocess_reviews(data, num)  # 전처리된 문장 리스트 생성
     # 모델 사용
-    topic_sentences = use_model(docs, review_conf['seed_topics'])  # BERTopic 모델로 주제 분석 수행
+    _ = use_model(docs, review_conf['seed_topics'])  # BERTopic 모델로 주제 분석 수행
 
 if __name__ == '__main__':
     main()
