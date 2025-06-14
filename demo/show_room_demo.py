@@ -19,6 +19,3 @@ model.room = batch_images_load(rooms_path=folder_path, batch_size=1, size=512, s
  # fast3r, spr 그리고 viser의 결합
 model.reconstruction()
 model.building_spr()
-
-model.reconstruction().building_spr()
-
