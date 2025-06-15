@@ -20,7 +20,7 @@ class ProcessorConfig:
 
     # 가중치 파일 경로
     weight_path: str = '/content/drive/MyDrive/weights/Weight_ST_RoomNet_ConvNext.h5'
-    ref_img_path: str = '/content/ShowRoom/demo/data/ref_img2.png'
+    ref_img_path: str = 'generate2d/discriminator/ref_img2.png'
 
     # 모델 설정
     image_size: Tuple[int, int] = (400, 400)
