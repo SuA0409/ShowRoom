@@ -459,114 +459,116 @@ class ShowRoomProcessor:
         # 2) 정면 이미지 2개 - 정보가 부족한 부분 판단 후 재생성
         elif len(front_views) == 2:
             z1, z2 = front_views
-            pose1 = poses[z1]
-            pose2 = poses[z2]
-            non_fronts = [i for i in range(3) if i not in front_views]  # 비정면 이미지에 대한 포즈
+            return [{"key": 0, "image": images[z1]}]
+            
+        #     pose1 = poses[z1]
+        #     pose2 = poses[z2]
+        #     non_fronts = [i for i in range(3) if i not in front_views]  # 비정면 이미지에 대한 포즈
 
-            # 정면 이미지 2개와 비정면 이미지 1개 간의 각도 비교
-            related_angles = []
-            for nf in non_fronts:
-                nf_pose = poses[nf]
-                angle1 = self.compute_relative_angle(pose1, nf_pose)
-                angle2 = self.compute_relative_angle(pose2, nf_pose)
-                related_angles.append((nf, angle1, angle2))
+        #     # 정면 이미지 2개와 비정면 이미지 1개 간의 각도 비교
+        #     related_angles = []
+        #     for nf in non_fronts:
+        #         nf_pose = poses[nf]
+        #         angle1 = self.compute_relative_angle(pose1, nf_pose)
+        #         angle2 = self.compute_relative_angle(pose2, nf_pose)
+        #         related_angles.append((nf, angle1, angle2))
 
-            for nf_name, angle1, angle2 in related_angles:
-                print(f"    {nf_name}와의 각도 차이: {z1}: {angle1:.1f}°, {z2}: {angle2:.1f}°")
+        #     for nf_name, angle1, angle2 in related_angles:
+        #         print(f"    {nf_name}와의 각도 차이: {z1}: {angle1:.1f}°, {z2}: {angle2:.1f}°")
 
-            # 두 정면 이미지 정보와 비정면 이미지의 정보가 겹치지 않는지 판별
-            for nf_name, angle1, angle2 in related_angles:
+        #     # 두 정면 이미지 정보와 비정면 이미지의 정보가 겹치지 않는지 판별
+        #     for nf_name, angle1, angle2 in related_angles:
 
-                # 두 정면 이미지와 비정면 이미지 정보가 겹치지 않음
-                if (angle1 <= 55 and angle2 <= 55) or (angle1 >= 90 and angle2 >= 90):
-                    print("    두 정면 이미지 모두와 시점 차이가 크거나 매우 작음 → 정밀 판별 수행")
-                    angle = self.compute_relative_angle(pose1, pose2)
-                    side = self.determine_relative_side(pose1, pose2)
-                    print(f"    두 정면 이미지 간 각도: {angle:.2f}°, 방향: {side}")
-                    result = self.decide_regeneration_from_angle_and_side(
-                        layout1=layout_map[z1],
-                        layout2=layout_map[z2],
-                        angle=angle,
-                        side=side,
-                        z1=str(z1),
-                        z2=str(z2)
-                    )
-                    if result == 'None':
-                        return [{"key": 2, "image": None}]
-                    img_idx, direction = result
-                    key = 0 if direction == 'left' else 1
-                    return [{"key": key, "image": images[int(img_idx)]}]
+        #         # 두 정면 이미지와 비정면 이미지 정보가 겹치지 않음
+        #         if (angle1 <= 55 and angle2 <= 55) or (angle1 >= 90 and angle2 >= 90):
+        #             print("    두 정면 이미지 모두와 시점 차이가 크거나 매우 작음 → 정밀 판별 수행")
+        #             angle = self.compute_relative_angle(pose1, pose2)
+        #             side = self.determine_relative_side(pose1, pose2)
+        #             print(f"    두 정면 이미지 간 각도: {angle:.2f}°, 방향: {side}")
+        #             result = self.decide_regeneration_from_angle_and_side(
+        #                 layout1=layout_map[z1],
+        #                 layout2=layout_map[z2],
+        #                 angle=angle,
+        #                 side=side,
+        #                 z1=str(z1),
+        #                 z2=str(z2)
+        #             )
+        #             if result == 'None':
+        #                 return [{"key": 2, "image": None}]
+        #             img_idx, direction = result
+        #             key = 0 if direction == 'left' else 1
+        #             return [{"key": key, "image": images[int(img_idx)]}]
 
-                # 정면 이미지 중 하나의 정면 이미지만 정보가 겹침(겹치지 않는 정면 쪽 생성)
-                elif angle1 <= 55 < angle2:
-                    print(f"    이미지 {z2}와의 각도가 커서 상대적 방향으로 판단")
-                    side = self.determine_relative_side(pose2, poses[nf_name])
-                    key = 0 if side == 'left' else 1
-                    return [{"key": key, "image": images[z2]}]
-                elif angle2 <= 55 < angle1:
-                    print(f"    이미지 {z1}와의 각도가 커서 상대적 방향으로 판단")
-                    side = self.determine_relative_side(pose1, poses[nf_name])
-                    key = 0 if side == 'left' else 1
-                    return [{"key": key, "image": images[z1]}]
+        #         # 정면 이미지 중 하나의 정면 이미지만 정보가 겹침(겹치지 않는 정면 쪽 생성)
+        #         elif angle1 <= 55 < angle2:
+        #             print(f"    이미지 {z2}와의 각도가 커서 상대적 방향으로 판단")
+        #             side = self.determine_relative_side(pose2, poses[nf_name])
+        #             key = 0 if side == 'left' else 1
+        #             return [{"key": key, "image": images[z2]}]
+        #         elif angle2 <= 55 < angle1:
+        #             print(f"    이미지 {z1}와의 각도가 커서 상대적 방향으로 판단")
+        #             side = self.determine_relative_side(pose1, poses[nf_name])
+        #             key = 0 if side == 'left' else 1
+        #             return [{"key": key, "image": images[z1]}]
 
-            print("    유효한 비교 대상 없음 → 기본 판별 수행")
-            angle = self.compute_relative_angle(pose1, pose2)
-            side = self.determine_relative_side(pose1, pose2)
-            result = self.decide_regeneration_from_angle_and_side(
-                layout1=layout_map[z1],
-                layout2=layout_map[z2],
-                angle=angle,
-                side=side,
-                z1=str(z1),
-                z2=str(z2)
-            )
-            if result == 'None':
-                return [{"key": 2, "image": None}]
-            img_idx, direction = result
-            key = 0 if direction == 'left' else 1
-            return [{"key": key, "image": images[int(img_idx)]}]
+        #     print("    유효한 비교 대상 없음 → 기본 판별 수행")
+        #     angle = self.compute_relative_angle(pose1, pose2)
+        #     side = self.determine_relative_side(pose1, pose2)
+        #     result = self.decide_regeneration_from_angle_and_side(
+        #         layout1=layout_map[z1],
+        #         layout2=layout_map[z2],
+        #         angle=angle,
+        #         side=side,
+        #         z1=str(z1),
+        #         z2=str(z2)
+        #     )
+        #     if result == 'None':
+        #         return [{"key": 2, "image": None}]
+        #     img_idx, direction = result
+        #     key = 0 if direction == 'left' else 1
+        #     return [{"key": key, "image": images[int(img_idx)]}]
 
-        # 3) 정면 이미지 1개 - 부족한 정보 판단 후 재생성
-        elif len(front_views) == 1:
-            z_front = front_views[0]
-            print(f"    정면 이미지가 1개: 이미지 {z_front}")
+        # # 3) 정면 이미지 1개 - 부족한 정보 판단 후 재생성
+        # elif len(front_views) == 1:
+        #     z_front = front_views[0]
+        #     print(f"    정면 이미지가 1개: 이미지 {z_front}")
 
-            non_fronts = [i for i in range(3) if i != z_front]
-            if len(non_fronts) != 2:
-                print("    정면이 1개지만 비교할 이미지가 부족 → 재생성 불가")
-                return [{"key": 2, "image": None}]
+        #     non_fronts = [i for i in range(3) if i != z_front]
+        #     if len(non_fronts) != 2:
+        #         print("    정면이 1개지만 비교할 이미지가 부족 → 재생성 불가")
+        #         return [{"key": 2, "image": None}]
 
-            # 정면 이미지 1개와 비정면 이미지 2개의 위치 및 방향 비교
-            pose_f = poses[z_front]
-            pose_nf1 = poses[non_fronts[0]]
-            pose_nf2 = poses[non_fronts[1]]
+        #     # 정면 이미지 1개와 비정면 이미지 2개의 위치 및 방향 비교
+        #     pose_f = poses[z_front]
+        #     pose_nf1 = poses[non_fronts[0]]
+        #     pose_nf2 = poses[non_fronts[1]]
 
-            _, z_dir1 = self.get_camera_position_and_direction(pose_nf1)
-            _, z_dir2 = self.get_camera_position_and_direction(pose_nf2)
+        #     _, z_dir1 = self.get_camera_position_and_direction(pose_nf1)
+        #     _, z_dir2 = self.get_camera_position_and_direction(pose_nf2)
 
-            z_dir1 = z_dir1 / np.linalg.norm(z_dir1)
-            z_dir2 = z_dir2 / np.linalg.norm(z_dir2)
+        #     z_dir1 = z_dir1 / np.linalg.norm(z_dir1)
+        #     z_dir2 = z_dir2 / np.linalg.norm(z_dir2)
 
-            dot_product = np.dot(z_dir1, z_dir2)
-            print(f"    두 비정면 이미지 간 Z축 방향 유사도 (cosθ): {dot_product:.3f}")
+        #     dot_product = np.dot(z_dir1, z_dir2)
+        #     print(f"    두 비정면 이미지 간 Z축 방향 유사도 (cosθ): {dot_product:.3f}")
 
-            # 정면 이미지에 대해 비정면 이미지 2개가 같은 방향 - 반대 방향 재생성
-            if dot_product > 0.8:
-                pos_f, dir_f = self.get_camera_position_and_direction(pose_f)
-                pos_nf1, _ = self.get_camera_position_and_direction(pose_nf1)
-                side = self.determine_relative_side(pose_f, pose_nf1)
-                opposite_side = 'right' if side == 'left' else 'left'
-                print(f"   → 비정면 이미지 둘 다 {side} 방향에 있음 → 반대쪽 {opposite_side}로 생성")
-                key = 0 if opposite_side == 'left' else 1
-                return [{"key": key, "image": images[z_front]}]
+        #     # 정면 이미지에 대해 비정면 이미지 2개가 같은 방향 - 반대 방향 재생성
+        #     if dot_product > 0.8:
+        #         pos_f, dir_f = self.get_camera_position_and_direction(pose_f)
+        #         pos_nf1, _ = self.get_camera_position_and_direction(pose_nf1)
+        #         side = self.determine_relative_side(pose_f, pose_nf1)
+        #         opposite_side = 'right' if side == 'left' else 'left'
+        #         print(f"   → 비정면 이미지 둘 다 {side} 방향에 있음 → 반대쪽 {opposite_side}로 생성")
+        #         key = 0 if opposite_side == 'left' else 1
+        #         return [{"key": key, "image": images[z_front]}]
 
-            # 정면 이미지에 대해 비정면 이미지 2개가 다른 방향 - 정보 겹침으로 인한 재생성 불가
-            print("   → 비정면 이미지 방향이 달라서 기준이 불분명 → 재생성 불가")
-            return [{"key": 2, "image": None}]
+        #     # 정면 이미지에 대해 비정면 이미지 2개가 다른 방향 - 정보 겹침으로 인한 재생성 불가
+        #     print("   → 비정면 이미지 방향이 달라서 기준이 불분명 → 재생성 불가")
+        #     return [{"key": 2, "image": None}]
 
-        else:
-            print("   → 정면 이미지 없음 → 재생성 불가")
-            return [{"key": 2, "image": None}]
+        # else:
+        #     print("   → 정면 이미지 없음 → 재생성 불가")
+        #     return [{"key": 2, "image": None}]
 
     def process(self, request_data, pose) -> List[Dict[str, Union[int, np.ndarray]]]:
         """
