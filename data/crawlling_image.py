@@ -1,11 +1,4 @@
-# Selenium을 사용한 크롤링
-!pip install selenium
-!apt-get update # for installing ChromeDriver
-!apt-get install -y chromium-chromedriver
-!cp /usr/lib/chromium-browser/chromedriver /usr/bin
-
-## 수집 위치 및 저장 위치
-START, END = 20, 30  # 본인 파트에 맞게 수정 !!!!
+START, END = 0, 10
 save_base_path = '/content/drive/MyDrive/Dataset/c2_2_20-29'  # 이미지 저장 위치
 
 # ※ 건들지 마시오.

@@ -226,7 +226,7 @@ class ServerMaker:
                 return jsonify({"status": "error", "message": str(e)}), 500
 
     def set_main(self):
-        RESULTS_FOLDER = 'server/results'
+        RESULT_FOLDER = 'server/results'
 
         @self.app.route('/analyze_review', methods=['POST'])
         def analyze_review():
@@ -256,7 +256,7 @@ class ServerMaker:
                 if result.get("status") == "success":
                     room_id = result.get('room_id', 'unknown')
 
-                    json_path = os.path.join(RESULTS_FOLDER, f"{room_id}.json")
+                    json_path = os.path.join(RESULT_FOLDER, f"review.json")
                     with open(json_path, 'w', encoding='utf-8') as f:
                         json.dump(result['result'], f, ensure_ascii=False, indent=2)
                     print(f"    결과 JSON 저장 완료: {json_path}")
@@ -276,7 +276,7 @@ class ServerMaker:
         @self.app.route('/review/<room_id>')
         def show_review(room_id):
             print(f" {room_id} 호출됨")
-            json_path = os.path.join(RESULTS_FOLDER, f"{room_id}.json")
+            json_path = os.path.join(RESULT_FOLDER, f"review.json")
             if not os.path.exists(json_path):
                 print(f" 결과 JSON 파일이 없음: {json_path}")
                 return "분석 결과가 없습니다.", 404

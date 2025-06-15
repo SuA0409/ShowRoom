@@ -1,4 +1,4 @@
-﻿test_name: 'layer_half_1e-4_init_v2'
+﻿test_name: 'layer_half_1e-4_v2_init'
 
 path:
     rooms_path: '/content/drive/MyDrive/Scannet++/preprocessv2'
