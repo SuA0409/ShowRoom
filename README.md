@@ -136,9 +136,9 @@ A warm-up scheduler was applied to stabilize early training.
 
 **- Gradient Accumulation:**
 
-Due to memory limitations, we used a batch size of **4**. To simulate a larger batch size of **32**, we applied **gradient accumulation** and performed backpropagation every **8 steps**.
+Due to memory limitations, we used a batch size of **4**. To simulate a larger batch size of **32**, we applied **gradient accumulation** delaying the parameter update until every **8 steps**.
 
-자원 제한으로 batch size를 4로 설정하였지만, gradient accumulation 기법을 활용하여 8회 반복 후 역전파를 수행, 결과적으로 batch size 32와 유사한 학습 효과를 얻도록 하였습니다.
+자원 제한으로 batch size를 4로 설정하였지만, gradient accumulation 기법을 활용하여 8회 누적 후에 한 번만 파라미터를 업데이트함으로써, 결과적으로 batch size 32와 유사한 학습 효과를 얻도록 하였습니다.
 
 **1.5. The Result of Train and Validation**
 

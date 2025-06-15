@@ -13,7 +13,7 @@ from viz.viz import find_free_port
 from generate2d.discriminator.discriminator2d import dis_main
 from generate2d.generator.stable_diffusion import init_set, gen_main
 from kd_fast3r.utils.data_preprocess import server_images_load
-from review.main_review import get_reviews, preprocess_reviews, use_model
+from review.main_review import get_reviews, preprocess_reviews, use_model, get_review_conf
 
 class ServerMaker:
     def __init__(self,
@@ -202,9 +202,7 @@ class ServerMaker:
                 room_id = room_id_match.group(1)
 
                 # 리뷰 분석 실행
-                with open("configs/review_conf.json", "r", encoding="utf-8") as f:
-                    review_conf = json.load(f)
-
+                review_conf = get_review_conf()
                 data, num = get_reviews(url, review_conf['headers'])
                 docs = preprocess_reviews(data, num)
                 topic_sentences = use_model(docs, review_conf['seed_topics'])
