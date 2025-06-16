@@ -149,7 +149,9 @@ Due to memory constraints, we used a batch size of **4**. To simulate a larger e
 **1.5. The Result of Train and Validation**
 
 - Train: Loss trends across epochs (up to 22 epoch)
-![KakaoTalk_20250616_122423972](https://github.com/user-attachments/assets/3a2dad2b-aa48-4eb0-bf57-38e5a0bab460)
+  ![image](https://github.com/user-attachments/assets/005acab3-5db1-42f2-b4ea-a34d5131ee01)
+
+
 
 - Validation:
   
