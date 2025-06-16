@@ -2,7 +2,8 @@
 Based on n user-selected images of a room, this system generates realistic 3D spaces by filling in missing 2D visual information (inpainting) and compensating for empty regions generated during the 3D reconstruction process.
 
 ## ShowRoom FlowChart
-![image](https://github.com/user-attachments/assets/f706becb-5712-4f78-bd5b-499ded7b035c)
+![image](https://github.com/user-attachments/assets/752f019e-7d6b-4030-9bba-cb3af9e893b6)
+
 
 
 ## Installation
