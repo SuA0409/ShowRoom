@@ -52,10 +52,10 @@ The generated images are saved in the output folder.
     │   └── scannet/
     ├── demo/                          # Demo code and sample data for ShowRoom
     │   ├── data/
-    ├── fast3r/                        # Input images or logic related to the Fast3R model
+    ├── fast3r/                        # Fast3R (CVPR 2025); teacher model of KD
     ├── generate2d/                   
-    │   ├── discriminator/             # Discriminator for 2D image generation
-    │   └── generator/                 # Generator for 2D image generation
+    │   ├── discriminator/             # Discriminator of 2D image
+    │   └── generator/                 # Generator of 2D image
     ├── kd_fast3r/                     # Knowledge Distillation training modules for Fast3R
     │   └── utils/
     ├── review/                        # Visualization and review of model evaluation results
