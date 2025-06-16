@@ -2,7 +2,7 @@
 Based on n user-selected images of a room, this system generates realistic 3D spaces by filling in missing 2D visual information (inpainting) and compensating for empty regions generated during the 3D reconstruction process.
 
 ## ShowRoom FlowChart
-![image](https://github.com/user-attachments/assets/752f019e-7d6b-4030-9bba-cb3af9e893b6)
+![image](https://github.com/user-attachments/assets/81453487-72b1-4635-b23e-1e375079e726)
 
 
 
@@ -21,10 +21,10 @@ Based on n user-selected images of a room, this system generates realistic 3D sp
 Demo dataset : demo/data
 
 ※ The demo below only supports model execution and is not running on a server-based demo.
-  ### Run to 3D Reconstruction (Fast3R-SPR-Viser)
+  ### Run to 3D Reconstruction (Fast3R → SPR → viser)
       python demo/show_room_demo.py
 
-  ### Run to 2D Generation (Discriminator -> Generator)
+  ### Run to 2D Generation (ST-RoomNet (discriminator) → Stable-Diffusion (generator))
   Download the weight file from this link: https://drive.google.com/file/d/1j2eQdEMWsHPpULlGBkZxVO6QFeOM0E1E/view?usp=sharing
   
   Put the weight file into the generator_2d folder.
@@ -36,7 +36,7 @@ If you want to run the demo with your own image, put your image and pose in the 
 The generated images are saved in the output folder.
 
   ## Run to Review
-      python demo/review_demo.py —url [Airbnb 숙소 URL]   # Enter the URL of the Airbnb listing as a string to extract the review topics.
+      python demo/review_demo.py —url [Airbnb URL]   # Enter the URL of the Airbnb listing as a string to extract the review topics.
       python demo/review_demo.py
 
 
@@ -156,10 +156,10 @@ Due to memory constraints, we used a batch size of **4**. To simulate a larger e
 
 - Validation:
   
-  Qualitative performance evaluation
+  - Qualitative performance evaluation
   ![image](https://github.com/user-attachments/assets/a95896f1-0d89-437b-8d1d-415244395c11)
 
-  Quantitative performance evaluation
+  - Quantitative performance evaluation
   ![image](https://github.com/user-attachments/assets/3e51b04d-be5b-4ed3-bb75-12a5321e035b)
 
 
