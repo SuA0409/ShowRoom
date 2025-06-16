@@ -153,10 +153,10 @@ Due to memory constraints, we used a batch size of **4**. To simulate a larger e
 
 - Validation:
   
-  Qualitative performance evaluation 정량적 성능 평가
+  Qualitative performance evaluation
   ![image](https://github.com/user-attachments/assets/a95896f1-0d89-437b-8d1d-415244395c11)
 
-  Quantitative performance evaluation 정성적 성능 평가
+  Quantitative performance evaluation
   ![image](https://github.com/user-attachments/assets/3e51b04d-be5b-4ed3-bb75-12a5321e035b)
 
 
