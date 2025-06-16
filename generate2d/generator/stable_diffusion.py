@@ -289,7 +289,8 @@ def show_image(img: Image.Image, title: str = "image", save_dir: str = "output")
     """
     os.makedirs(save_dir, exist_ok=True)
     save_path = os.path.join(save_dir, f"{title}.jpg")
-    img.save(save_path)
+    img_pil = Image.fromarray(img.astype('uint8'), mode='RGB')
+    img_pil.save(save_path)
     print(f"    저장 완료: {save_path}")
 
 def gen_main(output_list):
