@@ -43,20 +43,31 @@ The generated images are saved in the output folder.
       
 ## Project Structure
     ShowRoom/
-    ├── chrome_extension/               # 
-    ├── configs/               # 보조 함수들
-    ├── data/
-    ├── fast3r/        # 입력 이미지
-    ├── generate2d/
-    ├── kd_fast3r/
-    ├── main_server/
-    ├── review/
-    ├── review_server/   # 결과물 저장 위치
-    ├── server/
-    ├── LICENSE/
-    ├── requirements/
-    └── README.md
-    
+    ├── .idea/                         # PyCharm project settings
+    ├── EDA/                           # Exploratory Data Analysis scripts
+    ├── chrome_extension/              # Chrome extension implementation code
+    ├── configs/                       # KD model training and environment configuration files
+    ├── data/                          # Preprocessing for training data
+    │   └── scannet/
+    ├── demo/                          # Demo code and sample data for ShowRoom
+    │   ├── data/
+    ├── fast3r/                        # Input images or logic related to the Fast3R model
+    ├── generate2d/                   
+    │   ├── discriminator/             # Discriminator for 2D image generation
+    │   └── generator/                 # Generator for 2D image generation
+    ├── kd_fast3r/                     # Knowledge Distillation training modules for Fast3R
+    │   └── utils/
+    ├── review/                        # Visualization and review of model evaluation results
+    ├── server/                        # Flask-based backend server
+    │   ├── templates/
+    │   ├── results/
+    │   └── static/
+    ├── viz/                           # Visualization modules
+    ├── LICENSE                        # License information
+    ├── README.md                      # Project overview and documentation
+    ├── requirements.txt               # Package dependency list
+    └── setup.py                       # Installation script
+
 
 ## Knowledge Distillation of Fast3R
 **1.1. Training Dataset**
