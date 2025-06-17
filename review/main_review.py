@@ -1,4 +1,3 @@
-# 모델
 import torch 
 from bertopic import BERTopic  
 from sentence_transformers import SentenceTransformer  
@@ -8,7 +7,6 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from collections import defaultdict
 import kss
-# 리뷰 크롤링
 import pandas as pd
 from requests import request
 from bs4 import BeautifulSoup
