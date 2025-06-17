@@ -121,7 +121,7 @@ def get_review_conf():
 
 def get_reviews(url, headers):
     """
-    리뷰에 해당하는 json 호출 함수
+    리뷰 정보수집하는 함수
 
     Args:
         url (str): Airbnb 숙소 리뷰 페이지 URL
