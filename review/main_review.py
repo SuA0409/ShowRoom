@@ -1,4 +1,4 @@
-#------------------------- 모델 ---------------------------
+# 모델
 import torch 
 from bertopic import BERTopic  
 from sentence_transformers import SentenceTransformer  
@@ -8,7 +8,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from collections import defaultdict
 import kss
-#---------------------- 리뷰 크롤링 ------------------------
+# 리뷰 크롤링
 import pandas as pd
 from requests import request
 from bs4 import BeautifulSoup
@@ -21,13 +21,13 @@ import requests
 
 def comments(korean):
     """
-    한국어로 번역한것이 없을 때 or 한국어 댓글이 아닐때 None 반환 함수
+    한국어로 번역한것이 없거나 한국어 댓글이 아닐때 None 반환 함수
 
     Args:
         korean (dict): 리뷰 데이터를 포함한 딕셔너리
 
     Returns:
-        str or None: 한국어 리뷰 텍스트 또는 번역된 리뷰 텍스트 or 조건에 맞지 않으면 None
+        str or None: 한국어 리뷰 텍스트 또는 번역된 리뷰 텍스트가 조건에 맞지 않으면 None
     """
     if korean["language"] == 'ko':  # 리뷰 언어가 한국어인지 확인
         return korean["comments"]  # 한국어 리뷰 텍스트 반환
