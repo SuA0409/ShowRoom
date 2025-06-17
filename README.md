@@ -19,6 +19,7 @@ Based on n user-selected images of a room, this system generates realistic 3D sp
 
 ## Usage
 Demo dataset : demo/data
+When using Colab, insert the ngrok token into show_viz = ViserMaker(). (ex. show_viz = ViserMaker('2yU8oHMQl1SYlwPCSzDNxMWpFov_4AD8eGS8KFwptrmrw69pi'))
 
 ※ The demo below only supports model execution and is not running on a server-based demo.
   ### Run to 3D Reconstruction (Fast3R → SPR → viser)
