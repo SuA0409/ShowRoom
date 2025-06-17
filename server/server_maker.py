@@ -6,8 +6,8 @@ from io import BytesIO
 import requests
 import base64
 import os
-import re, copy
-
+import re
+import copy
 from viz.viz import find_free_port
 from generate2d.discriminator.discriminator2d import dis_main
 from generate2d.generator.stable_diffusion import init_set, gen_main
