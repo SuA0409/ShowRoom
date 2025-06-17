@@ -2,7 +2,8 @@
 Based on n user-selected images of a room, this system generates realistic 3D spaces by filling in missing 2D visual information (inpainting) and compensating for empty regions generated during the 3D reconstruction process.
 
 ## ShowRoom FlowChart
-![image](https://github.com/user-attachments/assets/f706becb-5712-4f78-bd5b-499ded7b035c)
+![image](https://github.com/user-attachments/assets/81453487-72b1-4635-b23e-1e375079e726)
+
 
 
 ## Installation
@@ -20,11 +21,11 @@ Based on n user-selected images of a room, this system generates realistic 3D sp
 Demo dataset : demo/data
 
 ※ The demo below only supports model execution and is not running on a server-based demo.
-  ### Run to 3D Reconstruction (Fast3R-SPR-Viser)
+  ### Run to 3D Reconstruction (Fast3R → SPR → viser)
       python demo/show_room_demo.py
 
-  ### Run to 2D Generation (Discriminator -> Generator)
-  Download the weight file from this link: https://drive.google.com/file/d/1j2eQdEMWsHPpULlGBkZxVO6QFeOM0E1E/view?usp=sharing
+  ### Run to 2D Generation (ST-RoomNet (discriminator) → Stable-Diffusion (generator))
+  Download the weight file from the following link: https://drive.google.com/file/d/1j2eQdEMWsHPpULlGBkZxVO6QFeOM0E1E/view?usp=sharing
   
   Put the weight file into the generator_2d folder.
   
@@ -35,7 +36,7 @@ If you want to run the demo with your own image, put your image and pose in the 
 The generated images are saved in the output folder.
 
   ## Run to Review
-      python demo/review_demo.py —url [Airbnb 숙소 URL]   # Enter the URL of the Airbnb listing as a string to extract the review topics.
+      python demo/review_demo.py —url [Airbnb URL]   # Enter the URL of the Airbnb listing as a string to extract the review topics.
       python demo/review_demo.py
 
 
@@ -43,11 +44,31 @@ The generated images are saved in the output folder.
       
 ## Project Structure
     ShowRoom/
-    ├── model/               # 학습된 모델 및 구조
-    ├── utils/               # 보조 함수들
-    ├── inputs/              # 입력 이미지
-    ├── outputs/             # 결과물 저장 위치
-    └── README.md
+    ├── .idea/                         # PyCharm project settings
+    ├── EDA/                           # Exploratory Data Analysis scripts
+    ├── chrome_extension/              # Chrome extension implementation code
+    ├── configs/                       # KD model training and environment configuration files
+    ├── data/                          # Preprocessing for training data
+    │   └── scannet/
+    ├── demo/                          # Demo code and sample data for ShowRoom
+    │   ├── data/
+    ├── fast3r/                        # Fast3R (CVPR 2025); teacher model of KD
+    ├── generate2d/                   
+    │   ├── discriminator/             # Discriminator of 2D image
+    │   └── generator/                 # Generator of 2D image
+    ├── kd_fast3r/                     # Knowledge Distillation training modules for Fast3R
+    │   └── utils/
+    ├── review/                        # Visualization and review of model evaluation results
+    ├── server/                        # Flask-based backend server
+    │   ├── templates/
+    │   ├── results/
+    │   └── static/
+    ├── viz/                           # Visualization modules
+    ├── LICENSE                        # License information
+    ├── README.md                      # Project overview and documentation
+    ├── requirements.txt               # Package dependency list
+    └── setup.py                       # Installation script
+
 
 ## Knowledge Distillation of Fast3R
 **1.1. Training Dataset**
@@ -58,56 +79,46 @@ This project was trained using the **ScanNet++ dataset**.
 
 For each scene, **5 images** were selected and the following preprocessing steps were applied:
 
-1. Resizing(크기 조절): 196 × 256
+1. Resizing: 196 × 256
 
-2. Normalization(정규화): Min-Max Normalization
+2. Normalization: Min-Max Normalization
 
-3. Input Conversion : Transform?? to match the input format of the Fast3R model (Fast3R 모델에 맞는 입력 형태로 변환)
+3. Input Conversion : Transform to match the input format of the Fast3R model
 
 **Fast3R Input Format**
 
 Each scene was represented as a list of dictionaries, one per view:
 
-Fast3R은 각 view를 dictionary로 구성하고, 전체 scene은 dictionary들의 리스트로 표현합니다.
-
     [ {view_1}, {view_2}, ..., {view_S} ]  # List of S dictionaries
 
 Each view_i contained the folling keys:
 
-각 view_i는 다음과 같은 key-value 구조를 가집니다:
-
-    image   : Tensor [B, 3, 192, 256]   # noramlized RGB image 정규화된 RGB 이미지
-    true_shape : Tensor [B, 2]   # original image dimensions 원본 이미지 크기 정보     
-    index   : list [B]   # image indices 각 이미지의 인덱스       
-    instance  : list [B]   # scene instance IDs 방 인스턴스 ID        
+    image   : Tensor [B, 3, 192, 256]   # noramlized RGB image 
+    true_shape : Tensor [B, 2]   # original image dimensions
+    index   : list [B]   # image indices 
+    instance  : list [B]   # scene instance IDs 
 
 B refers to the number of scenes in a batch. All views shared the same batch size B, and there were a total of S views per scene (e.g. 5 images)
 
-(B는 배치(batch) 내의 방(scene)의 수, 모든 view들은 같은 B를 공유하며, 총 S개의 view가 존재합니다 (예: 5장 이미지).)
-
-**- Final Data Loader Configuration 최종 Data Loader 설정**
-
-Each sample = 1 scene = 5 images
-
-각 샘플: 1개의 방(scene) = 5장의 이미지
+**- Final DataLoader Settings**
 
 1. Batch size: 4
 
-2. Image size (이미지 크기): [192 × 256 × 3]
+2. Image size: [192 × 256 × 3]
 
-3. Overall input shape 전체 입력 Shape: [S, B, C, H, W]
+3. Final input shape : [S, B, C, H, W]
     
-   S: Number of views per scene 한 방에서의 이미지 수 (5),
+   S: Number of views per scene (= 5),
    
-   B: Number of scenes per batch 배치 내 방의 개수(4),
+   B: Number of scenes per batch (= 4),
    
-   C: Number of channels 채널 수(3),
+   C: Number of channels (= 3),
    
-   H, W: Height and width 이미지 높이와 너비 (192, 256)
+   H, W: Height and width (= 192, 256)
 
 **1.3. Knowledge Distillation of Fast3R**
 
-**- Head Simplification Head 경량화:**
+**- Lightweight of Head:**
 
 In the student model, the number of hidden layers in the head was reduced by 50% to decrease parameter size and achieve model compression.
 
@@ -115,42 +126,42 @@ In the student model, the number of hidden layers in the head was reduced by 50%
 
 To effectively transfer knowledge from the teacher model, we used a weighted sum of the following three loss functions:
 
-1. RKD Distance Loss : Preserving relatvie distance structure between samples 샘플 간 상대 거리 구조 유지
+1. RKD Distance Loss : Preserving relatvie distance structure between samples
 
-2. RKD Angle Loss – Maintains angular relationships betweeen samples 샘플 간 각도(구조적 관계) 보존
+2. RKD Angle Loss – Maintains angular relationships betweeen samples
 
-3. Cosine Similarity Loss – Encourages directional similarity between feature vectors (Feature 간 방향 유사도 고려)
+3. Cosine Similarity Loss – Encourages directional similarity between feature vectors
 
 The final loss was computed as a simple weighted sum of the three. 
 
 **1.4. Train**
 
-**- Learning Rate Scheduler :**
+**- Learning Rate Scheduler:**
 
 A warm-up scheduler was applied to stabilize early training.
 
 - Learning rate increased to 1×10−4 during the first 5 epochs
-- Gradually decayed? to 1×10−6 over subsequent epochs
-
-학습 초반 안정화를 위해 초기 5 epoch 동안 learning rate를 1×10−4까지 warm-up한 뒤, 이후 학습이 진행되면서 점진적으로 1×10−6까지 감소시키는 스케줄러를 적용하였습니다.
+- Gradually decayed to 1×10−6 over subsequent epochs
 
 **- Gradient Accumulation:**
 
-Due to memory limitations, we used a batch size of **4**. To simulate a larger batch size of **32**, we applied **gradient accumulation** delaying the parameter update until every **8 steps**.
-
-자원 제한으로 batch size를 4로 설정하였지만, gradient accumulation 기법을 활용하여 8회 누적 후에 한 번만 파라미터를 업데이트함으로써, 결과적으로 batch size 32와 유사한 학습 효과를 얻도록 하였습니다.
+Due to memory constraints, we used a batch size of **4**. To simulate a larger effective batch size of **32**, we applied **gradient accumulation**, updating the model parameters every **8 steps**.
 
 **1.5. The Result of Train and Validation**
 
-- Train: Loss trends across epochs (up to epoch 22)  epoch에 따른 loss의 변화 (epoch 22까지의 진행상황)
-![그림1](https://github.com/user-attachments/assets/dfc478fd-fef6-41ef-ad33-65d2e5f009e9)
+- Train: Loss trends across epochs (up to 22 epoch)
+  ![image](https://github.com/user-attachments/assets/005acab3-5db1-42f2-b4ea-a34d5131ee01)
+
+
+
 - Validation:
   
-  Qualitative performance evaluation 정량적 성능 평가
-  ![image](https://github.com/user-attachments/assets/75ab280e-864f-42f9-909b-df12b4cb4b4d)
+  - Qualitative performance evaluation
+  ![image](https://github.com/user-attachments/assets/a95896f1-0d89-437b-8d1d-415244395c11)
 
-  Quantitative performance evaluation 정성적 성능 평가
-  
+  - Quantitative performance evaluation
+  ![image](https://github.com/user-attachments/assets/3e51b04d-be5b-4ed3-bb75-12a5321e035b)
+
 
 ## Citation
 If you use this project or build upon it, please cite:

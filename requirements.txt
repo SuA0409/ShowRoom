@@ -58,8 +58,6 @@ kobert-transformers
 umap-learn
 hdbscan
 bertopic
-umap-learn
-hdbscan
 
 # --------- ShowRoom --------- #
 flask_cors
