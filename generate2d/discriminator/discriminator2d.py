@@ -479,7 +479,7 @@ class ShowRoomProcessor:
             for nf_name, angle1, angle2 in related_angles:
 
                 # 두 정면 이미지와 비정면 이미지 정보가 겹치지 않음
-                if (angle1 <= 55 and angle2 <= 55) or (angle1 >= 90 and angle2 >= 90):
+                if (angle1 <= 70 and angle2 <= 70) or (angle1 >= 90 and angle2 >= 90):
                     print("    두 정면 이미지 모두와 시점 차이가 크거나 매우 작음 → 레이아웃 비교")
                     angle = self.compute_relative_angle(pose1, pose2)
                     side = self.determine_relative_side(pose1, pose2)
@@ -499,12 +499,12 @@ class ShowRoomProcessor:
                     return [{"key": key, "image": images[int(img_idx)]}]
 
                 # 정면 이미지 중 하나의 정면 이미지만 정보가 겹침(겹치지 않는 정면 쪽 생성)
-                elif angle1 <= 55 < angle2:
+                elif angle1 <= 70 < angle2:
                     print(f"    이미지 {z2}와의 각도가 커서 상대적 방향으로 판단")
                     side = self.determine_relative_side(pose2, poses[nf_name])
                     key = 0 if side == 'left' else 1
                     return [{"key": key, "image": images[z2]}]
-                elif angle2 <= 55 < angle1:
+                elif angle2 <= 70 < angle1:
                     print(f"    이미지 {z1}와의 각도가 커서 상대적 방향으로 판단")
                     side = self.determine_relative_side(pose1, poses[nf_name])
                     key = 0 if side == 'left' else 1
