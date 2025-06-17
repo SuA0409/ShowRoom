@@ -314,7 +314,7 @@ def gen_main(output_list):
     angle_value = 30
     steps = 50
     guidance = 8.5
-    prompt = "Extend only the pure white wall and floor using the source image as the color reference. Preserve the exact white paint tone and lighting without any darker or colored textures. Maintain a uniform white surface. Do not stretch, distort, or over-extend the existing TV—keep its size, shape, and position unchanged. Keep the TV screen showing the official Netflix interface with the authentic Netflix logo, and avoid any other text or graphics."
+    prompt = "Extend only the background wall and floor. Do not add new objects or decorations. Match color and lighting. Keep everything minimal."
 
     torch.manual_seed(seed)
     np.random.seed(seed)
