@@ -35,7 +35,7 @@ Demo dataset : demo/data
   ### Run to 2D Generation (ST-RoomNet (discriminator) → Stable-Diffusion (generator))
   Download the weight file from the following link: https://drive.google.com/file/d/1j2eQdEMWsHPpULlGBkZxVO6QFeOM0E1E/view?usp=sharing
   
-  Put the weight file into the __generate2d/discriminator/weight__
+  Put the weight file into the __generate2d/discriminator/weight__.
   
   ※ If running on Colab, you must enable GPU.
   
