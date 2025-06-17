@@ -283,7 +283,7 @@ def init_set():
     )
     print("다운로드 완료!")
 
-def show_image(img: Image.Image, title: str = "image", save_dir: str = "output"):
+def show_image(img: Image.Image, title: str = "image", save_dir: str = "output_gen"):
     """
     PIL 이미지를 시각화하는 대신 파일로 저장 (headless 환경 대응)
     """
@@ -310,14 +310,10 @@ def gen_main(output_list):
     start_time = time.time()
 
     # 파라미터 값 수정
-    seed = 42
     angle_value = 30
     steps = 50
     guidance = 8.5
-    prompt = "Extend only the pure white wall and floor using the source image as the color reference. Preserve the exact white paint tone and lighting without any darker or colored textures. Maintain a uniform white surface. Do not stretch, distort, or over-extend the existing TV—keep its size, shape, and position unchanged. Keep the TV screen showing the official Netflix interface with the authentic Netflix logo, and avoid any other text or graphics."
-
-    torch.manual_seed(seed)
-    np.random.seed(seed)
+    prompt = "Extend only the background wall and floor. Do not add new objects or decorations. Match color and lighting. Keep everything minimal."
 
     # 회전 및 인페인팅 수행용 SimpleRotator 인스턴스 생성
     rotator = SimpleRotator(device='cuda', max_depth_m=3.0)

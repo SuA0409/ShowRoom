@@ -2,9 +2,12 @@ from kd_fast3r.kd_fast3r import ShowRoom
 from viz.viz import ViserMaker
 from kd_fast3r.utils.data_preprocess import batch_images_load
 
+# ------- colab 사용시 ngrok token 삽입 -------
+# token = '2uU8oHMQl1SYlwPCSzDNxMWpFov_4AD8eGS8KFwptrmrw69pi' # add your ngrok token; token: str
+
 # --1. 모델 선언
  # model과 viser 선언
-show_viz = ViserMaker() # ngrok 사용시 token 삽입
+show_viz = ViserMaker(token) 
 model = ShowRoom(viz=show_viz)
 
 # --2. 데이터 로드

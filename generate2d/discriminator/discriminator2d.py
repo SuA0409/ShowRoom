@@ -19,7 +19,7 @@ class ProcessorConfig:
     """ShowRoomProcessor 설정을 위한 데이터 클래스"""
 
     # 가중치 파일 경로
-    weight_path: str = '/content/drive/MyDrive/weight/Weight_ST_RoomNet_ConvNext.h5'
+    weight_path: str = 'generate2d/discriminator/weight/Weight_ST_RoomNet_ConvNext.h5'
     ref_img_path: str = 'generate2d/discriminator/ref_img2.png'
 
     # 모델 설정
@@ -317,7 +317,7 @@ class ShowRoomProcessor:
             pose2 (np.ndarray): 두 번째 카메라 포즈
 
         Returns:
-            str: 'left' 또는 'right'
+            str: 'right' 또는 'left'
         """
 
         pos1, dir1 = self.get_camera_position_and_direction(pose1)
@@ -332,7 +332,7 @@ class ShowRoomProcessor:
         cross_vec = np.cross(dir1, dir2)
         direction_indicator = np.dot(cross_vec, baseline_unit)
 
-        return 'left' if direction_indicator > 0 else 'right'
+        return 'right' if direction_indicator > 0 else 'left'
 
     @staticmethod
     def get_class_area(layout_seg: np.ndarray,
@@ -479,8 +479,8 @@ class ShowRoomProcessor:
             for nf_name, angle1, angle2 in related_angles:
 
                 # 두 정면 이미지와 비정면 이미지 정보가 겹치지 않음
-                if (angle1 <= 55 and angle2 <= 55) or (angle1 >= 90 and angle2 >= 90):
-                    print("    두 정면 이미지 모두와 시점 차이가 크거나 매우 작음 → 정밀 판별 수행")
+                if (angle1 <= 70 and angle2 <= 70) or (angle1 >= 90 and angle2 >= 90):
+                    print("    두 정면 이미지 모두와 시점 차이가 크거나 매우 작음 → 레이아웃 비교")
                     angle = self.compute_relative_angle(pose1, pose2)
                     side = self.determine_relative_side(pose1, pose2)
                     print(f"    두 정면 이미지 간 각도: {angle:.2f}°, 방향: {side}")
@@ -499,12 +499,12 @@ class ShowRoomProcessor:
                     return [{"key": key, "image": images[int(img_idx)]}]
 
                 # 정면 이미지 중 하나의 정면 이미지만 정보가 겹침(겹치지 않는 정면 쪽 생성)
-                elif angle1 <= 55 < angle2:
+                elif angle1 <= 70 < angle2:
                     print(f"    이미지 {z2}와의 각도가 커서 상대적 방향으로 판단")
                     side = self.determine_relative_side(pose2, poses[nf_name])
                     key = 0 if side == 'left' else 1
                     return [{"key": key, "image": images[z2]}]
-                elif angle2 <= 55 < angle1:
+                elif angle2 <= 70 < angle1:
                     print(f"    이미지 {z1}와의 각도가 커서 상대적 방향으로 판단")
                     side = self.determine_relative_side(pose1, poses[nf_name])
                     key = 0 if side == 'left' else 1
