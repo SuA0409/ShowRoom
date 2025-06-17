@@ -310,14 +310,10 @@ def gen_main(output_list):
     start_time = time.time()
 
     # 파라미터 값 수정
-    seed = 42
     angle_value = 30
     steps = 50
     guidance = 8.5
     prompt = "Extend only the background wall and floor. Do not add new objects or decorations. Match color and lighting. Keep everything minimal."
-
-    torch.manual_seed(seed)
-    np.random.seed(seed)
 
     # 회전 및 인페인팅 수행용 SimpleRotator 인스턴스 생성
     rotator = SimpleRotator(device='cuda', max_depth_m=3.0)
