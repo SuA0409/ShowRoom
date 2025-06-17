@@ -19,7 +19,7 @@ class ProcessorConfig:
     """ShowRoomProcessor 설정을 위한 데이터 클래스"""
 
     # 가중치 파일 경로
-    weight_path: str = 'generate2d/discrminator/weight/Weight_ST_RoomNet_ConvNext.h5'
+    weight_path: str = 'generate2d/discriminator/weight/Weight_ST_RoomNet_ConvNext.h5'
     ref_img_path: str = 'generate2d/discriminator/ref_img2.png'
 
     # 모델 설정
