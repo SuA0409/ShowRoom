@@ -317,7 +317,7 @@ class ShowRoomProcessor:
             pose2 (np.ndarray): 두 번째 카메라 포즈
 
         Returns:
-            str: 'left' 또는 'right'
+            str: 'right' 또는 'left'
         """
 
         pos1, dir1 = self.get_camera_position_and_direction(pose1)
@@ -332,7 +332,7 @@ class ShowRoomProcessor:
         cross_vec = np.cross(dir1, dir2)
         direction_indicator = np.dot(cross_vec, baseline_unit)
 
-        return 'left' if direction_indicator > 0 else 'right'
+        return 'right' if direction_indicator > 0 else 'left'
 
     @staticmethod
     def get_class_area(layout_seg: np.ndarray,
