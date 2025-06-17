@@ -221,7 +221,7 @@ class Evaluator:
         print(f"Outlier 수: {consistency['num_outliers']}")
         print(f"평균 이웃 수: {consistency['mean_neighbors']:.2f}")
 
-def accuary(teacher_path, student_path):
+def accuracy(teacher_path, student_path):
     # 평가 객체 생성 및 실행
     evaluator = Evaluator(teacher_path, student_path)
     results = evaluator.evaluate_all(evaluator.teacher_pointmap, evaluator.student_pointmap)
@@ -234,4 +234,4 @@ if __name__ == "__main__":
     # 환경에 맞춰 path 경로 설정
     teacher_path = "/content/drive/MyDrive/INISW6_CV5/Fast3R/output data_for accuary/ex_teacher_output.pt"  # teahcer(Fast3R) 경로 (고정)
     student_path = "/content/drive/MyDrive/INISW6_CV5/Fast3R/output data_for accuary/pred/21.pth"  # student(ShowRoom) 경로
-    res_accuary = accuary(teacher_path, student_path)
+    res_accuary = accuracy(teacher_path, student_path)
