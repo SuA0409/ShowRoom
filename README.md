@@ -25,7 +25,7 @@ Demo dataset : demo/data
       python demo/show_room_demo.py
 
   ### Run to 2D Generation (ST-RoomNet (discriminator) → Stable-Diffusion (generator))
-  Download the weight file from this link: https://drive.google.com/file/d/1j2eQdEMWsHPpULlGBkZxVO6QFeOM0E1E/view?usp=sharing
+  Download the weight file from the following link: https://drive.google.com/file/d/1j2eQdEMWsHPpULlGBkZxVO6QFeOM0E1E/view?usp=sharing
   
   Put the weight file into the generator_2d folder.
   
