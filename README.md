@@ -37,7 +37,7 @@ Demo dataset : demo/data
   
   Put the weight file into the __generate2d/discriminator/weight__
   
-  ※If running on Colab, you must enable GPU.
+  ※ If running on Colab, you must enable GPU.
   
     python demo/generator_2d_demo.py
 
