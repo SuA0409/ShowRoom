@@ -28,7 +28,7 @@ for e in range(start_epoch, epochs + 1):
         start_time = time.time()
 
         for it in range(1, len(data_all) + 1):
-            # 데이터 가져오기; pop을 하여 colab issue 해결
+            # 데이터 가져오기 pop을 하여 colab issue 해결
             batch_data = data_all.pop()
 
             loss = showroom.train_model(batch_data)
