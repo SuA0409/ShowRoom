@@ -19,26 +19,29 @@ Based on n user-selected images of a room, this system generates realistic 3D sp
 
 ## Usage
 Demo dataset : demo/data
-When using Colab, insert the ngrok token into show_viz = ViserMaker(). (ex. show_viz = ViserMaker('2yU8oHMQl1SYlwPCSzDNxMWpFov_4AD8eGS8KFwptrmrw69pi'))
 
 ※ The demo below only supports model execution and is not running on a server-based demo.
   ### Run to 3D Reconstruction (Fast3R → SPR → viser)
-      python demo/show_room_demo.py
+  ※ When using Colab, insert the ngrok token into show_viz = ViserMaker(). 
+  
+  (e.g. show_viz = ViserMaker('2yU8oHMQl1SYlwPCSzDNxMWpFov_4AD8eGS8KFwptrmrw69pi'))
+    
+    python demo/show_room_demo.py
 
   ### Run to 2D Generation (ST-RoomNet (discriminator) → Stable-Diffusion (generator))
   Download the weight file from the following link: https://drive.google.com/file/d/1j2eQdEMWsHPpULlGBkZxVO6QFeOM0E1E/view?usp=sharing
   
   Put the weight file into the weight folder inside the generator_2d folder.
   
-      python demo/generator_2d_demo.py
+    python demo/generator_2d_demo.py
 
 If you want to run the demo with your own image, put your image and pose in the demo/data directory.
 
 The generated images are saved in the output folder.
 
   ## Run to Review
-      python demo/review_demo.py —url [Airbnb URL]   # Enter the URL of the Airbnb listing as a string to extract the review topics.
-      python demo/review_demo.py
+    python demo/review_demo.py —url [Airbnb URL]   # Enter the URL of the Airbnb listing as a string to extract the review topics.
+    python demo/review_demo.py
 
 
       
