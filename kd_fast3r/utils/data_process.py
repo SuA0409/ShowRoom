@@ -6,7 +6,7 @@ def data_processer(
     rooms_path: str='/content/drive/MyDrive/Scannet++/data_scannet_fin', 
     dataset_path: str='/content/drive/MyDrive/Scannet++/preprocessv2'
 ):
-    '''이미지 batch크기만큼 전처리 후 torch로 저장 <- dataloader의 학습속도가 매우 느림 ; 사전 전처리의 필요성
+    '''이미지 batch크기만큼 전처리 후 torch로 저장 <- dataloader의 학습속도가 매우 느림 사전 전처리의 필요성
     Args:
         rooms_path (str): 방의 모음이 들어 있는 path
         dataset_path (str): 저장된 파일을 저장할 path
