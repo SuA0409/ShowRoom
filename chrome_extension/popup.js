@@ -2,10 +2,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // 서버 기본 URL 설정
   const SERVER_BASE_URL = 'add_your_main_ngrok_server_address';
 
-  // 공통: 버튼 클릭 효과음 element
+  // 공통: 버튼 클릭 효과음 엘리먼트
   const clickSound = document.getElementById('click-sound');
 
-   // UI elements 정의: 닫기, 로딩 컨테이너
+   // UI 엘리먼트 정의: 닫기, 로딩 컨테이너
   const closeBtn = document.getElementById('close-popup');
   const loadingContainer = document.getElementById
   ('loading-container');
@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     closeBtn.addEventListener('click', () => window.close());
   }
 
-  // (옵션) 로고 버튼 클릭 시 새 탭으로 쇼룸 열기
+  // (옵션) 로고 버튼 클릭 시 사운드 재생 및 새 탭으로 쇼룸 열기
   const logoBtn = document.getElementById('logo-button');
   if (logoBtn) {
     logoBtn.addEventListener('click', () => {
@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // UI elements 정의: 3D 변환, 2D 생성, 상태 표시, 리뷰 요약, 토글, 페이지 이동 버튼
+  // UI 엘리먼트 정의: 3D 변환, 2D 생성, 상태 표시, 리뷰 요약, 토글, 페이지 이동 버튼
   const convertBtn = document.getElementById('convert');
   const create2DBtn = document.getElementById('create-2d');
   const status = document.getElementById('status');
@@ -41,26 +41,20 @@ document.addEventListener('DOMContentLoaded', () => {
       convertBtn.disabled = selectedImages.length < 3;
       if (selectedImages.length >= 3) {
         create2DBtn.disabled = false;
-        create2DBtn.setAttribute('data-tooltip', '선택된 이미지 2D 재생성');
-      }
-    }
+        create2DBtn.setAttribute('data-tooltip', '선택된 이미지 2D 재생성');     
+      } 
+    } 
   });
 
   // 썸네일 렌더링 및 클릭 이벤트 처리 함수
   function renderThumbnails(images) {
-
-    // 썸네일 컨테이너 및 선택 개수 표시 요소 가져오기
     const container = document.getElementById('selected-thumbnails');
     const countEl = document.getElementById('selected-count');
-
-    // 컨테이너 없으면 함수 종료
     if (!container) return;
 
-    // 컨테이너 초기화 및 선택 이미지 개수 표시
     container.innerHTML = '';
     if (countEl) countEl.textContent = `선택된 이미지: ${images.length}장`;
 
-    // 썸네일 이미지 생성 및 할당
     images.forEach(src => {
       const img = document.createElement('img');
       img.src = src;
@@ -91,37 +85,31 @@ document.addEventListener('DOMContentLoaded', () => {
       clickSound.play();
     });
 
-    // 현재 활성 탭 정보 가져오기
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const tab = tabs[0];
-
-      // Airbnb 상세 페이지가 아니면 안내 메시지 후 종료
+      // Airbnb 페이지 확인 및 이미지 가져오기
       if (!tab.url.includes('airbnb.co.kr') && !tab.url.includes('airbnb.com')) {
         alert('Airbnb 상세 페이지에서 실행해주세요.');
         return;
       }
 
-      // 컨텐츠 스크립트에 이미지 요청 후 오류 처리
       chrome.tabs.sendMessage(tab.id, { action: 'getImages' }, (response) => {
         if (chrome.runtime.lastError) {
           console.error('메시지 전송 실패:', chrome.runtime.lastError.message);
           alert('Airbnb 페이지에서 이미지를 찾을 수 없습니다.');
           return;
         }
-
-        // 응답값이 배열이 아니면 이미지 데이터 오류 처리
         if (!Array.isArray(response)) {
           alert('이미지 데이터를 가져오지 못했습니다.');
           return;
         }
-        
-        // 선택 이미지가 3장 미만이면 3D 변환 버튼 비활성화
+
         renderThumbnails(response);
         convertBtn.disabled = response.length < 3;
         setupConvertButton(tab.id);
 
         // 최초 이미지 로드 직후 저장
-        chrome.storage.local.set({ selectedImages: response });
+        chrome.storage.local.set({ selectedImages: response });        // ★ ADDED
       });
     });
   }
@@ -145,28 +133,24 @@ document.addEventListener('DOMContentLoaded', () => {
       if (loadingContainer) loadingContainer.style.display = 'block';
   
       try {
-        // 현재 활성 탭 정보 비동기 획득
         const tabs = await new Promise(resolve =>
           chrome.tabs.query({ active: true, currentWindow: true }, resolve)
         );
-
-        // 컨텐츠 스크립트에 이미지 목록 요청 (비동기)
+  
         const images = await new Promise((resolve, reject) => {
           chrome.tabs.sendMessage(tabs[0].id, { action: 'getImages' }, (res) => {
             if (chrome.runtime.lastError) return reject(chrome.runtime.lastError);
             resolve(res);
           });
         });
-
-        // 이미지가 3장 미만이면 알림 후 종료
+  
         if (!Array.isArray(images) || images.length < 3) {
           alert('최소 3장의 이미지를 선택해야 합니다.');
           return;
         }
   
         renderThumbnails(images);
-        
-        // 메인 서버에 3D 생성 요청 전송
+  
         const res = await fetch(`${SERVER_BASE_URL}/3d_upload`, {
           method: 'POST',
           headers: {
@@ -175,13 +159,12 @@ document.addEventListener('DOMContentLoaded', () => {
           },
           body: JSON.stringify({ images })
         });
-
-        // 서버 응답(JSON) 파싱 및 성공 여부 처리
+  
         const data = await res.json();
   
         if (data.status === 'success') {
-          showStatus('Fast3R 처리 완료 응답 받음', true);
-          console.log('Fast3R 응답:', data);
+          showStatus('✅ Fast3R 처리 완료 응답 받음!', true);
+          console.log('✅ Fast3R 응답:', data);
   
           // viser 새 창 열기
           if (data.viser_response && data.viser_response.status) {
@@ -197,17 +180,18 @@ document.addEventListener('DOMContentLoaded', () => {
             create2DBtn.setAttribute('data-tooltip', '선택된 이미지 2D 재생성');
           }
         } else {
-          showStatus('Fast3R 처리 중 오류가 발생했습니다.', false);
+          showStatus('❌ Fast3R 처리 중 오류가 발생했습니다.', false);
         }
       } catch (err) {
         console.error('Fast3R 요청 중 오류:', err);
-        showStatus('서버 통신 오류가 발생했습니다.', false);
+        showStatus('❌ 서버 통신 오류가 발생했습니다.', false);
       } finally {
         if (loadingContainer) loadingContainer.style.display = 'none';
         isRunning = false;
       }
     });
   }
+
 
   // 2D 생성 버튼 클릭 이벤트 처리
   if (create2DBtn) {
@@ -221,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
       create2DBtn.innerHTML  = '2D<br>생성 중...';
 
       try {
-        // 메인 서버에 2D 생성 요청 전송
+        // 서버에 2D 생성 요청 전송
         const res = await fetch(`${SERVER_BASE_URL}/2d_upload`, {
           method: 'POST',
           headers: {
@@ -232,8 +216,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 서버 응답 처리
         if (data.status === 'success') {
-          showStatus('2D 생성 완료!', true);
-          console.log('2D 생성 응답:', data);
+          showStatus('✅ 2D 생성 완료!', true);
+          console.log('✅ 2D 생성 응답:', data);
 
           //viser 새 창 띄우기
           if (data.viser_result && data.viser_result.status) {
@@ -244,11 +228,11 @@ document.addEventListener('DOMContentLoaded', () => {
           }
 
         } else {
-          showStatus('2D 생성 중 오류 발생.', false);
+          showStatus('❌ 2D 생성 불가 이미지 다른 이미지를 선택해 주세요.', false);
         }
       } catch (err) {
         console.error('2D 생성 요청 중 오류:', err);
-        showStatus('2D 생성 중 서버 오류.', false);
+        showStatus('❌ 2D 생성 중 서버 오류.', false);
       } finally {
         if (loadingContainer) loadingContainer.style.display = 'none';
         create2DBtn.disabled = false;
@@ -291,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
 
-        // 메인 서버에 리뷰 분석 요청 전송
+        // 서버에 리뷰 분석 요청 전송
         fetch(`${SERVER_BASE_URL}/analyze_review`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -301,9 +285,9 @@ document.addEventListener('DOMContentLoaded', () => {
           .then(data => {
             // 분석 결과 URL이 있으면 새 탭으로 열기, 아니면 오류 표시
             if (data.view_url) window.open(data.view_url, '_blank');
-            else showStatus('분석 실패: ' + (data.error || 'Unknown error'), false);
+            else showStatus('❌ 분석 실패: ' + (data.error || 'Unknown error'), false);
           })
-          .catch(e => showStatus('서버 오류: ' + e, false))
+          .catch(e => showStatus('❌ 서버 오류: ' + e, false))
           .finally(() => {
             analyzeBtn.disabled = false;
             analyzeBtn.textContent = '댓글 요약 시작';
