@@ -43,7 +43,7 @@ Demo dataset : demo/data
 
 If you want to run the demo with your own image, put your image and pose in the demo/data directory.
 
-The generated images are saved in the output_gen folder.
+The generated images are saved in the _output_gen_ folder.
 
   ## Run to Review
     python demo/review_demo.py —url [Airbnb URL]   # Enter the URL of the Airbnb listing as a string to extract the review topics.
@@ -103,10 +103,10 @@ Each scene was represented as a list of dictionaries, one per view:
 
 Each view_i contained the folling keys:
 
-    image   : Tensor [B, 3, 192, 256]   # noramlized RGB image 
-    true_shape : Tensor [B, 2]   # original image dimensions
-    index   : list [B]   # image indices 
-    instance  : list [B]   # scene instance IDs 
+    image   : Tensor [B, 3, 192, 256]     # noramlized RGB image 
+    true_shape : Tensor [B, 2]            # original image dimensions
+    index   : list [B]                    # image indices 
+    instance  : list [B]                  # scene instance IDs 
 
 B refers to the number of scenes in a batch. All views shared the same batch size B, and there were a total of S views per scene (e.g. 5 images)
 
