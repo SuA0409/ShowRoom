@@ -283,7 +283,7 @@ def init_set():
     )
     print("다운로드 완료!")
 
-def show_image(img: Image.Image, title: str = "image", save_dir: str = "output"):
+def show_image(img: Image.Image, title: str = "image", save_dir: str = "output_gen"):
     """
     PIL 이미지를 시각화하는 대신 파일로 저장 (headless 환경 대응)
     """
