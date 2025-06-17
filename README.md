@@ -23,7 +23,6 @@ Demo dataset : demo/data
 ※ The demo below only supports model execution and is not running on a server-based demo.
   ### Run to 3D Reconstruction (Fast3R → SPR → viser)
   ※ When using Colab, insert the ngrok token into show_viz = ViserMaker(). 
-  
   (e.g. show_viz = ViserMaker('2yU8oHMQl1SYlwPCSzDNxMWpFov_4AD8eGS8KFwptrmrw69pi'))
     
     python demo/show_room_demo.py
