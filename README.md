@@ -22,14 +22,14 @@ Demo dataset : demo/data
 
 ※ The demo below only supports model execution and is not running on a server-based demo.
   ### Run to 3D Reconstruction (Fast3R → SPR → viser)
-  ※ When using Colab, insert the ngrok token into token # add your ngrok; token: str. <br>(e.g. token = '2yU8oHMQl1SYlwPCSzDNxMWpFov_4AD8eGS8KFwptrmrw69pi')
+  ※ When using Colab, __insert the ngrok token__ into _token_ <br># add your ngrok token; token: str (e.g. token = '2yU8oHMQl1SYlwPCSzDNxMWpFov_4AD8eGS8KFwptrmrw69pi')
     
     python demo/show_room_demo.py
 
   ### Run to 2D Generation (ST-RoomNet (discriminator) → Stable-Diffusion (generator))
   Download the weight file from the following link: https://drive.google.com/file/d/1j2eQdEMWsHPpULlGBkZxVO6QFeOM0E1E/view?usp=sharing
   
-  Put the weight file into the generate2d/discriminator/weight
+  Put the weight file into the __generate2d/discriminator/weight__
   
     python demo/generator_2d_demo.py
 
