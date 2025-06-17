@@ -1,0 +1,6 @@
+head_args:
+  layer_dims:
+  - 48
+  - 96
+  - 192
+  - 384

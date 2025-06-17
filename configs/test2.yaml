@@ -1,0 +1,30 @@
+﻿test_name: 'layer_half_1e-5_v1'
+
+path:
+    rooms_path: '/content/drive/MyDrive/Scannet++/preprocessv2'
+    student_model_path: '/content/drive/MyDrive/Colab Notebooks/Model/ShowRoom/.model'
+    teacher_model_path: '/content/drive/MyDrive/Colab Notebooks/Model/ShowRoom/.model/teacher.pth'
+    test_image_path: '/content/drive/MyDrive/Colab Notebooks/Model/test_view'
+
+arg_path:
+    student_args_path: '/content/ShowRoom/configs/student_args_v1.yaml'
+    teacher_args_path: '/content/ShowRoom/configs/teacher_args.yaml'
+
+params:
+    epochs: 35
+    learning_rate: 1e-5
+    accum_iter: 1
+
+    optimizer:
+      type: AdamW
+      weight_decay: 0.05
+      betas: [0.9, 0.95]
+
+    scheduler:
+      type: LinearWarmupCosineAnnealingLR
+      warmup_epochs: 1
+      max_epochs: 30
+      eta_min: 1e-6
+
+    kd_loss:
+      type: RKDLoss
