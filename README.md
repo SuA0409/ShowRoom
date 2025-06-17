@@ -23,6 +23,8 @@ Demo dataset : demo/data
 ※ The demo below only supports model execution and is not running on a server-based demo.
   ### Run to 3D Reconstruction (Fast3R → SPR → viser)
   ※ When using Colab, __insert the ngrok token__ into _token_ <br>Add your ngrok token; token: str (e.g. token = '2yU8oHMQl1SYlwPCSzDNxMWpFov_4AD8eGS8KFwptrmrw69pi')
+
+  ※ If you're using a GPU, only GPUs with A100-like architecture are supported.
     
     python demo/show_room_demo.py
 
