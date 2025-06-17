@@ -54,7 +54,6 @@ The generated images are saved in the _output_gen_ folder.
       
 ## Project Structure
     ShowRoom/
-    ├── .idea/                         # PyCharm project settings
     ├── EDA/                           # Exploratory Data Analysis scripts
     ├── chrome_extension/              # Chrome extension implementation code
     ├── configs/                       # KD model training and environment configuration files
@@ -68,7 +67,7 @@ The generated images are saved in the _output_gen_ folder.
     │   └── generator/                 # Generator of 2D image
     ├── kd_fast3r/                     # Knowledge Distillation training modules for Fast3R
     │   └── utils/
-    ├── review/                        # Visualization and review of model evaluation results
+    ├── review/                        # Topic Extraction and review of model evaluation results
     ├── server/                        # Flask-based backend server
     │   ├── templates/
     │   ├── results/
