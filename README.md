@@ -39,7 +39,7 @@ Demo dataset : demo/data
 
 If you want to run the demo with your own image, put your image and pose in the demo/data directory.
 
-The generated images are saved in the output folder.
+The generated images are saved in the output_gen folder.
 
   ## Run to Review
     python demo/review_demo.py —url [Airbnb URL]   # Enter the URL of the Airbnb listing as a string to extract the review topics.
