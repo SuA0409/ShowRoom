@@ -1,9 +1,21 @@
-START, END = 0, 10
-save_base_path = '/content/drive/MyDrive/Dataset/c2_2_20-29'  # 이미지 저장 위치
+START, END = 0, 10 # 이미지 리스트 중 크롤링한 숙소들
+save_base_path = '/content/drive/MyDrive/Dataset/city1'  # 이미지 저장 위치
 
-# ※ 건들지 마시오.
 SLEEP = 2
-ROOM_LIST = ['주방', '거실', '침실']
+ROOM_LIST = ['주방', '거실', '침실'] # 실내 공간만 수집하기 위한 제한 사항
+
+# Selenium으로 웹사이트를 크롤링하기 위한 준비 작업과 드라이버 설정
+
+os.makedirs(save_base_path, exist_ok=True)
+sys.path.insert(0, '/usr/lib/chromium-browser/chromedriver')
+
+# 셀레니움 드라이버 설정 (Colab용)
+chrome_options = Options()
+chrome_options.add_argument("--headless")
+chrome_options.add_argument("--no-sandbox")
+chrome_options.add_argument("--disable-dev-shm-usage")
+chrome_options.add_argument('--window-size=1920x1080')
+driver = webdriver.Chrome(options=chrome_options)
 
 # Import
 import os, re, json
@@ -14,37 +26,20 @@ import base64
 from urllib.parse import quote, urljoin
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-
-# sys.path 설정
 import sys
+import json
 
+# 사전에 정의한 도시들의 리스트
+with open('configs/city_list.json', 'r', encoding='utf-8') as f:
+    cities = json.load(f)
 
-# Google mount
-from google.colab import drive
-drive.mount('/content/drive')
-
-
-# 도시 리스트
-# cities = ['New York', 'Los Angeles', 'San Francisco', 'Las Vegas', 'Miami', 'Chicago', 'Orlando', 'Vancouver',
-#           'Toronto', 'Montreal', 'Quebec City', 'London', 'Edinburgh', 'Manchester', 'Liverpool', 'Paris', 'Nice', 'Lyon', 'Marseille',
-#           'Berlin', 'Munich', 'Hamburg', 'Frankfurt', 'Rome', 'Venice', 'Milan', 'Florence', 'Naples', 'Barcelona', 'Seville', 'Madrid', 'Valencia',
-#           'Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Tokyo', 'Osaka', 'Kyoto', 'Fukuoka', 'Sapporo', 'Seoul', 'Busan', 'Jeju', 'Gangneung', 'Beijing',
-#           'Shanghai', 'Guangzhou', 'Chengdu', 'Bangkok', 'Phuket', 'Chiang Mai', 'Pattaya', 'Hanoi', 'Ho Chi Minh', 'Mexico City', 'Da Nang', 'Cancun',
-#           'Guadalajara', 'Rio de Janeiro', 'São Paulo', 'Istanbul', 'Cappadocia', 'Antalya']
-
-cities = ["Amsterdam", "Prague", "Vienna", "Budapest", "Copenhagen", "Stockholm", "Oslo", "Helsinki", "Dublin",
-    "Reykjavik", "Athens", "Santorini", "Dubrovnik", "Split", "Krakow", "Warsaw", "Bruges", "Brussels", "Zurich", "Geneva",
-    "Dubai", "Abu Dhabi", "Doha", "Jerusalem", "Tel Aviv", "Cairo", "Marrakesh", "Cape Town", "Johannesburg", "Nairobi",
-    "Buenos Aires", "Lima", "Cusco", "Santiago", "Bogotá", "Cartagena", "Quito", "Panama City", "San José",
-    "Havana", "Punta Cana", "San Juan", "Kingston", "Manila", "Bali", "Jakarta", "Kuala Lumpur", "Singapore", "Taipei"]
-cities = [it.replace(' ', '-') for it in cities]
+cities = [it.replace(' ', '-') for it in cities["city1"]]
 Curl = list()
 for i in range(len(cities)):
     Curl.append(f'https://www.yourURL.com/{cities[i]}/homes')
 
-
-# 이미지 저장
 def save_images(img_list, category, room_dir):
+    '''크롤링한 이미지를 저장'''
     category_dir = os.path.join(room_dir, category)
     os.makedirs(category_dir, exist_ok=True)
     for idx_img, img_url in enumerate(img_list):
@@ -54,21 +49,20 @@ def save_images(img_list, category, room_dir):
             img_path = os.path.join(category_dir, img_filename)
             with open(img_path, 'wb') as f:
                 f.write(img_data)
-            print(f"✅ 저장 완료: {img_path}")
+            print(f" 저장 완료: {img_path}")
         except Exception as e:
-            print(f"❌ 이미지 다운로드 실패: {e}")
+            print(f" 이미지 다운로드 실패: {e}")
 
-# 도시 페이지 이동
 def make_cursor(page: int) -> str:
+    '''다음 리스트로 도시를 옮기는 로직'''
     items_offset = (page - 1) * 18
     obj = {"section_offset": 0, "items_offset": items_offset, "version": 1}
     json_str = json.dumps(obj, separators=(',', ':'))
     b64 = base64.b64encode(json_str.encode()).decode()
     return quote(b64)
 
-
-# 숙소별 이미지 크롤링 및 저장 함수
 def crawl_and_save_images(driver, urls, i):
+    '''숙소 url을 돌면서 방 이미지를 저장하는 로직'''
     idx = 0
     while urls:
         url = urls.pop()
@@ -101,7 +95,7 @@ def crawl_and_save_images(driver, urls, i):
                     # 숙소 고유번호 추출
                     room_number = url.split('/rooms/')[-1].split('?')[0].strip()
                     if room_number in pre_room_list:
-                        print(f'⚠️ 숙소 크롤링한 숙소:{room_number}')
+                        print(f'xxx 숙소 크롤링한 숙소:{room_number}')
                         continue
                     room_dir = os.path.join(save_base_path, room_number)
                     os.makedirs(room_dir, exist_ok=True)
@@ -112,36 +106,10 @@ def crawl_and_save_images(driver, urls, i):
                     save_images(list(img_set), category, room_dir)
 
         except Exception as e:
-            print(f"⚠️ 숙소 처리 중 오류: {e}")
+            print(f"xxx 숙소 처리 중 오류: {e}")
             continue
 
         idx += 1
-
-
-# Selenium으로 웹사이트를 크롤링하기 위한 준비 작업과 드라이버 설정
-headers = {
-    "User-Agent": "",
-    "Accept": "*/*",
-    "Accept-Language": "",
-    "Referer": "",
-    "Cookie": (
-    ""
-    ""
-    ""
-    ""
-    "")
-}
-os.makedirs(save_base_path, exist_ok=True)
-sys.path.insert(0, '/usr/lib/chromium-browser/chromedriver')
-
-# 셀레니움 드라이버 설정 (Colab용)
-chrome_options = Options()
-chrome_options.add_argument("--headless")
-chrome_options.add_argument("--no-sandbox")
-chrome_options.add_argument("--disable-dev-shm-usage")
-chrome_options.add_argument('--window-size=1920x1080')
-driver = webdriver.Chrome(options=chrome_options)
-
 
 # Main
 if __name__ == '__main__':
@@ -162,9 +130,9 @@ if __name__ == '__main__':
         pre_room_list.extend(lines)
         pre_room_list = set(pre_room_list)
 
-        curl = Curl[i] # 첫번째 뉴욕 -> ...
+        curl = Curl[i]
 
-        cpgs = list() # 뉴욕이면 뉴욕에 대한 페이지들
+        cpgs = list()
         for j in range(1, 16): # 15페이지까지 있으니깐
             cursor = make_cursor(j)
             cpgs.append(f"{curl}?cursor={cursor}")
@@ -177,7 +145,7 @@ if __name__ == '__main__':
                 if re.search(r'^/rooms/', a_tag['href']):
                     link = urljoin('https://www.yourURL.com', a_tag['href'])
                     if link not in urls:
-                        urls.append(link) # 나랑 똑같애야됨
+                        urls.append(link)
 
         crawl_and_save_images(driver, urls, i)
-        print(f"\n✅ {curl} 모든 작업 완료!\t소요 시간 : {time.time() - current_time}")
+        print(f"\n 모든 작업 완료!\t소요 시간 : {time.time() - current_time}")

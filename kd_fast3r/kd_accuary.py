@@ -1,16 +1,7 @@
-# 환경 설정
-from google.colab import drive
-drive.mount('/content/drive')
-# 필요 라이브러리 설치
 import numpy as np
 import torch
 from scipy.spatial.distance import cdist
-from sklearn.metrics import mean_absolute_error
-from skimage.metrics import structural_similarity as ssim
-import matplotlib.pyplot as plt
-from typing import Dict, Tuple, Union, List
-import warnings
-import os
+from typing import Dict
 import random
 
 # 성능 평가 클래스

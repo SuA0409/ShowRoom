@@ -1,0 +1,17 @@
+{
+  "city1": [
+    "New York", "Los Angeles", "San Francisco", "Las Vegas", "Miami", "Chicago", "Orlando", "Vancouver",
+    "Toronto", "Montreal", "Quebec City", "London", "Edinburgh", "Manchester", "Liverpool", "Paris", "Nice", "Lyon", "Marseille",
+    "Berlin", "Munich", "Hamburg", "Frankfurt", "Rome", "Venice", "Milan", "Florence", "Naples", "Barcelona", "Seville", "Madrid", "Valencia",
+    "Sydney", "Melbourne", "Brisbane", "Perth", "Tokyo", "Osaka", "Kyoto", "Fukuoka", "Sapporo", "Seoul", "Busan", "Jeju", "Gangneung", "Beijing",
+    "Shanghai", "Guangzhou", "Chengdu", "Bangkok", "Phuket", "Chiang Mai", "Pattaya", "Hanoi", "Ho Chi Minh", "Mexico City", "Da Nang", "Cancun",
+    "Guadalajara", "Rio de Janeiro", "São Paulo", "Istanbul", "Cappadocia", "Antalya"
+  ],
+  "city2": [
+    "Amsterdam", "Prague", "Vienna", "Budapest", "Copenhagen", "Stockholm", "Oslo", "Helsinki", "Dublin",
+    "Reykjavik", "Athens", "Santorini", "Dubrovnik", "Split", "Krakow", "Warsaw", "Bruges", "Brussels", "Zurich", "Geneva",
+    "Dubai", "Abu Dhabi", "Doha", "Jerusalem", "Tel Aviv", "Cairo", "Marrakesh", "Cape Town", "Johannesburg", "Nairobi",
+    "Buenos Aires", "Lima", "Cusco", "Santiago", "Bogotá", "Cartagena", "Quito", "Panama City", "San José",
+    "Havana", "Punta Cana", "San Juan", "Kingston", "Manila", "Bali", "Jakarta", "Kuala Lumpur", "Singapore", "Taipei"
+  ]
+}

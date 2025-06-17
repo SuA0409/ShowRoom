@@ -46,12 +46,12 @@ class RKDLoss(nn.Module):
     # 각도 관계 손실 계산
     def RKDAngle(self, student, teacher):
         with torch.no_grad():
-            td = (teacher.unsqueeze(0) - teacher.unsqueeze(1))  # [b, b, c']
-            norm_td = F.normalize(td, p=2, dim=2)
+            t_d = (teacher.unsqueeze(0) - teacher.unsqueeze(1))  # [b, b, c']
+            norm_td = F.normalize(t_d, p=2, dim=2)
             t_angle = torch.bmm(norm_td, norm_td.transpose(1, 2)).view(-1)  # [b * c' * b]
 
-        sd = (student.unsqueeze(0) - student.unsqueeze(1))
-        norm_sd = F.normalize(sd, p=2, dim=2)
+        s_d = (student.unsqueeze(0) - student.unsqueeze(1))
+        norm_sd = F.normalize(s_d, p=2, dim=2)
         s_angle = torch.bmm(norm_sd, norm_sd.transpose(1, 2)).view(-1)
 
         loss = F.smooth_l1_loss(s_angle, t_angle, reduction='mean')

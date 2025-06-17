@@ -6,6 +6,7 @@ from kd_fast3r.utils.fast3r_to_spr import spr
 from fast3r.models.multiview_dust3r_module import MultiViewDUSt3RLitModule
 from fast3r.models.fast3r import Fast3R
 
+
 class ShowRoom:
     def __init__(self,
                  model_path='jedyang97/Fast3R_ViT_Large_512',
@@ -49,7 +50,7 @@ class ShowRoom:
         sample = len(images)
 
         for i, image in enumerate(images):
-        # input data를 device 타입에 맞게 조정
+            # input data를 device 타입에 맞게 조정
             images[i]['img'] = image['img'].to(self.device)
             images[i]['true_shape'] = image['true_shape'].to(self.device)
 
@@ -67,16 +68,15 @@ class ShowRoom:
             pred = self.model(images)
 
         # point cloud와 color를 (N, 3) np.ndarray 형태로 변환
-        self.point_cloud = np.concatenate([np.reshape(pred[i]['pts3d_in_other_view'].cpu().numpy().squeeze(), (-1, 3)) for i in range(sample)], axis=0)
-        self.color = np.concatenate([np.reshape(color[i], (-1, 3)) for i in range(sample)], axis=0)
+        self.point_cloud = [np.reshape(pred[i]['pts3d_in_other_view'].cpu().numpy().squeeze(), (-1, 3)) for i in
+                            range(sample)]
+        self.color = [np.reshape(color[i], (-1, 3)) for i in range(sample)]
 
         if self.info:
-            print(f"    모델 추론 완료 ! ({time.time()-start_time:.2f}s)")
+            print(f"    모델 추론 완료 ! ({time.time() - start_time:.2f}s)")
 
         # camera_pose를 추정하여 저장하는 함수, self.pose에 저장
         self._get_camera_pose(pred)
-
-        return self.point_cloud, self.color
 
     # reconstruction을 하는 main 함수
     def reconstruction(self):
@@ -94,12 +94,13 @@ class ShowRoom:
             repeat (int): spr의 반복 횟수
         '''
 
-        vertices, color = self.point_cloud, self.color
+        vertices = np.concatenate(self.point_cloud, axis=0)
+        color = np.concatenate(self.color, axis=0)
 
         for i in range(repeat):
             start_time = time.time()
             vertices, color = spr(vertices, color, depth=depth)
 
-            self.viz.add_point_cloud(f'생성된 spr_{i+1}', vertices, color, False)
+            self.viz.add_point_cloud(f'spr {i + 1}', vertices, color, False)
 
-            print(f'SPR {i+1}회 적용 완료! ({time.time() - start_time:.2f})')
+            print(f'SPR {i + 1}회 적용 완료! ({time.time() - start_time:.2f})')

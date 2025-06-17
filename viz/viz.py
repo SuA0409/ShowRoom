@@ -1,6 +1,7 @@
 from pyngrok import ngrok, conf
 import socket
 import viser
+import numpy as np
 
 def find_free_port():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -21,6 +22,10 @@ class ViserMaker:
 
         self.make_viser_server(token)
         self._build_viser()
+
+        self.is_gen = "False"
+        self.move = 0
+        self.server_list = list()
 
     # 서버 주소 할당
     def make_viser_server(self, token):
@@ -54,22 +59,46 @@ class ViserMaker:
         self.server.scene.set_up_direction((0.0, -1.0, 0.0))
         self.server.scene.world_axes.visible = False
 
+    def _clear(self):
+        '''viser에 등록된 point cloud와 color를 지우는 함수'''
+        for sl in reversed(self.server_list):
+            sl.remove()
+        self.server_list = list()
+
     def add_point_cloud(self,
                         name='default',
-                        point_cloud=None,
-                        color=None,
+                        point_clouds=None,
+                        colors=None,
                         init_viz=True):
         '''point_cloud를 viser에 추가하는 함수
         Args:
             name (str): viser에서 구분할 point cloud의 이름
-            point_cloud (np.ndarray): 화면에 표시할 point cloud
-            color (np.ndarray): point cloud와 매칭 되는 색상
+            point_clouds (Union[np.ndarray, list]): 화면에 표시할 point cloud
+            colors (Union[np.ndarray, list]): 화면에 표시할 point cloud와 매칭되는 color
             init_viz (bool): viser에 넣은 point could 초기 on/off 설정
         '''
-        self.server.add_point_cloud(
+        # srp과 fast3r 결과를 다형성으로 구분하여 실행
+        if isinstance(point_clouds, list):
+            # generation만 viser에 따로 업데이트
+            if self.is_gen == 'True':
+                self.move -= point_clouds[0][0]
+                point_cloud =  np.stack(point_clouds)[-1] - self.move
+                color = np.stack(colors)[-1]
+                name = "Generation"
+                print(name)
+                init_viz = False
+            else:
+                self._clear()
+                point_cloud = np.concatenate(point_clouds, axis=0)
+                color = np.concatenate(colors, axis=0)
+                self.move = point_cloud[0, :]
+        else:
+            point_cloud = point_clouds
+            color = colors
+        self.server_list.append(self.server.add_point_cloud(
             name=name,
-            points=point_cloud,
+            points=point_cloud*2,
             colors=color,
-            point_size=self.point_size,
+            point_size=self.point_size*2,
             visible=init_viz
-        )
+        ))

@@ -4,7 +4,6 @@ from pyngrok import ngrok
 from flask_cors import CORS
 from io import BytesIO
 import requests
-import copy
 import base64
 import os
 import re
@@ -107,6 +106,7 @@ class ServerMaker:
                 print(' main에서 입력 받음 !')
 
                 # request로 입력받은 데이터를 showroom.room에 저장
+                showroom.viz.is_gen = request.form.get("is_gen")
                 showroom.room = server_images_load(request.files)
 
                 # fast3r 실행
@@ -326,7 +326,8 @@ class ServerMaker:
             ## Fast3r에 3d 전환 요청
             try:
                 print(" Fast3R에 요청 전송 !")
-                self.fast3r_response = requests.post(self.FAST3R_SERVER_URL + "/3d_upload", files=copy.deepcopy(self.files), timeout=600)
+                self.fast3r_response = requests.post(self.FAST3R_SERVER_URL + "/3d_upload",
+                                                     files=copy.deepcopy(self.files), data={"is_gen":"False"}, timeout=600)
 
                 if self.fast3r_response.status_code == 200:
                     fast3r_result = self.fast3r_response.json()
@@ -399,7 +400,7 @@ class ServerMaker:
                 ## fast3r에 두 번째 요청
                 print(" Fast3R에 두 번째 요청 전송 !")
                 response_3d = requests.post(self.FAST3R_SERVER_URL + "/3d_upload",
-                                            files=copy.deepcopy(new_files), timeout=600)
+                                            files=copy.deepcopy(new_files), data={"is_gen":"True"}, timeout=600)
 
                 if response_3d.status_code == 200:
                     result_3d = response_3d.json()
@@ -430,4 +431,3 @@ class ServerMaker:
             except Exception as e:
                 print(" 2D 서버 요청 실패:", e)
                 return jsonify({"status": "error", "message": str(e)}), 500
-
