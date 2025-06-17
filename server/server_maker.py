@@ -6,7 +6,7 @@ from io import BytesIO
 import requests
 import base64
 import os
-import re
+import re, copy
 
 from viz.viz import find_free_port
 from generate2d.discriminator.discriminator2d import dis_main
